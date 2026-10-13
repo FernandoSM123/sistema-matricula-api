@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Matricula.Api/Matricula.Api.csproj" />
+    <Project Path="src/Matricula.Application/Matricula.Application.csproj" />
+    <Project Path="src/Matricula.Domain/Matricula.Domain.csproj" />
+    <Project Path="src/Matricula.Infrastructure/Matricula.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Matricula.IntegrationTests/Matricula.IntegrationTests.csproj" />
+    <Project Path="tests/Matricula.UnitTests/Matricula.UnitTests.csproj" />
+  </Folder>
+</Solution>

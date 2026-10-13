@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <!-- CA1515: los tipos públicos son necesarios entre capas. CA1848: LoggerMessage es opcional en este proyecto. -->
+    <NoWarn>$(NoWarn);CA1515;CA1848;CA1711</NoWarn>
+  </PropertyGroup>
+</Project>

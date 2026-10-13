@@ -1,0 +1,6 @@
+# Normaliza finales de línea en el repositorio
+* text=auto
+
+# Los scripts de Windows necesitan CRLF para que cmd interprete bien etiquetas y goto
+*.cmd text eol=crlf
+*.bat text eol=crlf

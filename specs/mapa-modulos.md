@@ -18,7 +18,7 @@
 
 | Módulo | Spec | Plan | Tareas | Avance | Estado del módulo |
 |---|---|---|---|---|---|
-| `fundacion` | [Aprobada](SPEC-fundacion.md) | [Aprobado](../tasks/fundacion/plan.md) | [Aprobadas](../tasks/fundacion/todo.md) | 2/6 | En implementación |
+| `fundacion` | [Aprobada](SPEC-fundacion.md) | [Aprobado](../tasks/fundacion/plan.md) | [Aprobadas](../tasks/fundacion/todo.md) | 3/6 | En implementación |
 | `acceso` | — | — | — | — | Sin empezar |
 | `estudiantes` | — | — | — | — | Sin empezar |
 | `profesores` | — | — | — | — | Sin empezar |

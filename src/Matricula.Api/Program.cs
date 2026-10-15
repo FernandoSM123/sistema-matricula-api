@@ -24,6 +24,13 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 
+// Sin orígenes configurados no se permite ninguno.
+var origenesPermitidos = builder.Configuration.GetSection("Cors:OrigenesPermitidos").Get<string[]>() ?? [];
+builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
+    .WithOrigins(origenesPermitidos)
+    .AllowAnyHeader()
+    .AllowAnyMethod()));
+
 // Pendiente (paso 4 de docs/arquitectura.md): autenticación JWT, políticas de autorización,
 // rate limiting en login y olvido de contraseña, y seed del primer administrador.
 
@@ -40,6 +47,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors();
 app.UseAuthorization();
 
 app.MapControllers();

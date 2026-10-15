@@ -14,7 +14,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T1. Manejo de errores | Completada | ✅ | ➖ | ✅ ⏳ | ✅ |
 | T2. CORS | Completada | ✅ | ➖ | ✅ | ✅ |
 | T3. Rutas kebab-case | Completada | ✅ | ➖ | ✅ ⏳ | ✅ |
-| T4. Tests de `PaginacionRequest` | Pendiente | ⬜ | ⬜ | ➖ | ⬜ |
+| T4. Tests de `PaginacionRequest` | Completada | ✅ | ✅ | ➖ | ✅ |
 | T5. README | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 
 **Estados de tarea:**

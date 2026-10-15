@@ -3,6 +3,7 @@ using Matricula.Domain.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Matricula.Api.Common;
 
@@ -16,6 +17,11 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
     {
         ArgumentNullException.ThrowIfNull(httpContext);
 
+        var violacionUnicidad = exception is DbUpdateException
+        {
+            InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } postgres
+        } ? postgres : null;
+
         var (status, title, code) = exception switch
         {
             BusinessRuleException e => (StatusCodes.Status409Conflict, "Regla de negocio incumplida", e.Code),
@@ -23,6 +29,7 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
             ConflictException => (StatusCodes.Status409Conflict, "Conflicto", null),
             ForbiddenException => (StatusCodes.Status403Forbidden, "Acceso denegado", null),
             DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, "Conflicto de concurrencia", "CONCURRENCIA"),
+            _ when violacionUnicidad is not null => (StatusCodes.Status409Conflict, "Dato duplicado", "RN-13"),
             _ => (StatusCodes.Status500InternalServerError, "Error interno", (string?)null)
         };
 
@@ -30,6 +37,13 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
         if (exception is DbUpdateConcurrencyException)
         {
             detail = "Los datos cambiaron mientras se procesaba la solicitud. Intente de nuevo.";
+        }
+        else if (violacionUnicidad is not null)
+        {
+            // Red de seguridad: los servicios validan antes los duplicados. El nombre de la restricción
+            // solo va al log, para no exponer la estructura de la BD.
+            detail = "Ya existe un registro con ese mismo valor (cédula, correo, código, NRC o nombre). Revise los datos.";
+            logger.LogWarning("Violación de unicidad en la restricción {Restriccion}", violacionUnicidad.ConstraintName);
         }
         else if (status == StatusCodes.Status500InternalServerError)
         {

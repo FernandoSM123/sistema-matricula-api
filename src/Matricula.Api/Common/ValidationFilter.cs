@@ -1,6 +1,8 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Matricula.Api.Common;
 
@@ -8,14 +10,15 @@ namespace Matricula.Api.Common;
 /// Ejecuta el validador de FluentValidation de cada argumento de la acción, si existe,
 /// y responde 400 con ValidationProblemDetails cuando hay errores.
 /// </summary>
-public class ValidationFilter(IServiceProvider serviceProvider) : IAsyncActionFilter
+public class ValidationFilter(IServiceProvider serviceProvider, ProblemDetailsFactory problemDetailsFactory)
+    : IAsyncActionFilter
 {
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(next);
 
-        var errores = new Dictionary<string, string[]>();
+        var errores = new ModelStateDictionary();
 
         foreach (var argumento in context.ActionArguments.Values.OfType<object>())
         {
@@ -28,19 +31,18 @@ public class ValidationFilter(IServiceProvider serviceProvider) : IAsyncActionFi
             var resultado = await validador.ValidateAsync(
                 new ValidationContext<object>(argumento), context.HttpContext.RequestAborted);
 
-            foreach (var grupo in resultado.Errors.GroupBy(e => e.PropertyName))
+            foreach (var error in resultado.Errors)
             {
-                errores[grupo.Key] = grupo.Select(e => e.ErrorMessage).ToArray();
+                errores.AddModelError(error.PropertyName, error.ErrorMessage);
             }
         }
 
-        if (errores.Count > 0)
+        if (errores.ErrorCount > 0)
         {
-            context.Result = new BadRequestObjectResult(new ValidationProblemDetails(errores)
-            {
-                Title = "Los datos enviados no son válidos",
-                Status = StatusCodes.Status400BadRequest
-            });
+            // La fábrica aplica los valores por defecto de ProblemDetails, entre ellos el traceId.
+            var problem = problemDetailsFactory.CreateValidationProblemDetails(
+                context.HttpContext, errores, StatusCodes.Status400BadRequest, "Los datos enviados no son válidos");
+            context.Result = new BadRequestObjectResult(problem);
             return;
         }
 

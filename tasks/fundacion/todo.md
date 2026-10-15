@@ -11,7 +11,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | Tarea | Estado | Código | Pruebas unitarias | Verificación manual | Commit |
 |---|---|:---:|:---:|:---:|:---:|
 | T0. Commits iniciales | Completada | ➖ | ➖ | ✅ | ✅ |
-| T1. Manejo de errores | Pendiente | ⬜ | ➖ | ⬜ ⏳ | ⬜ |
+| T1. Manejo de errores | Completada | ✅ | ➖ | ✅ ⏳ | ✅ |
 | T2. CORS | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T3. Rutas kebab-case | Pendiente | ⬜ | ➖ | ⬜ ⏳ | ⬜ |
 | T4. Tests de `PaginacionRequest` | Pendiente | ⬜ | ⬜ | ➖ | ⬜ |

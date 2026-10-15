@@ -100,10 +100,12 @@ dotnet ef database update --project src/Matricula.Infrastructure --startup-proje
 ## Pruebas
 
 ```bash
-dotnet test
+dotnet test tests/Matricula.UnitTests
 ```
 
-Las pruebas de integración que usan base de datos trabajan sobre una BD aparte, `matricula_tests`, en el mismo PostgreSQL local. Se recrea con las migraciones al iniciar la ejecución, así que nunca apuntes a la BD de desarrollo. La cadena de conexión se toma de la variable de entorno `ConnectionStrings__MatriculaTests`.
+Por ahora solo hay pruebas unitarias de las reglas del dominio, que no usan base de datos ni necesitan configuración. Los endpoints se prueban manualmente con Scalar (http://localhost:5022/scalar) o con `src/Matricula.Api/Matricula.Api.http`, y los correos se revisan en smtp4dev (http://localhost:5080).
+
+Las pruebas de integración están diferidas. Cuando se retomen, usarán una BD aparte, `matricula_tests`, en el mismo PostgreSQL local, recreada con las migraciones en cada ejecución, y nunca la BD de desarrollo.
 
 ## Docker (opcional)
 

@@ -15,7 +15,7 @@ Este documento fija las pautas de arquitectura y las buenas prácticas para la A
 | Validación | **FluentValidation** (solo para los DTO de entrada) | Mensajes claros por campo |
 | Auth | **JWT Bearer** + `PasswordHasher<T>` de Identity, **sin** ASP.NET Identity completo | El flujo de contraseñas temporales (RN-22 a RN-33) es propio y no encaja bien con Identity |
 | Correo | Interfaz `IEmailSender` + **MailKit**; en desarrollo **smtp4dev** instalado como dotnet tool | Se puede cambiar de proveedor sin tocar la lógica |
-| Pruebas | xUnit + `WebApplicationFactory` sobre una BD **PostgreSQL local de pruebas** (`matricula_tests`), recreada con las migraciones en cada ejecución | **No** uses InMemory ni SQLite: no validan índices filtrados, FK, transacciones ni `xmin` |
+| Pruebas | **Por ahora:** xUnit solo para pruebas **unitarias** de las reglas puras del dominio, sin BD. Los servicios y endpoints se verifican manualmente con Scalar, `Matricula.Api.http` y smtp4dev. **Diferido:** pruebas de integración con `WebApplicationFactory` sobre una BD **PostgreSQL local de pruebas** (`matricula_tests`), recreada con las migraciones en cada ejecución | Unitarias: rápidas y sin configuración. Cuando se retome la integración, **no** uses InMemory ni SQLite: no validan índices filtrados, FK, transacciones ni `xmin` |
 
 **Lo que NO usaría (para mantenerlo simple):** MediatR/CQRS, AutoMapper, un repositorio genérico encima de EF, Clean Architecture completa ni DDD con agregados estrictos. `DbContext` ya cumple el papel de repositorio y de Unit of Work.
 
@@ -189,7 +189,7 @@ Así las reglas puras se prueban con tests unitarios sin BD, y los servicios orq
 - Usa Git desde el día uno, con commits pequeños, y añade un `README` con los pasos para levantar el proyecto. En desarrollo, PostgreSQL y smtp4dev se instalan localmente; el `docker-compose.yml` queda como alternativa opcional (por ejemplo, para el despliegue futuro).
 
 ## 9. Orden sugerido de implementación
-1. Esqueleto de la solución, `Directory.Build.props`, `.editorconfig`, BD local de desarrollo y de pruebas, smtp4dev.
+1. Esqueleto de la solución, `Directory.Build.props`, `.editorconfig`, BD local de desarrollo, smtp4dev. (La BD de pruebas `matricula_tests` se configura cuando se retomen las pruebas de integración.)
 2. Dominio + `AppDbContext` + configuraciones + primera migración.
 3. Infraestructura transversal: ProblemDetails, manejo de excepciones, paginación, OpenAPI/Scalar.
 4. Auth completo (login, temporales, cambio obligatorio, olvido, seed del admin, correo).

@@ -4,7 +4,7 @@ Módulo `fundacion` del [mapa de módulos](mapa-modulos.md). Sin dependencias.
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/fundacion/plan.md) | [Aprobadas](../tasks/fundacion/todo.md) | 5/6 tareas completadas |
+| **Aprobada** | [Aprobado](../tasks/fundacion/plan.md) | [Aprobadas](../tasks/fundacion/todo.md) | 6/6 tareas completadas: **módulo completado** (2026-10-15) |
 
 **Historial:**
 - 2026-10-15: v1 aprobada.

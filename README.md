@@ -90,6 +90,24 @@ Para quitar un valor, usa `dotnet user-secrets remove "<clave>" --project src/Ma
 
 > El `secrets.json` se guarda en texto plano, sin cifrar. Solo sirve para que las credenciales no terminen en el repositorio. No usar en producción.
 
+### CORS
+
+La sección `Cors:OrigenesPermitidos` indica desde qué orígenes (URL del frontend) el navegador puede llamar a la API:
+
+| Archivo | Valor |
+|---|---|
+| `appsettings.json` | `[]`: no se permite ningún origen (valor seguro por defecto) |
+| `appsettings.Development.json` | `["http://localhost:5173"]` (provisional, hasta definir el puerto del frontend) |
+
+Para cambiarlo en desarrollo, edita `appsettings.Development.json`. En otros entornos, usa variables de entorno con un índice por origen:
+
+```powershell
+$env:Cors__OrigenesPermitidos__0 = "https://matricula.ejemplo.com"
+$env:Cors__OrigenesPermitidos__1 = "https://admin.ejemplo.com"
+```
+
+La lista se lee al arrancar, así que hay que reiniciar la API después de cambiarla. CORS solo afecta a los navegadores; herramientas como `curl` o Scalar no lo necesitan.
+
 ## Migraciones
 
 ```bash

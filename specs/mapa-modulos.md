@@ -18,7 +18,7 @@
 
 | Módulo | Spec | Plan | Tareas | Avance | Estado del módulo |
 |---|---|---|---|---|---|
-| `fundacion` | [Aprobada](SPEC-fundacion.md) | [Aprobado](../tasks/fundacion/plan.md) | [Aprobadas](../tasks/fundacion/todo.md) | 5/6 | En implementación |
+| `fundacion` | [Aprobada](SPEC-fundacion.md) | [Aprobado](../tasks/fundacion/plan.md) | [Aprobadas](../tasks/fundacion/todo.md) | 6/6 | Completado |
 | `acceso` | — | — | — | — | Sin empezar |
 | `estudiantes` | — | — | — | — | Sin empezar |
 | `profesores` | — | — | — | — | Sin empezar |
@@ -39,6 +39,16 @@
 - **Completado:** todas las tareas completadas y los criterios de éxito de la spec cumplidos.
 
 **Avance** = tareas completadas / total de tareas del `todo.md` del módulo.
+
+## Verificaciones heredadas
+
+Verificaciones que un módulo no pudo hacer por falta de datos o endpoints. Se copian al `todo.md` del módulo destino cuando se crea.
+
+| Origen | Destino | Verificación |
+|---|---|---|
+| `fundacion` T1 | `acceso` | Un dato duplicado que llegue a la BD (por ejemplo, el correo de `usuario`) responde `409` con `code: "RN-13"`, sin el nombre de la restricción |
+| `fundacion` T1 | `acceso` | El `400` de validación (primer DTO con validador, por ejemplo el login) incluye `traceId` |
+| `fundacion` T3 | primer módulo con un controller de nombre compuesto | Su ruta sale en kebab-case (por ejemplo, `/api/v1/cambio-grupo`) |
 
 ## Decisiones aprobadas
 

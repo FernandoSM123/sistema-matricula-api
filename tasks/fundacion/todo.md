@@ -15,7 +15,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T2. CORS | Completada | ✅ | ➖ | ✅ | ✅ |
 | T3. Rutas kebab-case | Completada | ✅ | ➖ | ✅ ⏳ | ✅ |
 | T4. Tests de `PaginacionRequest` | Completada | ✅ | ✅ | ➖ | ✅ |
-| T5. README | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T5. README | Completada | ✅ | ➖ | ✅ | ✅ |
 
 **Estados de tarea:**
 - **Pendiente:** no se ha empezado.
@@ -69,5 +69,10 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 - Files: `README.md`
 
 ## Cierre del módulo
-- ⬜ Criterios de éxito de la spec cumplidos (1 y 2 por revisión de código).
-- ⬜ Verificaciones ⏳ anotadas en `tasks/acceso/todo.md` cuando se cree: el 409 RN-13, el `traceId` en el 400 y la ruta kebab-case.
+- ✅ Criterios de éxito de la spec cumplidos (2026-10-15):
+  1. 23505 → 409 `RN-13` sin nombre de restricción: por revisión de código.
+  2. `traceId` en el 400: por revisión de código.
+  3. Verificaciones manuales: 404 ProblemDetails con `traceId`, CORS permitido y no permitido, `/health` y Scalar.
+  4. CORS con lista vacía (Production) no permite ningún origen.
+  5. `dotnet build` sin warnings; 9/9 pruebas unitarias en verde.
+- ✅ Verificaciones ⏳ registradas en `specs/mapa-modulos.md` ("Verificaciones heredadas"), para copiarlas a `tasks/acceso/todo.md` cuando se cree.

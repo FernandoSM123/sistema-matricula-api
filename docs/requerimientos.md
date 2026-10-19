@@ -42,7 +42,7 @@ Para que un estudiante se pueda matricular en un grupo, se deben cumplir dos con
 
 | Rol | Descripción |
 |---|---|
-| **Administrador** | Personal administrativo del instituto. Tiene control total: gestiona todos los catálogos, abre y cierra grupos, y puede matricular, retirar o cambiar de grupo a cualquier estudiante. Es el único que puede registrar profesores y otros administradores. También puede registrar estudiantes. |
+| **Administrador** | Personal administrativo del instituto, registrado con sus datos personales. Tiene control total: gestiona todos los catálogos, abre y cierra grupos, y puede matricular, retirar o cambiar de grupo a cualquier estudiante. Es el único que puede registrar profesores y otros administradores. También puede registrar estudiantes. |
 | **Profesor** | Docente del instituto. Consulta los grupos que tiene asignados, sus horarios y los estudiantes matriculados en ellos. Su cuenta solo la puede crear un administrador. |
 | **Estudiante** | Persona registrada en el instituto. Consulta la oferta de grupos abiertos, se matricula, se retira o cambia de grupo, y ve su propia matrícula y su horario. Puede registrarse por su cuenta o ser registrado por un administrador. |
 | **Visitante** *(sin sesión)* | Persona que todavía no ha iniciado sesión. Solo puede registrarse como estudiante, iniciar sesión, solicitar una contraseña temporal si olvidó la suya y consultar la oferta académica (RF-50). |
@@ -54,7 +54,7 @@ Para que un estudiante se pueda matricular en un grupo, se deben cumplir dos con
 | Estudiante | El propio estudiante, mediante el registro público | La define el estudiante al registrarse |
 | Estudiante | Un administrador, por ejemplo si el estudiante no sabe usar el sistema | Temporal, generada por el sistema y **enviada al correo** de la persona; se debe cambiar en el primer ingreso |
 | Profesor | Solo un administrador | Temporal, generada por el sistema y **enviada al correo** de la persona; se debe cambiar en el primer ingreso |
-| Administrador | Solo otro administrador. El primero se crea automáticamente al instalar el sistema | Temporal, generada por el sistema y **enviada al correo** de la persona; se debe cambiar en el primer ingreso. La del primer administrador se define en la configuración inicial |
+| Administrador | Solo otro administrador. El primero se crea automáticamente al instalar el sistema, con datos personales genéricos que luego se actualizan | Temporal, generada por el sistema y **enviada al correo** de la persona; se debe cambiar en el primer ingreso. La del primer administrador se define en la configuración inicial |
 
 > El administrador **nunca ve ni conoce** la contraseña de otra persona. Las contraseñas temporales solo se envían al correo del usuario.
 
@@ -67,6 +67,7 @@ Para que un estudiante se pueda matricular en un grupo, se deben cumplir dos con
 | Cambiar la contraseña propia y consultar el perfil propio | — | ✔ | ✔ | ✔ |
 | Registrar estudiantes | — | ✔ | — | — |
 | Registrar profesores y administradores | — | ✔ | — | — |
+| Gestionar administradores (listar, consultar y modificar sus datos) | — | ✔ | — | — |
 | Reenviar una contraseña temporal a otro usuario | — | ✔ | — | — |
 | Activar o desactivar usuarios | — | ✔ | — | — |
 | Gestionar estudiantes | — | ✔ | — | Solo ver y editar sus datos de contacto |
@@ -100,8 +101,9 @@ Para que un estudiante se pueda matricular en un grupo, se deben cumplir dos con
   - El administrador proporciona los datos del profesor.
   - El sistema crea la cuenta con rol Profesor y genera una contraseña temporal (RF-05).
 - **RF-04 Registro de administradores por otro administrador:**
-  - El sistema crea la cuenta con rol Administrador y genera una contraseña temporal (RF-05).
-  - El primer administrador se crea automáticamente al instalar el sistema, también con una contraseña temporal.
+  - El administrador proporciona los datos personales del nuevo administrador (cédula, nombre, apellidos, teléfono y correo).
+  - El sistema crea a la vez la cuenta y el registro del administrador, con rol Administrador, y genera una contraseña temporal (RF-05).
+  - El primer administrador se crea automáticamente al instalar el sistema, también con una contraseña temporal y con datos personales genéricos (por ejemplo, "John Doe"), que después se actualizan con RF-55.
 - **RF-05 Generar y enviar una contraseña temporal:**
   - El sistema genera una contraseña aleatoria y la **envía al correo** registrado de la persona.
   - Nadie más la ve; tampoco el administrador.
@@ -147,11 +149,16 @@ Perfil ─► Cambiar contraseña ─► Contraseña actual + nueva + confirmaci
 ```
 
 ### 3.3 Gestión de cuentas
-- **RF-13 Consultar el perfil propio:** cualquier usuario puede ver sus datos y su rol.
+- **RF-13 Consultar el perfil propio:** cualquier usuario puede ver sus datos personales, su correo y su rol.
 - **RF-14 Desactivar o reactivar usuarios:**
   - Un usuario desactivado no puede iniciar sesión ni recibir contraseñas temporales.
   - Desactivar una cuenta no borra el historial de la persona.
   - Los usuarios nunca se eliminan físicamente (ver la sección 4.2).
+- **RF-55 Listar, consultar y modificar administradores:**
+  - Solo un administrador puede hacerlo.
+  - El listado permite buscar por nombre, cédula o correo y filtrar por estado (activo o inactivo).
+  - Se pueden modificar los datos personales y el correo de cualquier administrador, incluido el propio. El nuevo correo no puede pertenecer a otra cuenta (RN-13).
+  - Los administradores no se eliminan: se desactivan con RF-14 (RN-30, RN-35).
 
 ### 3.4 Estudiantes
 - **RF-15 Registrar un estudiante:** se hace mediante el registro público (RF-01) o por un administrador (RF-02).
@@ -244,7 +251,7 @@ Perfil ─► Cambiar contraseña ─► Contraseña actual + nueva + confirmaci
 | RN-10 | Los retiros y cambios de grupo solo se permiten hasta la fecha límite de retiro del periodo. |
 | RN-11 | No se permiten matrículas, retiros ni cambios en grupos Cerrados, En curso, Finalizados o Cancelados. Solo el administrador puede hacer excepciones. |
 | RN-12 | Al cancelar un grupo, todas sus matrículas activas pasan a estado **Retirada**. |
-| RN-13 | No pueden repetirse la cédula de estudiantes y profesores, el correo de los usuarios, el código de curso, el NRC de grupo, el código de aula ni el nombre de periodo. |
+| RN-13 | No pueden repetirse la cédula de estudiantes, profesores y administradores (dentro de cada uno de esos registros), el correo de los usuarios, el código de curso, el NRC de grupo, el código de aula ni el nombre de periodo. Una misma cédula puede aparecer, por ejemplo, en un profesor y en un administrador, cada uno con su propia cuenta y su propio correo. |
 | RN-14 | Dos horarios se traslapan si son el mismo día y uno empieza antes de que termine el otro. |
 | RN-15 | La hora de fin de un bloque de horario debe ser posterior a su hora de inicio. |
 | RN-16 | Las fechas del periodo deben ser coherentes: el inicio de la matrícula va antes de su fin, y el inicio de clases va antes del fin de clases. La fecha límite de retiro debe caer dentro del periodo. |
@@ -256,7 +263,7 @@ Perfil ─► Cambiar contraseña ─► Contraseña actual + nueva + confirmaci
 | Código | Regla |
 |---|---|
 | RN-19 | El registro público siempre crea cuentas con rol **Estudiante**. No existe forma de elegir otro rol desde ese registro. |
-| RN-20 | Solo un administrador puede crear cuentas de Profesor o Administrador y cambiar el rol de un usuario. |
+| RN-20 | Solo un administrador puede crear cuentas de Profesor o Administrador. |
 | RN-21 | Si en el registro público se usa una cédula o un correo que ya existen, el registro se rechaza. El sistema indica a la persona que inicie sesión, solicite una contraseña temporal por olvido o contacte a la administración. |
 | RN-22 | Toda cuenta creada por un administrador recibe una contraseña temporal por correo y no tiene contraseña definitiva hasta que la persona haga su primer ingreso. |
 | RN-23 | Las contraseñas temporales son aleatorias y solo se envían al correo del usuario. El sistema nunca las devuelve ni las muestra a nadie, ni siquiera al administrador. Vencen a las **72 horas** si son de una cuenta nueva o un reenvío del administrador, y a **1 hora** si son de un olvido de contraseña. |
@@ -266,8 +273,8 @@ Perfil ─► Cambiar contraseña ─► Contraseña actual + nueva + confirmaci
 | RN-27 | Cada cuenta tiene como máximo una contraseña temporal vigente. Una nueva solicitud reemplaza a la anterior. La temporal se anula al usarse, al vencer, o cuando el usuario ingresa con su contraseña actual. |
 | RN-28 | Ante una solicitud de olvido de contraseña, el sistema responde siempre igual, exista o no el correo, para no revelar qué correos están registrados. |
 | RN-29 | Una cuenta desactivada no puede iniciar sesión ni recibir contraseñas temporales. |
-| RN-30 | Siempre debe existir al menos un administrador activo: no se puede desactivar ni cambiar el rol del último. |
-| RN-31 | Cada cuenta tiene un único rol. Cada estudiante y cada profesor tiene exactamente una cuenta, y el correo de la cuenta es el mismo de su registro. |
+| RN-30 | Siempre debe existir al menos un administrador activo: no se puede desactivar al último. |
+| RN-31 | Cada cuenta tiene un único rol, que se asigna al crearla y **nunca cambia**. Si una persona pasa a cumplir otro rol (por ejemplo, un profesor que se vuelve administrador), se le registra en ese rol con una cuenta nueva y un correo distinto; si deja el rol anterior, esa cuenta se desactiva y conserva su historial (RN-40). Cada estudiante, cada profesor y cada administrador tiene exactamente una cuenta. El correo se guarda solo en la cuenta y es a la vez el correo de contacto de la persona; cambiarlo en el registro de la persona es cambiarlo en su cuenta. |
 | RN-32 | Una solicitud de olvido de contraseña **no invalida** la contraseña actual: esta sigue funcionando hasta que el usuario defina una nueva. |
 | RN-33 | Cada vez que cambia la contraseña de una cuenta, el sistema envía un correo de aviso al usuario. |
 
@@ -283,6 +290,7 @@ Los registros del sistema están relacionados entre sí; por ejemplo, un grupo d
 |---|---|---|
 | Estudiante | Desactivar / reactivar | Solo si nunca tuvo matrículas |
 | Profesor | Desactivar / reactivar | Solo si nunca tuvo grupos |
+| Administrador | Desactivar / reactivar su cuenta | ❌ Nunca |
 | Curso | Desactivar / reactivar | Solo si nunca tuvo grupos |
 | Aula | Desactivar / reactivar | Solo si nunca tuvo grupos |
 | Periodo académico | Se conserva como historial | Solo si no tiene grupos |
@@ -309,9 +317,9 @@ Los registros del sistema están relacionados entre sí; por ejemplo, un grupo d
 ### 5.1 Usuario
 | Dato | Descripción | Obligatorio |
 |---|---|:---:|
-| Correo electrónico | Identificador para iniciar sesión (único) | Sí |
+| Correo electrónico | Identificador para iniciar sesión (único) y correo de contacto de la persona (RN-31) | Sí |
 | Contraseña | Contraseña definitiva, almacenada protegida y nunca en texto plano. Está vacía en las cuentas creadas por un administrador hasta su primer ingreso | Condicional |
-| Rol | Administrador, Profesor o Estudiante | Sí |
+| Rol | Administrador, Profesor o Estudiante. Se asigna al crear la cuenta y no cambia (RN-31) | Sí |
 | Estado | Activo o inactivo | Sí |
 | Contraseña temporal | Contraseña temporal vigente, almacenada protegida y nunca en texto plano | Condicional |
 | Vencimiento de la contraseña temporal | Fecha y hora en que vence la temporal | Condicional |
@@ -329,7 +337,7 @@ Los registros del sistema están relacionados entre sí; por ejemplo, un grupo d
 | Nombre | | Sí |
 | Apellidos | | Sí |
 | Teléfono | | Sí |
-| Correo electrónico | | Sí |
+| Correo electrónico | Se guarda solo en su cuenta de usuario (RN-31) | Sí |
 | Fecha de nacimiento | | No |
 | Dirección | | No |
 | Fecha de registro | Fecha de ingreso al instituto | Sí |
@@ -343,13 +351,24 @@ Los registros del sistema están relacionados entre sí; por ejemplo, un grupo d
 | Nombre | | Sí |
 | Apellidos | | Sí |
 | Teléfono | | Sí |
-| Correo electrónico | | Sí |
+| Correo electrónico | Se guarda solo en su cuenta de usuario (RN-31) | Sí |
 | Especialidad | Área de conocimiento (por ejemplo, programación, redes u ofimática) | No |
 | Fecha de contratación | | No |
 | Estado | Activo o inactivo | Sí |
 | Usuario asociado | Cuenta de acceso al sistema, creada junto con el registro | Sí |
 
-### 5.4 Curso
+### 5.4 Administrador
+| Dato | Descripción | Obligatorio |
+|---|---|:---:|
+| Cédula | Identificación única entre los administradores (RN-13) | Sí |
+| Nombre | | Sí |
+| Apellidos | | Sí |
+| Teléfono | | Sí |
+| Correo electrónico | Se guarda solo en su cuenta de usuario (RN-31) | Sí |
+| Estado | Activo o inactivo; es el estado de su cuenta | Sí |
+| Usuario asociado | Cuenta de acceso al sistema, creada junto con el registro | Sí |
+
+### 5.5 Curso
 | Dato | Descripción | Obligatorio |
 |---|---|:---:|
 | Código | Identificador único del curso | Sí |
@@ -360,7 +379,7 @@ Los registros del sistema están relacionados entre sí; por ejemplo, un grupo d
 | Nivel | Básico, intermedio o avanzado | Sí |
 | Estado | Activo o inactivo | Sí |
 
-### 5.5 Periodo académico
+### 5.6 Periodo académico
 | Dato | Descripción | Obligatorio |
 |---|---|:---:|
 | Nombre | Por ejemplo, "2026-I" (único) | Sí |
@@ -370,7 +389,7 @@ Los registros del sistema están relacionados entre sí; por ejemplo, un grupo d
 | Fecha de fin de matrícula | | Sí |
 | Fecha límite de retiro | | Sí |
 
-### 5.6 Aula
+### 5.7 Aula
 | Dato | Descripción | Obligatorio |
 |---|---|:---:|
 | Código | Identificador único del aula | Sí |
@@ -378,7 +397,7 @@ Los registros del sistema están relacionados entre sí; por ejemplo, un grupo d
 | Capacidad | Cantidad máxima de estudiantes | Sí |
 | Estado | Activa o inactiva | Sí |
 
-### 5.7 Grupo
+### 5.8 Grupo
 | Dato | Descripción | Obligatorio |
 |---|---|:---:|
 | NRC | Número de referencia único del grupo | Sí |
@@ -390,7 +409,7 @@ Los registros del sistema están relacionados entre sí; por ejemplo, un grupo d
 | Modalidad | Presencial, virtual o híbrida | Sí |
 | Estado | Planificado, Abierto, Cerrado, En curso, Finalizado o Cancelado | Sí |
 
-### 5.8 Horario (bloque de un grupo)
+### 5.9 Horario (bloque de un grupo)
 | Dato | Descripción | Obligatorio |
 |---|---|:---:|
 | Grupo | Grupo al que pertenece | Sí |
@@ -398,7 +417,7 @@ Los registros del sistema están relacionados entre sí; por ejemplo, un grupo d
 | Hora de inicio | | Sí |
 | Hora de fin | | Sí |
 
-### 5.9 Matrícula
+### 5.10 Matrícula
 | Dato | Descripción | Obligatorio |
 |---|---|:---:|
 | Estudiante | | Sí |
@@ -408,14 +427,14 @@ Los registros del sistema están relacionados entre sí; por ejemplo, un grupo d
 | Fecha de retiro | Se registra cuando el estudiante se retira | Condicional |
 | Motivo del retiro o cambio | Retiro voluntario, cambio de grupo o cancelación del grupo | No |
 
-### 5.10 Relaciones entre los datos
+### 5.11 Relaciones entre los datos
 - Un **curso** tiene muchos **grupos**, y cada grupo pertenece a un solo curso.
 - Un **profesor** puede tener muchos **grupos**, y cada grupo tiene un solo profesor.
 - Un **periodo académico** agrupa muchos **grupos**.
 - Un **aula** puede tener asignados muchos **grupos**, siempre que sus horarios no choquen.
 - Un **grupo** tiene uno o varios **bloques de horario**.
 - Un **estudiante** puede tener muchas **matrículas**, y un **grupo** tiene muchas **matrículas**. La matrícula es la relación entre un estudiante y un grupo.
-- Cada **estudiante** y cada **profesor** tiene exactamente un **usuario** para ingresar al sistema. Los **administradores** tienen un usuario, pero no un registro de estudiante ni de profesor.
+- Cada **estudiante**, cada **profesor** y cada **administrador** tiene exactamente un **usuario** para ingresar al sistema. El correo de la persona es el de su usuario.
 ```mermaid
 erDiagram
     CURSO ||--o{ GRUPO : "se abre en"
@@ -427,6 +446,7 @@ erDiagram
     GRUPO ||--o{ MATRICULA : "recibe"
     USUARIO ||--o| ESTUDIANTE : "accede como"
     USUARIO ||--o| PROFESOR : "accede como"
+    USUARIO ||--o| ADMINISTRADOR : "accede como"
 ```
 
 ---
@@ -471,7 +491,7 @@ Todos los listados deben permitir búsqueda y filtrado, y deben mostrarse por p�
 - **Validación:** el sistema debe rechazar los datos incompletos o inválidos con mensajes claros que indiquen qué dato o qué regla se incumplió.
 - **Concurrencia:** si dos estudiantes intentan tomar el último cupo de un grupo al mismo tiempo, solo uno debe lograrlo.
 - **Usabilidad:** los mensajes de error y de confirmación deben ser comprensibles para el usuario final.
-- **Datos iniciales:** el sistema debe incluir una cuenta de administrador inicial para poder empezar a usarse. Esa cuenta tiene una contraseña temporal que se debe cambiar en el primer ingreso.
+- **Datos iniciales:** el sistema debe incluir una cuenta de administrador inicial para poder empezar a usarse. Esa cuenta tiene una contraseña temporal que se debe cambiar en el primer ingreso, y datos personales genéricos (por ejemplo, "John Doe") que se actualizan después (RF-55).
 
 ---
 

@@ -35,7 +35,7 @@ Este documento fija las pautas de arquitectura y las buenas prácticas para la A
 ### 2.2 Detalle por capa
 
 **Matricula.Domain**: no depende de nada, ni siquiera de EF Core.
-- `Entities/`: las clases modelo, mapeadas a tablas: `Estudiante`, `Profesor`, `Curso`, `Periodo`, `Aula`, `Grupo`, `Horario`, `Matricula`, `Usuario`. Heredan de `EntidadBase`.
+- `Entities/`: las clases modelo, mapeadas a tablas: `Estudiante`, `Profesor`, `Administrador`, `Curso`, `Periodo`, `Aula`, `Grupo`, `Horario`, `Matricula`, `Usuario`. Heredan de `EntidadBase`.
 - `Enums/`: `EstadoGrupo`, `Modalidad`, `EstadoMatricula`, `Rol`, `NivelCurso`…
 - `Exceptions/`: `BusinessRuleException(code, mensaje)`.
 - Métodos con reglas que solo dependen del propio objeto, por ejemplo:
@@ -97,7 +97,7 @@ Infrastructure implementa las interfaces definidas en Application (inversión de
   - `POST /api/grupos/{id}/estado` con body `{ "estado": "Abierto" }`
   - `POST /api/estudiantes/{id}/desactivar` y `.../reactivar`
   - `POST /api/matriculas` (matricular), `POST /api/matriculas/{id}/retiro`, `POST /api/matriculas/{id}/cambio-grupo`
-  - `POST /api/auth/login`, `/api/auth/olvido-contrasena`, `/api/auth/cambiar-contrasena`, `/api/auth/logout`, `GET /api/auth/perfil` (o `/api/me`)
+  - `POST /api/auth/login`, `/api/auth/olvido-contrasena`, `/api/auth/cambio-obligatorio` (RF-07), `/api/auth/cambiar-contrasena` (RF-09), `/api/auth/logout`, `GET /api/auth/perfil` (o `/api/me`)
   - `POST /api/usuarios/{id}/reenviar-temporal`
 - **"Lo mío":** usa `/api/me/matriculas`, `/api/me/horario` y `/api/me/grupos`, en lugar de que el cliente envíe su propio id.
 - **Códigos HTTP coherentes:** `200` · `201` + `Location` al crear · `204` sin contenido · `400` validación · `401` sin sesión · `403` sin permiso o con cambio de contraseña pendiente · `404` · `409` choque con una regla de negocio, un dato duplicado o concurrencia.
@@ -169,10 +169,11 @@ Así las reglas puras se prueban con tests unitarios sin BD, y los servicios orq
 
 ## 7. Seguridad (lo específico de este sistema)
 - `Usuario` tiene: `PasswordHash?`, `TempPasswordHash?`, `TempPasswordExpira`, `TempPasswordMotivo`, `Rol`, `Activo` y `SecurityStamp`. Ambos hashes se calculan con `PasswordHasher<Usuario>`.
+- **El rol es inmutable (RN-31):** `Usuario.Rol` se fija al crear la cuenta (propiedad `init`) y no existe ningún endpoint ni método de servicio para cambiarlo. Una persona con otro rol recibe otra cuenta, con otro correo, y su registro de `Estudiante`, `Profesor` o `Administrador` correspondiente; la misma cédula puede repetirse entre tablas. Así el rol del token, los permisos y el historial de cada cuenta nunca se desfasan.
 - **Login:**
   - Si la contraseña coincide con la definitiva, limpia la temporal (RN-11/RN-27).
   - Si coincide con la temporal vigente, emite un JWT con el claim `must_change_password=true`.
-- **RN-24:** una **política de autorización por defecto** exige que **no** exista ese claim. Solo `cambiar-contrasena` y `logout` permiten tenerlo (`[Authorize(Policy="PasswordChangePending")]`).
+- **RN-24:** una **política de autorización por defecto** exige que **no** exista ese claim. Solo `cambio-obligatorio` y `logout` permiten tenerlo (`[Authorize(Policy="PasswordChangePending")]`).
 - **Roles:** `[Authorize(Roles = "Administrador")]` o políticas con nombre.
 - **Propiedad (RN-18):** se verifica en el servicio usando `ICurrentUser` (Id, Rol, EstudianteId, ProfesorId leídos de los claims), no solo con atributos.
 - **Logout, desactivación y cambio de contraseña con JWT:** usa tokens de vida corta (por ejemplo, 30–60 min) y un claim con el `SecurityStamp`. Al cambiar la contraseña, desactivar la cuenta o cerrar sesión, se regenera el stamp, y un evento `OnTokenValidated` lo compara contra la BD. Es simple y cumple RN-29.

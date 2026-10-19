@@ -12,7 +12,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 |---|---|:---:|:---:|:---:|:---:|
 | T1. Dominio de cuentas | Completada | ✅ | ✅ | ➖ | ✅ |
 | T2. Persistencia y migración | Completada | ✅ | ➖ | ✅ | ✅ |
-| T3. Hash y generador de temporales | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T3. Hash y generador de temporales | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Seed del primer administrador | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T5. JWT y login | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T6. Autorización y perfil | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |

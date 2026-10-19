@@ -2,6 +2,7 @@ using Matricula.Application.Abstractions;
 using Matricula.Infrastructure.Email;
 using Matricula.Infrastructure.Persistence;
 using Matricula.Infrastructure.Persistence.Interceptors;
+using Matricula.Infrastructure.Seguridad;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +17,8 @@ public static class DependencyInjection
             ?? throw new InvalidOperationException("Falta la cadena de conexión 'Matricula'.");
 
         services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<IHasherContrasenas, HasherContrasenas>();
+        services.AddSingleton<IGeneradorContrasenas, GeneradorContrasenas>();
         services.AddScoped<AuditoriaInterceptor>();
 
         services.AddDbContext<AppDbContext>((sp, options) => options

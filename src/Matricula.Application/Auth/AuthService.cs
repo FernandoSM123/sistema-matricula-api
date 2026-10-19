@@ -51,6 +51,42 @@ public class AuthService(
     }
 
     /// <summary>
+    /// RF-09: cambio de la contraseña propia con la actual. Envía el aviso (RN-33) y devuelve un token nuevo;
+    /// los tokens anteriores, también los de otras sesiones, dejan de valer.
+    /// </summary>
+    public async Task<TokenResponse> CambiarContrasenaAsync(CambiarContrasenaRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var usuario = await CargarUsuarioActualAsync(cancellationToken);
+
+        if (usuario.PasswordHash is null
+            || hasher.Verificar(usuario.PasswordHash, request.ContrasenaActual) == ResultadoVerificacion.Incorrecta)
+        {
+            throw new BusinessRuleException("RF-09", "La contraseña actual no es correcta.");
+        }
+
+        ValidarDistintaDeLaActual(usuario, request.NuevaContrasena);
+
+        usuario.EstablecerContrasena(hasher.Hashear(request.NuevaContrasena), timeProvider.GetUtcNow());
+        await db.SaveChangesAsync(cancellationToken);
+
+        await envioCorreos.EnviarAvisoCambioContrasenaAsync(usuario, cancellationToken);
+        return EmitirToken(usuario, debeCambiarContrasena: false);
+    }
+
+    /// <summary>
+    /// RF-08: cierra todas las sesiones del usuario, porque regenera el stamp.
+    /// </summary>
+    public async Task LogoutAsync(CancellationToken cancellationToken)
+    {
+        var usuario = await CargarUsuarioActualAsync(cancellationToken);
+
+        usuario.CerrarSesiones();
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
     /// RF-13: datos de la cuenta del usuario actual y, si los tiene, sus datos personales.
     /// </summary>
     public async Task<PerfilResponse> ObtenerPerfilAsync(CancellationToken cancellationToken)

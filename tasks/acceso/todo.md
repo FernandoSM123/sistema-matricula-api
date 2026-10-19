@@ -17,7 +17,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T5. JWT y login | Completada | ✅ | ✅ | ✅ | ✅ |
 | T6. Autorización y perfil | Completada | ✅ | ➖ | ✅ | ✅ |
 | T7. Cambio obligatorio y correos | Completada | ✅ | ➖ | ✅ | ✅ |
-| T8. Cambiar contraseña y logout | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T8. Cambiar contraseña y logout | Completada | ✅ | ➖ | ✅ | ✅ |
 | T9. Olvido de contraseña y rate limiting | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T10. `CuentaService` y registrar administrador | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T11. Listar, consultar y editar administradores | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -135,7 +135,7 @@ Al completarlas se marcan como cumplidas en el mapa.
   - `POST /api/v1/auth/cambiar-contrasena` (política por defecto) y `POST /api/v1/auth/logout` (`PasswordChangePending`, `204`).
 - Verify:
   - Actual incorrecta → `409 RF-09`; cambio válido → `200`, aviso en smtp4dev, token anterior → `401`.
-  - Logout → `204`; el token → `401`. Logout con un token de temporal → `204`.
+  - Logout → `204`; el token y los de otras sesiones → `401`. El logout con un token de temporal se verifica en T9 (necesita una temporal).
 - Files: `src/Matricula.Application/Auth/{CambiarContrasenaRequest,CambiarContrasenaRequestValidator}.cs`, `AuthService.cs`, `AuthController.cs`
 
 ### T9. Olvido de contraseña y rate limiting
@@ -147,6 +147,7 @@ Al completarlas se marcan como cumplidas en el mapa.
   - Correo existente, inexistente e inactivo → respuestas idénticas; solo el existente recibe la temporal (1 h).
   - Login con la definitiva tras el olvido → `200` sin cambio pendiente; la temporal ya no sirve (RF-11). Login con la temporal → cambio obligatorio (RF-07).
   - Temporal vencida (ajustar `temp_password_expira` en la BD) → `401`.
+  - Pendiente de T8: logout con el token de la temporal → `204`.
   - 11 logins en un minuto → el último `429`; 6 olvidos → el último `429`.
 - Files: `src/Matricula.Application/Auth/{OlvidoContrasenaRequest,OlvidoContrasenaRequestValidator}.cs`, `AuthService.cs`, `AuthController.cs`, `src/Matricula.Api/Program.cs`
 

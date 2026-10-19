@@ -4,7 +4,7 @@ Módulo `acceso` del [mapa de módulos](mapa-modulos.md). Depende de `fundacion`
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/acceso/plan.md) | [Aprobadas](../tasks/acceso/todo.md) | 6/13 tareas completadas |
+| **Aprobada** | [Aprobado](../tasks/acceso/plan.md) | [Aprobadas](../tasks/acceso/todo.md) | 7/13 tareas completadas |
 
 **Historial:**
 - 2026-10-19: v1 en revisión.

@@ -16,7 +16,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T4. Seed del primer administrador | Completada | ✅ | ➖ | ✅ | ✅ |
 | T5. JWT y login | Completada | ✅ | ✅ | ✅ | ✅ |
 | T6. Autorización y perfil | Completada | ✅ | ➖ | ✅ | ✅ |
-| T7. Cambio obligatorio y correos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T7. Cambio obligatorio y correos | Completada | ✅ | ➖ | ✅ | ✅ |
 | T8. Cambiar contraseña y logout | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T9. Olvido de contraseña y rate limiting | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T10. `CuentaService` y registrar administrador | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |

@@ -47,3 +47,16 @@ Authorization: Bearer {{token}}
 GET {{host}}/api/v1/me
 
 ###
+
+# Cambio obligatorio (RF-07) con el token de la temporal. Devuelve un token nuevo; el anterior deja de valer.
+# Confirmación distinta → 400; nueva igual a la temporal → 409 RN-25; sin cambio pendiente → 403.
+POST {{host}}/api/v1/auth/cambio-obligatorio
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nuevaContrasena": "NuevaClave2026",
+  "confirmacion": "NuevaClave2026"
+}
+
+###

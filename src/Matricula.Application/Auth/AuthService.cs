@@ -1,6 +1,8 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
+using Matricula.Application.Correos;
 using Matricula.Domain.Entities;
+using Matricula.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Matricula.Application.Auth;
@@ -10,8 +12,44 @@ public class AuthService(
     IHasherContrasenas hasher,
     IGeneradorToken generadorToken,
     ICurrentUser currentUser,
+    EnvioCorreos envioCorreos,
     TimeProvider timeProvider)
 {
+    /// <summary>
+    /// RF-07: quien ingresó con una temporal define su nueva contraseña. Devuelve un token sin cambio pendiente;
+    /// el anterior deja de valer porque cambia el stamp.
+    /// </summary>
+    public async Task<TokenResponse> CambioObligatorioAsync(CambioObligatorioRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!currentUser.DebeCambiarContrasena)
+        {
+            throw new ForbiddenException("No tiene un cambio de contraseña pendiente. Para cambiarla use cambiar-contrasena.");
+        }
+
+        var usuario = await CargarUsuarioActualAsync(cancellationToken);
+        var ahora = timeProvider.GetUtcNow();
+
+        if (!usuario.TemporalVigente(ahora))
+        {
+            throw new BusinessRuleException("RN-23", "La contraseña temporal venció. Solicite una nueva.");
+        }
+
+        if (hasher.Verificar(usuario.TempPasswordHash!, request.NuevaContrasena) != ResultadoVerificacion.Incorrecta)
+        {
+            throw new BusinessRuleException("RN-25", "La nueva contraseña debe ser distinta de la contraseña temporal.");
+        }
+
+        ValidarDistintaDeLaActual(usuario, request.NuevaContrasena);
+
+        usuario.EstablecerContrasena(hasher.Hashear(request.NuevaContrasena), ahora);
+        await db.SaveChangesAsync(cancellationToken);
+
+        await envioCorreos.EnviarAvisoCambioContrasenaAsync(usuario, cancellationToken);
+        return EmitirToken(usuario, debeCambiarContrasena: false);
+    }
+
     /// <summary>
     /// RF-13: datos de la cuenta del usuario actual y, si los tiene, sus datos personales.
     /// </summary>
@@ -85,6 +123,24 @@ public class AuthService(
     public Task<bool> SesionValidaAsync(int usuarioId, string securityStamp, CancellationToken cancellationToken) =>
         db.Usuarios.AsNoTracking()
             .AnyAsync(u => u.Id == usuarioId && u.Activo && u.SecurityStamp == securityStamp, cancellationToken);
+
+    private async Task<Usuario> CargarUsuarioActualAsync(CancellationToken cancellationToken)
+    {
+        var usuarioId = currentUser.UsuarioId ?? throw new UnauthorizedException("No hay una sesión activa.");
+
+        return await db.Usuarios.SingleOrDefaultAsync(u => u.Id == usuarioId, cancellationToken)
+            ?? throw new NotFoundException("La cuenta ya no existe.");
+    }
+
+    // RN-25.
+    private void ValidarDistintaDeLaActual(Usuario usuario, string nuevaContrasena)
+    {
+        if (usuario.PasswordHash is not null
+            && hasher.Verificar(usuario.PasswordHash, nuevaContrasena) != ResultadoVerificacion.Incorrecta)
+        {
+            throw new BusinessRuleException("RN-25", "La nueva contraseña debe ser distinta de la contraseña actual.");
+        }
+    }
 
     // RN-29. Solo se informa cuando la contraseña ya resultó correcta, así no revela qué correos existen.
     private static void ValidarActiva(Usuario usuario)

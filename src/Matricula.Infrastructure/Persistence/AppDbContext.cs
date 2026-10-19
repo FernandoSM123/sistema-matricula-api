@@ -1,11 +1,13 @@
 using Matricula.Application.Abstractions;
+using Matricula.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Matricula.Infrastructure.Persistence;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options), IAppDbContext
 {
-    // public DbSet<Estudiante> Estudiantes => Set<Estudiante>();
+    public DbSet<Usuario> Usuarios => Set<Usuario>();
+    public DbSet<Administrador> Administradores => Set<Administrador>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

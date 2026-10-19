@@ -83,6 +83,17 @@ public class Usuario : EntidadBase
     }
 
     /// <summary>
+    /// Recalcula el hash de la misma contraseña (parámetros de hash más nuevos). No es un cambio de contraseña:
+    /// no cambia la fecha ni el stamp, ni envía aviso.
+    /// </summary>
+    public void ActualizarHashContrasena(string hash)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(hash);
+
+        PasswordHash = hash;
+    }
+
+    /// <summary>
     /// RF-11 y RN-27: ingresar con la contraseña actual anula la temporal pendiente.
     /// </summary>
     public void RegistrarIngresoConDefinitiva(DateTimeOffset ahora)

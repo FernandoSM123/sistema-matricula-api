@@ -14,7 +14,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T2. Persistencia y migración | Completada | ✅ | ➖ | ✅ | ✅ |
 | T3. Hash y generador de temporales | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Seed del primer administrador | Completada | ✅ | ➖ | ✅ | ✅ |
-| T5. JWT y login | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T5. JWT y login | Completada | ✅ | ✅ | ✅ | ✅ |
 | T6. Autorización y perfil | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T7. Cambio obligatorio y correos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T8. Cambiar contraseña y logout | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -40,7 +40,7 @@ Copiadas de `specs/mapa-modulos.md` ("Verificaciones heredadas"):
 | Origen | Verificación | Tarea |
 |---|---|---|
 | `fundacion` T1 | Un dato duplicado que llegue a la BD (el correo de `usuario`) responde `409` con `code: "RN-13"`, sin el nombre de la restricción | T10 |
-| `fundacion` T1 | El `400` de validación (primer DTO con validador: el login) incluye `traceId` | T5 |
+| `fundacion` T1 | El `400` de validación (primer DTO con validador: el login) incluye `traceId` | T5 ✅ |
 
 Al completarlas se marcan como cumplidas en el mapa.
 
@@ -93,7 +93,8 @@ Al completarlas se marcan como cumplidas en el mapa.
 - Verify:
   - Login del administrador inicial con la temporal → `200` con `debeCambiarContrasena: true`.
   - Contraseña incorrecta y correo inexistente → mismo `401`.
-  - ⬜ **Heredada:** login con el cuerpo vacío → `400` con `traceId`.
+  - ✅ **Heredada:** login con el cuerpo vacío → `400` con `traceId` y mensajes en español.
+  - Se verifican más adelante, porque necesitan endpoints posteriores: el rechazo de un token por `SecurityStamp` (T6, con `GET /api/v1/me`) y el `403 RN-29` de una cuenta inactiva (T12, al desactivar).
 - Files: `src/Matricula.Api/Seguridad/{JwtOptions,GeneradorToken,ValidacionSecurityStamp}.cs`, `src/Matricula.Application/Auth/{AuthService,LoginRequest,LoginRequestValidator,TokenResponse}.cs`, `src/Matricula.Api/Controllers/AuthController.cs`, `src/Matricula.Api/Program.cs`, `appsettings.json`
 
 ### T6. Autorización y perfil

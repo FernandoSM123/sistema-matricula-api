@@ -3,3 +3,36 @@
 GET {{host}}/health
 
 ###
+
+# Login (RF-06). Con la temporal del administrador inicial responde debeCambiarContrasena: true.
+# @name login
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "correo": "admin@instituto.local",
+  "contrasena": "TuTemporal123"
+}
+
+###
+
+@token = {{login.response.body.$.accessToken}}
+
+# Credenciales inválidas → 401 con mensaje genérico.
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "correo": "admin@instituto.local",
+  "contrasena": "Incorrecta123"
+}
+
+###
+
+# Validación → 400 con traceId.
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{}
+
+###

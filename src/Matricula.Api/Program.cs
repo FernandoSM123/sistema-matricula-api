@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Matricula.Api.Common;
+using Matricula.Api.Seguridad;
 using Matricula.Api.Services;
 using Matricula.Application;
 using Matricula.Application.Abstractions;
@@ -19,6 +20,9 @@ builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddControllers(options =>
     {
         options.Filters.Add<ValidationFilter>();
+        // Los obligatorios los valida FluentValidation, con mensajes en español; sin esto, [ApiController]
+        // rechaza antes los string no anulables con mensajes en inglés.
+        options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
         options.Conventions.Add(new RouteTokenTransformerConvention(new SlugifyParameterTransformer()));
     })
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -37,8 +41,10 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
     .AllowAnyHeader()
     .AllowAnyMethod()));
 
-// Pendiente (paso 4 de docs/arquitectura.md): autenticación JWT, políticas de autorización
-// y rate limiting en login y olvido de contraseña.
+builder.Services.AddSeguridad(builder.Configuration);
+
+// Pendiente (paso 4 de docs/arquitectura.md): políticas de autorización y rate limiting en login
+// y olvido de contraseña.
 
 var app = builder.Build();
 
@@ -56,6 +62,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseCors();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

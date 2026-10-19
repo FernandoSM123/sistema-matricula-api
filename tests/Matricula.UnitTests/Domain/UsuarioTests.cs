@@ -127,6 +127,20 @@ public class UsuarioTests
     }
 
     [Fact]
+    public void ActualizarHashContrasena_CambiaElHashSinCambiarStampNiFecha()
+    {
+        var usuario = NuevoUsuario();
+        usuario.EstablecerContrasena("hash-v2", Ahora);
+        var stamp = usuario.SecurityStamp;
+
+        usuario.ActualizarHashContrasena("hash-v3");
+
+        Assert.Equal("hash-v3", usuario.PasswordHash);
+        Assert.Equal(stamp, usuario.SecurityStamp);
+        Assert.Equal(Ahora, usuario.FechaCambioContrasena);
+    }
+
+    [Fact]
     public void RegistrarIngresoConDefinitiva_AnulaLaTemporalPendienteSinCambiarElStamp()
     {
         var usuario = NuevoUsuario();

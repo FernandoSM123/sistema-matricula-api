@@ -1,4 +1,5 @@
 using FluentValidation;
+using Matricula.Application.Auth;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Matricula.Application;
@@ -9,8 +10,7 @@ public static class DependencyInjection
     {
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
 
-        // Registrar aquí los servicios de cada funcionalidad, por ejemplo:
-        // services.AddScoped<EstudianteService>();
+        services.AddScoped<AuthService>();
 
         return services;
     }

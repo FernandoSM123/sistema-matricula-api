@@ -13,7 +13,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T1. Dominio de cuentas | Completada | ✅ | ✅ | ➖ | ✅ |
 | T2. Persistencia y migración | Completada | ✅ | ➖ | ✅ | ✅ |
 | T3. Hash y generador de temporales | Completada | ✅ | ➖ | ✅ | ✅ |
-| T4. Seed del primer administrador | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T4. Seed del primer administrador | Completada | ✅ | ➖ | ✅ | ✅ |
 | T5. JWT y login | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T6. Autorización y perfil | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T7. Cambio obligatorio y correos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -76,7 +76,7 @@ Al completarlas se marcan como cumplidas en el mapa.
 ### T4. Seed del primer administrador
 - Acceptance:
   - `AdminSeedOptions` (`Correo`, `Cedula`, `Nombre`, `Apellidos`, `Telefono`, `ContrasenaTemporal`). Datos genéricos en `appsettings.json` ("John Doe", `admin@instituto.local`, `000000000`, `00000000`); `ContrasenaTemporal` solo en user-secrets.
-  - `AdminSeedService : IHostedService`: sin administradores → crea `Usuario` + `Administrador` en un solo `SaveChangesAsync` (temporal de 72 h, `CreadoPorId` nulo). Si el inicial existe sin `PasswordHash` → renueva la temporal. Sin administradores y sin `ContrasenaTemporal` → la API no arranca, con mensaje claro. Tabla inexistente → mensaje que pide aplicar las migraciones.
+  - `AdminSeedService`, ejecutado al inicio de `Program` (`SembrarAdministradorInicialAsync`): sin administradores → crea `Usuario` + `Administrador` en un solo `SaveChangesAsync` (temporal de 72 h, `CreadoPorId` nulo). Si el inicial existe sin `PasswordHash` → renueva la temporal. Sin administradores y sin `ContrasenaTemporal` → la API no arranca, con mensaje claro. Tabla inexistente → mensaje que pide aplicar las migraciones.
 - Verify:
   - Arrancar con la BD vacía: en `usuario` aparece el administrador con `password_hash` nulo y `temp_password_hash` con valor; en `administrador`, "John Doe".
   - Reiniciar: no se duplica y la temporal se renueva (cambia `temp_password_expira`).

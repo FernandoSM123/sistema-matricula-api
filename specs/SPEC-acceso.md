@@ -4,13 +4,14 @@ Módulo `acceso` del [mapa de módulos](mapa-modulos.md). Depende de `fundacion`
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/acceso/plan.md) | [Aprobadas](../tasks/acceso/todo.md) | 3/13 tareas completadas |
+| **Aprobada** | [Aprobado](../tasks/acceso/plan.md) | [Aprobadas](../tasks/acceso/todo.md) | 4/13 tareas completadas |
 
 **Historial:**
 - 2026-10-19: v1 en revisión.
 - 2026-10-19: v2 en revisión. Los administradores tienen datos personales (entidad `Administrador`, RF-55), la cédula es única por tabla, el correo vive solo en `Usuario` y el seed crea al administrador inicial con datos genéricos. Decisiones 6 y 7 del mapa. Se quitan el listado y detalle genéricos de `/usuarios`.
 - 2026-10-19: v3 en revisión. Dos endpoints para cambiar la contraseña y el rol de una cuenta no cambia (decisión 8 del mapa). Sin preguntas abiertas.
 - 2026-10-19: v3 aprobada.
+- 2026-10-19: el seed se ejecuta al inicio de `Program` en lugar de en un `IHostedService` (sin paquetes nuevos; §5 de la arquitectura admite ambas opciones).
 
 ## Objetivo
 
@@ -109,7 +110,7 @@ Dar al sistema cuentas de usuario, autenticación y autorización, para que los 
 
 8. **Rate limiting** con el middleware integrado de ASP.NET Core (sin paquetes nuevos), por IP: `login` 10 peticiones por minuto y `olvido-contrasena` 5 cada 15 minutos. Al superarlo, `429` como `ProblemDetails`.
 
-9. **Seed del primer administrador** (`IHostedService`, `AdminSeedOptions`)
+9. **Seed del primer administrador** (`AdminSeedService`, ejecutado al inicio de `Program` antes de atender peticiones, y `AdminSeedOptions`)
    - Configuración: `Correo`, `Cedula`, `Nombre`, `Apellidos` y `Telefono` con valores genéricos y anónimos en `appsettings.json` (`admin@instituto.local`, `000000000`, `John`, `Doe`, `00000000`). `ContrasenaTemporal` solo en user-secrets o variables de entorno.
    - Si no existe ningún administrador, crea el `Usuario` y el `Administrador` con esos datos, motivo `CuentaNueva` y vencimiento de 72 horas. No envía correo. Los datos genéricos se corrigen después con `PUT /api/v1/administradores/{id}`.
    - Si el administrador inicial existe pero nunca definió su contraseña, en cada arranque renueva la temporal desde la configuración. Así un vencimiento no deja el sistema sin acceso.

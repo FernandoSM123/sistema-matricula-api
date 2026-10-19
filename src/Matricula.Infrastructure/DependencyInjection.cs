@@ -2,6 +2,7 @@ using Matricula.Application.Abstractions;
 using Matricula.Infrastructure.Email;
 using Matricula.Infrastructure.Persistence;
 using Matricula.Infrastructure.Persistence.Interceptors;
+using Matricula.Infrastructure.Seed;
 using Matricula.Infrastructure.Seguridad;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -33,6 +34,9 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(SmtpOptions.SectionName))
             .ValidateOnStart();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
+
+        services.AddOptions<AdminSeedOptions>().Bind(configuration.GetSection(AdminSeedOptions.SectionName));
+        services.AddScoped<AdminSeedService>();
 
         return services;
     }

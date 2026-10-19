@@ -39,7 +39,7 @@ El login llega pronto (paso 5) porque todo lo demás se prueba con un token. `Ma
 - **Correos:** un helper en Application (`EnviarSinFallarAsync`) que envuelve `IEmailSender` y devuelve `bool`; registra el error sin el cuerpo del correo.
 - **Validadores compartidos:** reglas de FluentValidation reutilizables para la nueva contraseña (RN-26 + confirmación) y para los datos personales (cédula, nombres, teléfono), que luego usarán `estudiantes` y `profesores`.
 - **Rate limiting:** `AddRateLimiter` con dos políticas de ventana fija particionadas por `RemoteIpAddress`, `[EnableRateLimiting]` en las dos acciones, y `OnRejected` que escribe un `ProblemDetails` `429`.
-- **Seed:** `IHostedService` que crea un scope, consulta la BD y guarda. Valida `ContrasenaTemporal` solo cuando la necesita (no hay administradores o el inicial nunca definió su contraseña).
+- **Seed:** `AdminSeedService` (scoped) ejecutado al inicio de `Program` con `SembrarAdministradorInicialAsync`, en su propio scope. No se usa `IHostedService` porque Infrastructure no referencia `Microsoft.Extensions.Hosting` y no se añaden paquetes (§5 de la arquitectura admite ambas opciones). Valida `ContrasenaTemporal` solo cuando la necesita (no hay administradores o el inicial nunca definió su contraseña).
 
 ## Riesgos y mitigación
 

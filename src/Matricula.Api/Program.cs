@@ -4,6 +4,7 @@ using Matricula.Api.Services;
 using Matricula.Application;
 using Matricula.Application.Abstractions;
 using Matricula.Infrastructure;
+using Matricula.Infrastructure.Seed;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Scalar.AspNetCore;
 
@@ -36,10 +37,12 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
     .AllowAnyHeader()
     .AllowAnyMethod()));
 
-// Pendiente (paso 4 de docs/arquitectura.md): autenticación JWT, políticas de autorización,
-// rate limiting en login y olvido de contraseña, y seed del primer administrador.
+// Pendiente (paso 4 de docs/arquitectura.md): autenticación JWT, políticas de autorización
+// y rate limiting en login y olvido de contraseña.
 
 var app = builder.Build();
+
+await app.Services.SembrarAdministradorInicialAsync(app.Lifetime.ApplicationStopping);
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();

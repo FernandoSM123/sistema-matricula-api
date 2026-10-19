@@ -2,7 +2,7 @@
 
 Módulo `acceso` del [mapa](../../specs/mapa-modulos.md). Spec: [`specs/SPEC-acceso.md`](../../specs/SPEC-acceso.md) · Plan: [`plan.md`](plan.md)
 
-**Estado de la lista:** En revisión (2026-10-19)
+**Estado de la lista:** Aprobada (2026-10-19)
 
 Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula.UnitTests` en verde, la verificación indicada y un commit pequeño que cite los RF/RN. Las peticiones de cada flujo se agregan a `src/Matricula.Api/Matricula.Api.http` en la misma tarea.
 
@@ -10,8 +10,8 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 
 | Tarea | Estado | Código | Pruebas unitarias | Verificación manual | Commit |
 |---|---|:---:|:---:|:---:|:---:|
-| T1. Dominio de cuentas | Pendiente | ⬜ | ⬜ | ➖ | ⬜ |
-| T2. Persistencia y migración | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T1. Dominio de cuentas | Completada | ✅ | ✅ | ➖ | ✅ |
+| T2. Persistencia y migración | En progreso | ⬜ | ➖ | ⬜ | ⬜ |
 | T3. Hash y generador de temporales | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T4. Seed del primer administrador | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T5. JWT y login | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |

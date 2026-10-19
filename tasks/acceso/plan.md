@@ -2,7 +2,7 @@
 
 Módulo `acceso` del [mapa](../../specs/mapa-modulos.md). Spec: [`specs/SPEC-acceso.md`](../../specs/SPEC-acceso.md) · Tareas: [`todo.md`](todo.md)
 
-**Estado del plan:** En revisión (2026-10-19)
+**Estado del plan:** Aprobado (2026-10-19)
 
 ## Enfoque
 

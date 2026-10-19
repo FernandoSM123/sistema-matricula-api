@@ -36,3 +36,14 @@ Content-Type: application/json
 {}
 
 ###
+
+# Perfil propio (RF-13). Con el token de una temporal responde 403 RN-24.
+GET {{host}}/api/v1/me
+Authorization: Bearer {{token}}
+
+###
+
+# Sin token → 401.
+GET {{host}}/api/v1/me
+
+###

@@ -9,8 +9,34 @@ public class AuthService(
     IAppDbContext db,
     IHasherContrasenas hasher,
     IGeneradorToken generadorToken,
+    ICurrentUser currentUser,
     TimeProvider timeProvider)
 {
+    /// <summary>
+    /// RF-13: datos de la cuenta del usuario actual y, si los tiene, sus datos personales.
+    /// </summary>
+    public async Task<PerfilResponse> ObtenerPerfilAsync(CancellationToken cancellationToken)
+    {
+        var usuarioId = currentUser.UsuarioId ?? throw new UnauthorizedException("No hay una sesión activa.");
+
+        return await db.Usuarios.AsNoTracking()
+            .Where(u => u.Id == usuarioId)
+            .Select(u => new PerfilResponse(
+                u.Id,
+                u.Correo,
+                u.Rol,
+                u.Activo,
+                u.FechaCreacion,
+                u.UltimoIngreso,
+                u.FechaCambioContrasena,
+                db.Administradores
+                    .Where(a => a.UsuarioId == u.Id)
+                    .Select(a => new DatosPersonalesResponse(a.Cedula, a.Nombre, a.Apellidos, a.Telefono))
+                    .FirstOrDefault()))
+            .SingleOrDefaultAsync(cancellationToken)
+            ?? throw new NotFoundException("La cuenta ya no existe.");
+    }
+
     /// <summary>
     /// RF-06, RF-07 y RF-11. Credenciales inválidas, correo inexistente y temporal vencida dan el mismo 401.
     /// </summary>

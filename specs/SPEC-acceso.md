@@ -4,13 +4,14 @@ Módulo `acceso` del [mapa de módulos](mapa-modulos.md). Depende de `fundacion`
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/acceso/plan.md) | [Aprobadas](../tasks/acceso/todo.md) | 5/13 tareas completadas |
+| **Aprobada** | [Aprobado](../tasks/acceso/plan.md) | [Aprobadas](../tasks/acceso/todo.md) | 6/13 tareas completadas |
 
 **Historial:**
 - 2026-10-19: v1 en revisión.
 - 2026-10-19: v2 en revisión. Los administradores tienen datos personales (entidad `Administrador`, RF-55), la cédula es única por tabla, el correo vive solo en `Usuario` y el seed crea al administrador inicial con datos genéricos. Decisiones 6 y 7 del mapa. Se quitan el listado y detalle genéricos de `/usuarios`.
 - 2026-10-19: v3 en revisión. Dos endpoints para cambiar la contraseña y el rol de una cuenta no cambia (decisión 8 del mapa). Sin preguntas abiertas.
 - 2026-10-19: v3 aprobada.
+- 2026-10-19: T6, los endpoints de administrador usan la política `Politicas.Administrador` en lugar de `Roles`, y se documenta que una ruta inexistente sin token responde `401` (supuesto 11).
 - 2026-10-19: el seed se ejecuta al inicio de `Program` en lugar de en un `IHostedService` (sin paquetes nuevos; §5 de la arquitectura admite ambas opciones).
 
 ## Objetivo
@@ -67,7 +68,7 @@ Dar al sistema cuentas de usuario, autenticación y autorización, para que los 
 4. **Autorización**
    - Política de respaldo (`FallbackPolicy`) y por defecto: usuario autenticado **y sin** el claim `must_change_password` (RN-24). Los endpoints públicos llevan `[AllowAnonymous]`; también `/health`, OpenAPI y Scalar.
    - Política `PasswordChangePending`: solo exige autenticación. La usan únicamente el cambio obligatorio y el logout.
-   - Roles con `[Authorize(Roles = nameof(Rol.Administrador))]`.
+   - Roles con la política `[Authorize(Policy = Politicas.Administrador)]` (rol + sin cambio pendiente). **No** se usa `[Authorize(Roles = ...)]`: reemplaza la política por defecto y dejaría pasar a un administrador con cambio pendiente (RN-24). Los módulos siguientes siguen la misma regla.
    - Un usuario con cambio pendiente que llama a otro endpoint recibe `403` con `code: "RN-24"`.
    - Esquema Bearer en el documento OpenAPI, para probar con token desde Scalar.
 
@@ -283,6 +284,7 @@ Se aplican salvo que se corrijan en la revisión:
 8. **Límites de rate limiting** de 10 por minuto (login) y 5 cada 15 minutos (olvido), por IP.
 9. **Seed:** renueva la temporal mientras el administrador inicial no haya definido su contraseña.
 10. **Las pruebas unitarias cubren solo Domain**; el generador de temporales se verifica a mano (o con una prueba si se aprueba referenciar Infrastructure desde `Matricula.UnitTests`).
+11. **Rutas inexistentes:** la política de respaldo también se aplica a las peticiones sin ruta, así que sin token responden `401` (no revelan qué rutas existen) y con sesión `404`. Con cambio pendiente, `403 RN-24`.
 
 ## Decisiones
 

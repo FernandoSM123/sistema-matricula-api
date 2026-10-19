@@ -1,5 +1,6 @@
 using Matricula.Application.Abstractions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -8,7 +9,7 @@ namespace Matricula.Api.Seguridad;
 public static class SeguridadExtensions
 {
     /// <summary>
-    /// Autenticación JWT con validación del SecurityStamp en cada petición.
+    /// Autenticación JWT con validación del SecurityStamp en cada petición, y políticas de autorización.
     /// </summary>
     public static IServiceCollection AddSeguridad(this IServiceCollection services, IConfiguration configuration)
     {
@@ -40,6 +41,9 @@ public static class SeguridadExtensions
                 };
                 bearer.Events = new JwtBearerEvents { OnTokenValidated = ValidacionSecurityStamp.OnTokenValidated };
             });
+
+        services.AddPoliticas();
+        services.AddSingleton<IAuthorizationMiddlewareResultHandler, ResultadoAutorizacionHandler>();
 
         return services;
     }

@@ -25,13 +25,14 @@ builder.Services.AddControllers(options =>
         options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
         options.Conventions.Add(new RouteTokenTransformerConvention(new SlugifyParameterTransformer()));
     })
-    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
+    .ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = RespuestaModeloInvalido.Crear);
 builder.Services.AddRouting(options => options.LowercaseUrls = true);
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options => options.AddDocumentTransformer<BearerSecuritySchemeTransformer>());
 builder.Services.AddHealthChecks();
 
 // Sin orígenes configurados no se permite ninguno.
@@ -43,8 +44,7 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
 
 builder.Services.AddSeguridad(builder.Configuration);
 
-// Pendiente (paso 4 de docs/arquitectura.md): políticas de autorización y rate limiting en login
-// y olvido de contraseña.
+// Pendiente (paso 4 de docs/arquitectura.md): rate limiting en login y olvido de contraseña.
 
 var app = builder.Build();
 
@@ -55,8 +55,8 @@ app.UseStatusCodePages();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference();
+    app.MapOpenApi().AllowAnonymous();
+    app.MapScalarApiReference().AllowAnonymous();
 }
 
 app.UseHttpsRedirection();
@@ -66,6 +66,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health").AllowAnonymous();
 
 await app.RunAsync();

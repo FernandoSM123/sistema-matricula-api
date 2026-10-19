@@ -12,4 +12,8 @@ public static class ClaimsToken
 
     // RN-24: solo existe en los tokens emitidos al ingresar con una temporal.
     public const string DebeCambiarContrasena = "must_change_password";
+
+    // Los añaden los módulos estudiantes y profesores al login.
+    public const string EstudianteId = "estudiante_id";
+    public const string ProfesorId = "profesor_id";
 }

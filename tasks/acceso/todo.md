@@ -15,7 +15,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T3. Hash y generador de temporales | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Seed del primer administrador | Completada | ✅ | ➖ | ✅ | ✅ |
 | T5. JWT y login | Completada | ✅ | ✅ | ✅ | ✅ |
-| T6. Autorización y perfil | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T6. Autorización y perfil | Completada | ✅ | ➖ | ✅ | ✅ |
 | T7. Cambio obligatorio y correos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T8. Cambiar contraseña y logout | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T9. Olvido de contraseña y rate limiting | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -110,7 +110,9 @@ Al completarlas se marcan como cumplidas en el mapa.
   - Sin token → `401` `ProblemDetails`; con un token alterado → `401`.
   - `/health` y Scalar siguen abiertos; Scalar permite pegar el token.
   - Los `curl` de CORS de `fundacion` siguen dando lo esperado.
-- Files: `src/Matricula.Api/Seguridad/{Politicas,ResultadoAutorizacionHandler}.cs`, `src/Matricula.Api/Services/CurrentUser.cs`, `src/Matricula.Application/Auth/{AuthService (ObtenerPerfilAsync),PerfilResponse}.cs`, `src/Matricula.Api/Controllers/MeController.cs`, `src/Matricula.Api/Program.cs`
+  - Login sin cuerpo o con JSON inválido → `400` en español (los mensajes del framework se reemplazan).
+  - Se verifican en T7, porque necesitan un token sin cambio pendiente: `GET /api/v1/me` → `200` con "John Doe", el `401` de un token cuyo stamp cambió y el `404` de una ruta inexistente con sesión.
+- Files: `src/Matricula.Api/Seguridad/{Politicas,SinCambioPendienteRequirement,ResultadoAutorizacionHandler,BearerSecuritySchemeTransformer}.cs`, `src/Matricula.Api/Common/RespuestaModeloInvalido.cs`, `src/Matricula.Api/Services/CurrentUser.cs`, `src/Matricula.Application/Auth/{AuthService (ObtenerPerfilAsync),PerfilResponse}.cs`, `src/Matricula.Api/Controllers/MeController.cs`, `src/Matricula.Api/Program.cs`
 
 ### T7. Cambio obligatorio y correos
 - Acceptance:
@@ -121,7 +123,8 @@ Al completarlas se marcan como cumplidas en el mapa.
   - `POST /api/v1/auth/cambio-obligatorio` con `PasswordChangePending`; `403` si el token no tiene el claim.
 - Verify:
   - Confirmación distinta → `400`; nueva igual a la temporal → `409 RN-25`.
-  - Cambio válido → `200` con token nuevo sin el claim; aviso en smtp4dev; el token anterior → `401`; `GET /api/v1/me` con el nuevo → `200`.
+  - Cambio válido → `200` con token nuevo sin el claim; aviso en smtp4dev; el token anterior → `401` (stamp cambiado); `GET /api/v1/me` con el nuevo → `200` con "John Doe".
+  - Pendientes de T6: con el token nuevo, una ruta inexistente → `404`.
   - Login con la nueva contraseña → `200` sin cambio pendiente; con la temporal → `401`.
 - Files: `src/Matricula.Application/Auth/{CambioObligatorioRequest,CambioObligatorioRequestValidator,NuevaContrasenaRules}.cs`, `src/Matricula.Application/Correos/{PlantillasCorreo,EnvioCorreos}.cs`, `AuthService.cs`, `AuthController.cs`
 

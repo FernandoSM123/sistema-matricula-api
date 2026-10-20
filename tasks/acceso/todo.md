@@ -21,7 +21,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T9. Olvido de contraseña y rate limiting | Completada | ✅ | ➖ | ✅ | ✅ |
 | T10. `CuentaService` y registrar administrador | Completada | ✅ | ➖ | ✅ ⏳ | ✅ |
 | T11. Listar, consultar y editar administradores | Completada | ✅ | ➖ | ✅ | ✅ |
-| T12. Reenviar temporal, desactivar y reactivar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T12. Reenviar temporal, desactivar y reactivar | Completada | ✅ | ➖ | ✅ | ✅ |
 | T13. README y cierre | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 
 **Estados de tarea:**
@@ -94,7 +94,7 @@ Al completarlas se marcan como cumplidas en el mapa.
   - Login del administrador inicial con la temporal → `200` con `debeCambiarContrasena: true`.
   - Contraseña incorrecta y correo inexistente → mismo `401`.
   - ✅ **Heredada:** login con el cuerpo vacío → `400` con `traceId` y mensajes en español.
-  - Se verifican más adelante, porque necesitan endpoints posteriores: el rechazo de un token por `SecurityStamp` (T6, con `GET /api/v1/me`) y el `403 RN-29` de una cuenta inactiva (T12, al desactivar).
+  - Se verificaron más adelante: el rechazo de un token por `SecurityStamp` (✅ en T7) y el `403 RN-29` de una cuenta inactiva (✅ en T12).
 - Files: `src/Matricula.Api/Seguridad/{JwtOptions,GeneradorToken,ValidacionSecurityStamp}.cs`, `src/Matricula.Application/Auth/{AuthService,LoginRequest,LoginRequestValidator,TokenResponse}.cs`, `src/Matricula.Api/Controllers/AuthController.cs`, `src/Matricula.Api/Program.cs`, `appsettings.json`
 
 ### T6. Autorización y perfil
@@ -188,8 +188,8 @@ Al completarlas se marcan como cumplidas en el mapa.
   - Desactivar una cuenta con sesión abierta → su token `401`; su login `403 RN-29`; su olvido no envía correo.
   - Desactivar al último administrador activo (también a sí mismo) → `409 RN-30`.
   - Reactivar → vuelve a iniciar sesión.
-  - Pendiente de T10: registrar un administrador con la cédula de uno inactivo → `409 RN-39` con su `usuarioId`.
-  - Pendiente de T11: el listado de administradores oculta al inactivo sin `incluirInactivos` y lo muestra con `incluirInactivos=true`.
+  - ✅ Pendiente de T10: registrar un administrador con la cédula de uno inactivo → `409 RN-39` con su `usuarioId`.
+  - ✅ Pendiente de T11: el listado de administradores oculta al inactivo sin `incluirInactivos` y lo muestra con `incluirInactivos=true`.
 - Files: `src/Matricula.Application/Cuentas/{UsuarioService,ReenvioTemporalResponse}.cs`, `src/Matricula.Api/Controllers/UsuariosController.cs`, `DependencyInjection.cs`
 
 ### T13. README y cierre

@@ -132,3 +132,20 @@ Content-Type: application/json
 }
 
 ###
+
+# Reenviar una temporal (RF-12). El id es el usuarioId. Cuenta inactiva → 409 RN-29.
+POST {{host}}/api/v1/usuarios/2/reenviar-temporal
+Authorization: Bearer {{token}}
+
+###
+
+# Desactivar una cuenta (RF-14): sus tokens dejan de valer. Último administrador activo → 409 RN-30.
+POST {{host}}/api/v1/usuarios/2/desactivar
+Authorization: Bearer {{token}}
+
+###
+
+POST {{host}}/api/v1/usuarios/2/reactivar
+Authorization: Bearer {{token}}
+
+###

@@ -16,6 +16,7 @@ public static class DependencyInjection
         services.AddScoped<EnvioCorreos>();
         services.AddScoped<AuthService>();
         services.AddScoped<CuentaService>();
+        services.AddScoped<UsuarioService>();
         services.AddScoped<AdministradorService>();
 
         return services;

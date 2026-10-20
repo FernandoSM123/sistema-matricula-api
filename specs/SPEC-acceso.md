@@ -4,13 +4,14 @@ Módulo `acceso` del [mapa de módulos](mapa-modulos.md). Depende de `fundacion`
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/acceso/plan.md) | [Aprobadas](../tasks/acceso/todo.md) | 12/13 tareas completadas |
+| **Aprobada** | [Aprobado](../tasks/acceso/plan.md) | [Aprobadas](../tasks/acceso/todo.md) | 13/13 tareas completadas: **módulo completado** (2026-10-19) |
 
 **Historial:**
 - 2026-10-19: v1 en revisión.
 - 2026-10-19: v2 en revisión. Los administradores tienen datos personales (entidad `Administrador`, RF-55), la cédula es única por tabla, el correo vive solo en `Usuario` y el seed crea al administrador inicial con datos genéricos. Decisiones 6 y 7 del mapa. Se quitan el listado y detalle genéricos de `/usuarios`.
 - 2026-10-19: v3 en revisión. Dos endpoints para cambiar la contraseña y el rol de una cuenta no cambia (decisión 8 del mapa). Sin preguntas abiertas.
 - 2026-10-19: v3 aprobada.
+- 2026-10-19: módulo completado (13/13 tareas). Desviaciones registradas: seed al inicio de `Program` (no `IHostedService`), política `Politicas.Administrador` en lugar de `Roles`, rutas inexistentes sin token → `401` (supuesto 11), `GET /administradores/{id}` adelantado a T10.
 - 2026-10-19: T6, los endpoints de administrador usan la política `Politicas.Administrador` en lugar de `Roles`, y se documenta que una ruta inexistente sin token responde `401` (supuesto 11).
 - 2026-10-19: el seed se ejecuta al inicio de `Program` en lugar de en un `IHostedService` (sin paquetes nuevos; §5 de la arquitectura admite ambas opciones).
 

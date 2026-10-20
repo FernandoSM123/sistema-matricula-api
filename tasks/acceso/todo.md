@@ -2,7 +2,7 @@
 
 Módulo `acceso` del [mapa](../../specs/mapa-modulos.md). Spec: [`specs/SPEC-acceso.md`](../../specs/SPEC-acceso.md) · Plan: [`plan.md`](plan.md)
 
-**Estado de la lista:** Aprobada (2026-10-19)
+**Estado de la lista:** Aprobada (2026-10-19) · **Módulo completado** (2026-10-19)
 
 Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula.UnitTests` en verde, la verificación indicada y un commit pequeño que cite los RF/RN. Las peticiones de cada flujo se agregan a `src/Matricula.Api/Matricula.Api.http` en la misma tarea.
 
@@ -22,7 +22,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T10. `CuentaService` y registrar administrador | Completada | ✅ | ➖ | ✅ ⏳ | ✅ |
 | T11. Listar, consultar y editar administradores | Completada | ✅ | ➖ | ✅ | ✅ |
 | T12. Reenviar temporal, desactivar y reactivar | Completada | ✅ | ➖ | ✅ | ✅ |
-| T13. README y cierre | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T13. README y cierre | Completada | ✅ | ➖ | ✅ | ✅ |
 
 **Estados de tarea:**
 - **Pendiente:** no se ha empezado.
@@ -198,10 +198,18 @@ Al completarlas se marcan como cumplidas en el mapa.
   - `Matricula.Api.http` con el recorrido completo de la spec.
   - Recorrido completo de la tabla de verificación manual de la spec; consola revisada sin contraseñas ni temporales.
   - Verificaciones heredadas marcadas como cumplidas en `specs/mapa-modulos.md`.
-- Verify: revisión manual del README siguiéndolo desde cero en una BD vacía.
+- Verify: revisión manual del README. No se recreó la BD de desarrollo para no perder datos; el arranque desde una BD vacía (seed, mensajes de error de configuración) ya se verificó en T4, y el primer ingreso completo en T5 y T7.
 - Files: `README.md`, `src/Matricula.Api/Matricula.Api.http`, `specs/mapa-modulos.md`
 
 ## Cierre del módulo
-- ⬜ Criterios de éxito de la spec cumplidos.
-- ⬜ Verificaciones heredadas de `fundacion` cumplidas y marcadas en el mapa.
-- ⬜ Estados actualizados en la spec, el mapa y esta lista.
+- ✅ Criterios de éxito de la spec cumplidos (2026-10-19):
+  1. Migración `AgregaUsuarioYAdministrador` con índices únicos y FK sin cascada: revisión de la migración y `dotnet ef migrations list` (T2).
+  2. Flujos de §3.2: login con definitiva y temporal (T5), cambio obligatorio (T7), cambio propio y logout (T8), olvido (T9), reenvío (T12).
+  3. Administradores con datos personales: registro (T10), listado, detalle y edición (T11); "John Doe" editable (T11).
+  4. Sin token solo responden los anónimos; con cambio pendiente solo el cambio obligatorio y el logout (T6, T7, T9, T10).
+  5. Logout, desactivación y cambio de contraseña invalidan los tokens (T7, T8, T12).
+  6. Tabla de verificación manual de la spec recorrida tarea por tarea; prueba de humo final en T13. Sin verificar a mano: la temporal vencida (cubierta por pruebas unitarias) y el `403` con un token de otro rol (⏳ heredada a `estudiantes`).
+  7. `dotnet build` sin warnings; 39/39 pruebas unitarias en verde.
+- ✅ Verificaciones heredadas de `fundacion` cumplidas (T5 y T10) y marcadas en el mapa. Se dejó una nueva para `estudiantes` (el `403` con un token de otro rol).
+- ✅ Estados actualizados en la spec, el mapa y esta lista.
+- Datos de prueba en la BD de desarrollo: administradores Ana Mora, Pedro Castro, Lucía Vargas, Mario Rojas y "Carrera Uno" (activos). Credenciales del inicial: `admin@instituto.local` / `NuevaClave2026`.

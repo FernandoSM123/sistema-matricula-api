@@ -1,5 +1,8 @@
 @host = http://localhost:5022
 
+# Recorrido del módulo acceso. Ejecuta primero el login con tus credenciales: las demás peticiones usan
+# {{token}}. Primer ingreso: login con la temporal de AdminSeed → cambio-obligatorio → login con la nueva.
+
 GET {{host}}/health
 
 ###

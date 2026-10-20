@@ -111,3 +111,24 @@ GET {{host}}/api/v1/administradores/1
 Authorization: Bearer {{token}}
 
 ###
+
+# Listar administradores (RF-55): paginado, solo activos salvo incluirInactivos=true.
+GET {{host}}/api/v1/administradores?page=1&pageSize=20&search=&incluirInactivos=false
+Authorization: Bearer {{token}}
+
+###
+
+# Editar un administrador, incluido el propio (RF-55). Cambiar el correo cambia el de su cuenta.
+PUT {{host}}/api/v1/administradores/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cedula": "000000000",
+  "nombre": "John",
+  "apellidos": "Doe",
+  "telefono": "00000000",
+  "correo": "admin@instituto.local"
+}
+
+###

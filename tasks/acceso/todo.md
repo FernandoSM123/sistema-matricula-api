@@ -20,7 +20,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T8. Cambiar contraseña y logout | Completada | ✅ | ➖ | ✅ | ✅ |
 | T9. Olvido de contraseña y rate limiting | Completada | ✅ | ➖ | ✅ | ✅ |
 | T10. `CuentaService` y registrar administrador | Completada | ✅ | ➖ | ✅ ⏳ | ✅ |
-| T11. Listar, consultar y editar administradores | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T11. Listar, consultar y editar administradores | Completada | ✅ | ➖ | ✅ | ✅ |
 | T12. Reenviar temporal, desactivar y reactivar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T13. README y cierre | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 
@@ -172,7 +172,7 @@ Al completarlas se marcan como cumplidas en el mapa.
   - `GET /api/v1/administradores/{id}` → `200` o `404`.
   - `PUT /api/v1/administradores/{id}` con `ActualizarAdministradorRequest` + validador: cédula de otro → `409 RN-13`; cambio de correo vía `CuentaService.CambiarCorreoAsync`.
 - Verify:
-  - El listado oculta los inactivos sin el filtro (usar la desactivación directa en la BD o esperar a T12) y los incluye con él.
+  - El listado pagina, ordena por apellidos y busca en nombre, apellidos, cédula y correo. El filtro de inactivos se verifica en T12.
   - Editar a "John Doe" con datos reales → `200`; `GET /api/v1/me` los muestra.
   - Cambiar el correo → el login funciona con el nuevo y no con el anterior; correo de otra cuenta → `409 RN-13`.
 - Files: `src/Matricula.Application/Administradores/{AdministradorService,ActualizarAdministradorRequest,ActualizarAdministradorRequestValidator,ListarAdministradoresRequest}.cs`, `AdministradoresController.cs`
@@ -189,6 +189,7 @@ Al completarlas se marcan como cumplidas en el mapa.
   - Desactivar al último administrador activo (también a sí mismo) → `409 RN-30`.
   - Reactivar → vuelve a iniciar sesión.
   - Pendiente de T10: registrar un administrador con la cédula de uno inactivo → `409 RN-39` con su `usuarioId`.
+  - Pendiente de T11: el listado de administradores oculta al inactivo sin `incluirInactivos` y lo muestra con `incluirInactivos=true`.
 - Files: `src/Matricula.Application/Cuentas/{UsuarioService,ReenvioTemporalResponse}.cs`, `src/Matricula.Api/Controllers/UsuariosController.cs`, `DependencyInjection.cs`
 
 ### T13. README y cierre

@@ -19,7 +19,7 @@
 | Módulo | Spec | Plan | Tareas | Avance | Estado del módulo |
 |---|---|---|---|---|---|
 | `fundacion` | [Aprobada](SPEC-fundacion.md) | [Aprobado](../tasks/fundacion/plan.md) | [Aprobadas](../tasks/fundacion/todo.md) | 6/6 | Completado |
-| `acceso` | [Aprobada](SPEC-acceso.md) | [Aprobado](../tasks/acceso/plan.md) | [Aprobadas](../tasks/acceso/todo.md) | 10/13 | En implementación |
+| `acceso` | [Aprobada](SPEC-acceso.md) | [Aprobado](../tasks/acceso/plan.md) | [Aprobadas](../tasks/acceso/todo.md) | 11/13 | En implementación |
 | `estudiantes` | — | — | — | — | Sin empezar |
 | `profesores` | — | — | — | — | Sin empezar |
 | `catalogos` | — | — | — | — | Sin empezar |

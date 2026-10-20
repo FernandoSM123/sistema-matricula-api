@@ -90,3 +90,24 @@ Content-Type: application/json
 }
 
 ###
+
+# Registrar un administrador (RF-04). Requiere el token de un administrador sin cambio pendiente.
+# 201 + Location; la temporal llega a smtp4dev y nunca a la respuesta. Correo o cédula repetidos → 409 RN-13.
+POST {{host}}/api/v1/administradores
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cedula": "1-2345-6789",
+  "nombre": "Ana",
+  "apellidos": "Mora Solís",
+  "telefono": "8888-8888",
+  "correo": "ana@instituto.local"
+}
+
+###
+
+GET {{host}}/api/v1/administradores/1
+Authorization: Bearer {{token}}
+
+###

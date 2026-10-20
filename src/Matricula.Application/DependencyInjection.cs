@@ -1,6 +1,8 @@
 using FluentValidation;
+using Matricula.Application.Administradores;
 using Matricula.Application.Auth;
 using Matricula.Application.Correos;
+using Matricula.Application.Cuentas;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Matricula.Application;
@@ -13,6 +15,8 @@ public static class DependencyInjection
 
         services.AddScoped<EnvioCorreos>();
         services.AddScoped<AuthService>();
+        services.AddScoped<CuentaService>();
+        services.AddScoped<AdministradorService>();
 
         return services;
     }

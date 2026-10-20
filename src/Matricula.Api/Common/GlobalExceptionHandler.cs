@@ -64,6 +64,14 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
             problem.Extensions["code"] = code;
         }
 
+        if (exception is BusinessRuleException { Datos: var datos })
+        {
+            foreach (var (clave, valor) in datos)
+            {
+                problem.Extensions[clave] = valor;
+            }
+        }
+
         return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
         {
             HttpContext = httpContext,

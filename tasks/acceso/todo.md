@@ -19,7 +19,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T7. Cambio obligatorio y correos | Completada | ✅ | ➖ | ✅ | ✅ |
 | T8. Cambiar contraseña y logout | Completada | ✅ | ➖ | ✅ | ✅ |
 | T9. Olvido de contraseña y rate limiting | Completada | ✅ | ➖ | ✅ | ✅ |
-| T10. `CuentaService` y registrar administrador | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T10. `CuentaService` y registrar administrador | Completada | ✅ | ➖ | ✅ ⏳ | ✅ |
 | T11. Listar, consultar y editar administradores | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T12. Reenviar temporal, desactivar y reactivar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T13. README y cierre | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -39,7 +39,7 @@ Copiadas de `specs/mapa-modulos.md` ("Verificaciones heredadas"):
 
 | Origen | Verificación | Tarea |
 |---|---|---|
-| `fundacion` T1 | Un dato duplicado que llegue a la BD (el correo de `usuario`) responde `409` con `code: "RN-13"`, sin el nombre de la restricción | T10 |
+| `fundacion` T1 | Un dato duplicado que llegue a la BD (el correo de `usuario`) responde `409` con `code: "RN-13"`, sin el nombre de la restricción | T10 ✅ |
 | `fundacion` T1 | El `400` de validación (primer DTO con validador: el login) incluye `traceId` | T5 ✅ |
 
 Al completarlas se marcan como cumplidas en el mapa.
@@ -161,8 +161,9 @@ Al completarlas se marcan como cumplidas en el mapa.
   - Registro válido → `201`; temporal en smtp4dev con el nombre; la respuesta no trae la contraseña; las temporales cumplen RN-26.
   - Correo existente con otra capitalización → `409 RN-13`; cédula repetida → `409 RN-13`.
   - Con smtp4dev apagado → `201` con `correoEnviado: false`.
-  - Token de no administrador → `403`.
-  - ⬜ **Heredada:** dos registros simultáneos con el mismo correo → uno `201` y otro `409 RN-13` sin el nombre de la restricción (ver el riesgo correspondiente del plan).
+  - Token con cambio pendiente → `403 RN-24`; sin token → `401`. ⏳ Token de otro rol → `403`: lo verifica `estudiantes`, cuando existan cuentas de otro rol.
+  - ✅ **Heredada:** dos registros simultáneos con el mismo correo → uno `201` y otro `409 RN-13` ("Dato duplicado"), sin el nombre de la restricción, que solo queda en el log.
+  - `GET /api/v1/administradores/{id}` se adelantó de T11 para que el `Location` del `201` sea válido.
 - Files: `src/Matricula.Application/Cuentas/CuentaService.cs`, `src/Matricula.Application/Common/Validacion/DatosPersonalesRules.cs`, `src/Matricula.Application/Administradores/{AdministradorService,RegistrarAdministradorRequest,RegistrarAdministradorRequestValidator,AdministradorResponse}.cs`, `src/Matricula.Api/Controllers/AdministradoresController.cs`, `DependencyInjection.cs`
 
 ### T11. Listar, consultar y editar administradores
@@ -187,6 +188,7 @@ Al completarlas se marcan como cumplidas en el mapa.
   - Desactivar una cuenta con sesión abierta → su token `401`; su login `403 RN-29`; su olvido no envía correo.
   - Desactivar al último administrador activo (también a sí mismo) → `409 RN-30`.
   - Reactivar → vuelve a iniciar sesión.
+  - Pendiente de T10: registrar un administrador con la cédula de uno inactivo → `409 RN-39` con su `usuarioId`.
 - Files: `src/Matricula.Application/Cuentas/{UsuarioService,ReenvioTemporalResponse}.cs`, `src/Matricula.Api/Controllers/UsuariosController.cs`, `DependencyInjection.cs`
 
 ### T13. README y cierre

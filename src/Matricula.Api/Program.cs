@@ -43,8 +43,7 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
     .AllowAnyMethod()));
 
 builder.Services.AddSeguridad(builder.Configuration);
-
-// Pendiente (paso 4 de docs/arquitectura.md): rate limiting en login y olvido de contraseña.
+builder.Services.AddLimitesPeticiones();
 
 var app = builder.Build();
 
@@ -62,6 +61,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseCors();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

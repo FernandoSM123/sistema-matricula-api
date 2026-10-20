@@ -2,6 +2,7 @@ using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
 using Matricula.Application.Correos;
 using Matricula.Domain.Entities;
+using Matricula.Domain.Enums;
 using Matricula.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,9 +13,35 @@ public class AuthService(
     IHasherContrasenas hasher,
     IGeneradorToken generadorToken,
     ICurrentUser currentUser,
+    IGeneradorContrasenas generadorContrasenas,
     EnvioCorreos envioCorreos,
     TimeProvider timeProvider)
 {
+    public const string MensajeOlvido = "Si el correo está registrado, recibirás una contraseña temporal.";
+
+    /// <summary>
+    /// RF-10: si el correo es de una cuenta activa, envía una temporal de 1 hora que reemplaza a la anterior
+    /// (RN-27). La contraseña actual sigue funcionando (RN-32). La respuesta es siempre la misma (RN-28, RN-29).
+    /// </summary>
+    public async Task<MensajeResponse> OlvidoContrasenaAsync(OlvidoContrasenaRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var correo = Usuario.NormalizarCorreo(request.Correo);
+        var usuario = await db.Usuarios.SingleOrDefaultAsync(u => u.Correo == correo, cancellationToken);
+
+        if (usuario is { Activo: true })
+        {
+            var temporal = generadorContrasenas.Generar();
+            usuario.AsignarTemporal(hasher.Hashear(temporal), MotivoTemporal.Olvido, timeProvider.GetUtcNow());
+            await db.SaveChangesAsync(cancellationToken);
+
+            await envioCorreos.EnviarTemporalAsync(usuario, temporal, MotivoTemporal.Olvido, cancellationToken);
+        }
+
+        return new MensajeResponse(MensajeOlvido);
+    }
+
     /// <summary>
     /// RF-07: quien ingresó con una temporal define su nueva contraseña. Devuelve un token sin cambio pendiente;
     /// el anterior deja de valer porque cambia el stamp.

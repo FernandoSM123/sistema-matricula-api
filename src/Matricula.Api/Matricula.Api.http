@@ -79,3 +79,14 @@ POST {{host}}/api/v1/auth/logout
 Authorization: Bearer {{token}}
 
 ###
+
+# Olvido de contraseña (RF-10). Siempre 200 con el mismo mensaje; la temporal (1 hora) llega a smtp4dev.
+# Límite: 5 solicitudes cada 15 minutos por IP (después 429).
+POST {{host}}/api/v1/auth/olvido-contrasena
+Content-Type: application/json
+
+{
+  "correo": "admin@instituto.local"
+}
+
+###

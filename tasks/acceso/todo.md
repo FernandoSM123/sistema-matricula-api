@@ -18,7 +18,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T6. Autorización y perfil | Completada | ✅ | ➖ | ✅ | ✅ |
 | T7. Cambio obligatorio y correos | Completada | ✅ | ➖ | ✅ | ✅ |
 | T8. Cambiar contraseña y logout | Completada | ✅ | ➖ | ✅ | ✅ |
-| T9. Olvido de contraseña y rate limiting | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T9. Olvido de contraseña y rate limiting | Completada | ✅ | ➖ | ✅ | ✅ |
 | T10. `CuentaService` y registrar administrador | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T11. Listar, consultar y editar administradores | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T12. Reenviar temporal, desactivar y reactivar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -146,8 +146,8 @@ Al completarlas se marcan como cumplidas en el mapa.
 - Verify:
   - Correo existente, inexistente e inactivo → respuestas idénticas; solo el existente recibe la temporal (1 h).
   - Login con la definitiva tras el olvido → `200` sin cambio pendiente; la temporal ya no sirve (RF-11). Login con la temporal → cambio obligatorio (RF-07).
-  - Temporal vencida (ajustar `temp_password_expira` en la BD) → `401`.
-  - Pendiente de T8: logout con el token de la temporal → `204`.
+  - Temporal vencida → `401`: cubierta por las pruebas unitarias de `TemporalVigente`; la prueba manual requiere editar `temp_password_expira` en la BD y queda opcional (se puede hacer desde un cliente de PostgreSQL).
+  - ✅ Pendiente de T8: logout con el token de la temporal → `204`.
   - 11 logins en un minuto → el último `429`; 6 olvidos → el último `429`.
 - Files: `src/Matricula.Application/Auth/{OlvidoContrasenaRequest,OlvidoContrasenaRequestValidator}.cs`, `AuthService.cs`, `AuthController.cs`, `src/Matricula.Api/Program.cs`
 

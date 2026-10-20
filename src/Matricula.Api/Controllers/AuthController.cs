@@ -3,6 +3,7 @@ using Matricula.Api.Seguridad;
 using Matricula.Application.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Matricula.Api.Controllers;
 
@@ -14,12 +15,27 @@ public class AuthController(AuthService authService) : ApiControllerBase
     /// </summary>
     [HttpPost("login")]
     [AllowAnonymous]
+    [EnableRateLimiting(LimitesPeticiones.Login)]
     [ProducesResponseType<TokenResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult<TokenResponse>> Login(LoginRequest request, CancellationToken cancellationToken) =>
         Ok(await authService.LoginAsync(request, cancellationToken));
+
+    /// <summary>
+    /// Olvido de contraseña (RF-10). Si el correo es de una cuenta activa, envía una temporal que vence en 1 hora.
+    /// Responde siempre lo mismo, exista o no el correo (RN-28).
+    /// </summary>
+    [HttpPost("olvido-contrasena")]
+    [AllowAnonymous]
+    [EnableRateLimiting(LimitesPeticiones.OlvidoContrasena)]
+    [ProducesResponseType<MensajeResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
+    public async Task<ActionResult<MensajeResponse>> OlvidoContrasena(OlvidoContrasenaRequest request, CancellationToken cancellationToken) =>
+        Ok(await authService.OlvidoContrasenaAsync(request, cancellationToken));
 
     /// <summary>
     /// Cambio obligatorio tras ingresar con una temporal (RF-07): nueva contraseña y confirmación.

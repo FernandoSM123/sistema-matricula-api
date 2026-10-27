@@ -2,7 +2,7 @@
 
 Módulo `acceso` del [mapa](../../specs/mapa-modulos.md). Spec: [`specs/SPEC-acceso.md`](../../specs/SPEC-acceso.md) · Plan: [`plan.md`](plan.md)
 
-**Estado de la lista:** En revisión (2026-10-19)
+**Estado de la lista:** Aprobada (2026-10-19) · **Módulo completado** (2026-10-19)
 
 Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula.UnitTests` en verde, la verificación indicada y un commit pequeño que cite los RF/RN. Las peticiones de cada flujo se agregan a `src/Matricula.Api/Matricula.Api.http` en la misma tarea.
 
@@ -10,19 +10,19 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 
 | Tarea | Estado | Código | Pruebas unitarias | Verificación manual | Commit |
 |---|---|:---:|:---:|:---:|:---:|
-| T1. Dominio de cuentas | Pendiente | ⬜ | ⬜ | ➖ | ⬜ |
-| T2. Persistencia y migración | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
-| T3. Hash y generador de temporales | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
-| T4. Seed del primer administrador | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
-| T5. JWT y login | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
-| T6. Autorización y perfil | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
-| T7. Cambio obligatorio y correos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
-| T8. Cambiar contraseña y logout | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
-| T9. Olvido de contraseña y rate limiting | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
-| T10. `CuentaService` y registrar administrador | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
-| T11. Listar, consultar y editar administradores | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
-| T12. Reenviar temporal, desactivar y reactivar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
-| T13. README y cierre | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T1. Dominio de cuentas | Completada | ✅ | ✅ | ➖ | ✅ |
+| T2. Persistencia y migración | Completada | ✅ | ➖ | ✅ | ✅ |
+| T3. Hash y generador de temporales | Completada | ✅ | ➖ | ✅ | ✅ |
+| T4. Seed del primer administrador | Completada | ✅ | ➖ | ✅ | ✅ |
+| T5. JWT y login | Completada | ✅ | ✅ | ✅ | ✅ |
+| T6. Autorización y perfil | Completada | ✅ | ➖ | ✅ | ✅ |
+| T7. Cambio obligatorio y correos | Completada | ✅ | ➖ | ✅ | ✅ |
+| T8. Cambiar contraseña y logout | Completada | ✅ | ➖ | ✅ | ✅ |
+| T9. Olvido de contraseña y rate limiting | Completada | ✅ | ➖ | ✅ | ✅ |
+| T10. `CuentaService` y registrar administrador | Completada | ✅ | ➖ | ✅ ⏳ | ✅ |
+| T11. Listar, consultar y editar administradores | Completada | ✅ | ➖ | ✅ | ✅ |
+| T12. Reenviar temporal, desactivar y reactivar | Completada | ✅ | ➖ | ✅ | ✅ |
+| T13. README y cierre | Completada | ✅ | ➖ | ✅ | ✅ |
 
 **Estados de tarea:**
 - **Pendiente:** no se ha empezado.
@@ -39,8 +39,8 @@ Copiadas de `specs/mapa-modulos.md` ("Verificaciones heredadas"):
 
 | Origen | Verificación | Tarea |
 |---|---|---|
-| `fundacion` T1 | Un dato duplicado que llegue a la BD (el correo de `usuario`) responde `409` con `code: "RN-13"`, sin el nombre de la restricción | T10 |
-| `fundacion` T1 | El `400` de validación (primer DTO con validador: el login) incluye `traceId` | T5 |
+| `fundacion` T1 | Un dato duplicado que llegue a la BD (el correo de `usuario`) responde `409` con `code: "RN-13"`, sin el nombre de la restricción | T10 ✅ |
+| `fundacion` T1 | El `400` de validación (primer DTO con validador: el login) incluye `traceId` | T5 ✅ |
 
 Al completarlas se marcan como cumplidas en el mapa.
 
@@ -76,7 +76,7 @@ Al completarlas se marcan como cumplidas en el mapa.
 ### T4. Seed del primer administrador
 - Acceptance:
   - `AdminSeedOptions` (`Correo`, `Cedula`, `Nombre`, `Apellidos`, `Telefono`, `ContrasenaTemporal`). Datos genéricos en `appsettings.json` ("John Doe", `admin@instituto.local`, `000000000`, `00000000`); `ContrasenaTemporal` solo en user-secrets.
-  - `AdminSeedService : IHostedService`: sin administradores → crea `Usuario` + `Administrador` en un solo `SaveChangesAsync` (temporal de 72 h, `CreadoPorId` nulo). Si el inicial existe sin `PasswordHash` → renueva la temporal. Sin administradores y sin `ContrasenaTemporal` → la API no arranca, con mensaje claro. Tabla inexistente → mensaje que pide aplicar las migraciones.
+  - `AdminSeedService`, ejecutado al inicio de `Program` (`SembrarAdministradorInicialAsync`): sin administradores → crea `Usuario` + `Administrador` en un solo `SaveChangesAsync` (temporal de 72 h, `CreadoPorId` nulo). Si el inicial existe sin `PasswordHash` → renueva la temporal. Sin administradores y sin `ContrasenaTemporal` → la API no arranca, con mensaje claro. Tabla inexistente → mensaje que pide aplicar las migraciones.
 - Verify:
   - Arrancar con la BD vacía: en `usuario` aparece el administrador con `password_hash` nulo y `temp_password_hash` con valor; en `administrador`, "John Doe".
   - Reiniciar: no se duplica y la temporal se renueva (cambia `temp_password_expira`).
@@ -93,7 +93,8 @@ Al completarlas se marcan como cumplidas en el mapa.
 - Verify:
   - Login del administrador inicial con la temporal → `200` con `debeCambiarContrasena: true`.
   - Contraseña incorrecta y correo inexistente → mismo `401`.
-  - ⬜ **Heredada:** login con el cuerpo vacío → `400` con `traceId`.
+  - ✅ **Heredada:** login con el cuerpo vacío → `400` con `traceId` y mensajes en español.
+  - Se verificaron más adelante: el rechazo de un token por `SecurityStamp` (✅ en T7) y el `403 RN-29` de una cuenta inactiva (✅ en T12).
 - Files: `src/Matricula.Api/Seguridad/{JwtOptions,GeneradorToken,ValidacionSecurityStamp}.cs`, `src/Matricula.Application/Auth/{AuthService,LoginRequest,LoginRequestValidator,TokenResponse}.cs`, `src/Matricula.Api/Controllers/AuthController.cs`, `src/Matricula.Api/Program.cs`, `appsettings.json`
 
 ### T6. Autorización y perfil
@@ -109,7 +110,9 @@ Al completarlas se marcan como cumplidas en el mapa.
   - Sin token → `401` `ProblemDetails`; con un token alterado → `401`.
   - `/health` y Scalar siguen abiertos; Scalar permite pegar el token.
   - Los `curl` de CORS de `fundacion` siguen dando lo esperado.
-- Files: `src/Matricula.Api/Seguridad/{Politicas,ResultadoAutorizacionHandler}.cs`, `src/Matricula.Api/Services/CurrentUser.cs`, `src/Matricula.Application/Auth/{AuthService (ObtenerPerfilAsync),PerfilResponse}.cs`, `src/Matricula.Api/Controllers/MeController.cs`, `src/Matricula.Api/Program.cs`
+  - Login sin cuerpo o con JSON inválido → `400` en español (los mensajes del framework se reemplazan).
+  - Se verifican en T7, porque necesitan un token sin cambio pendiente: `GET /api/v1/me` → `200` con "John Doe", el `401` de un token cuyo stamp cambió y el `404` de una ruta inexistente con sesión.
+- Files: `src/Matricula.Api/Seguridad/{Politicas,SinCambioPendienteRequirement,ResultadoAutorizacionHandler,BearerSecuritySchemeTransformer}.cs`, `src/Matricula.Api/Common/RespuestaModeloInvalido.cs`, `src/Matricula.Api/Services/CurrentUser.cs`, `src/Matricula.Application/Auth/{AuthService (ObtenerPerfilAsync),PerfilResponse}.cs`, `src/Matricula.Api/Controllers/MeController.cs`, `src/Matricula.Api/Program.cs`
 
 ### T7. Cambio obligatorio y correos
 - Acceptance:
@@ -120,7 +123,8 @@ Al completarlas se marcan como cumplidas en el mapa.
   - `POST /api/v1/auth/cambio-obligatorio` con `PasswordChangePending`; `403` si el token no tiene el claim.
 - Verify:
   - Confirmación distinta → `400`; nueva igual a la temporal → `409 RN-25`.
-  - Cambio válido → `200` con token nuevo sin el claim; aviso en smtp4dev; el token anterior → `401`; `GET /api/v1/me` con el nuevo → `200`.
+  - Cambio válido → `200` con token nuevo sin el claim; aviso en smtp4dev; el token anterior → `401` (stamp cambiado); `GET /api/v1/me` con el nuevo → `200` con "John Doe".
+  - Pendientes de T6: con el token nuevo, una ruta inexistente → `404`.
   - Login con la nueva contraseña → `200` sin cambio pendiente; con la temporal → `401`.
 - Files: `src/Matricula.Application/Auth/{CambioObligatorioRequest,CambioObligatorioRequestValidator,NuevaContrasenaRules}.cs`, `src/Matricula.Application/Correos/{PlantillasCorreo,EnvioCorreos}.cs`, `AuthService.cs`, `AuthController.cs`
 
@@ -131,7 +135,7 @@ Al completarlas se marcan como cumplidas en el mapa.
   - `POST /api/v1/auth/cambiar-contrasena` (política por defecto) y `POST /api/v1/auth/logout` (`PasswordChangePending`, `204`).
 - Verify:
   - Actual incorrecta → `409 RF-09`; cambio válido → `200`, aviso en smtp4dev, token anterior → `401`.
-  - Logout → `204`; el token → `401`. Logout con un token de temporal → `204`.
+  - Logout → `204`; el token y los de otras sesiones → `401`. El logout con un token de temporal se verifica en T9 (necesita una temporal).
 - Files: `src/Matricula.Application/Auth/{CambiarContrasenaRequest,CambiarContrasenaRequestValidator}.cs`, `AuthService.cs`, `AuthController.cs`
 
 ### T9. Olvido de contraseña y rate limiting
@@ -142,7 +146,8 @@ Al completarlas se marcan como cumplidas en el mapa.
 - Verify:
   - Correo existente, inexistente e inactivo → respuestas idénticas; solo el existente recibe la temporal (1 h).
   - Login con la definitiva tras el olvido → `200` sin cambio pendiente; la temporal ya no sirve (RF-11). Login con la temporal → cambio obligatorio (RF-07).
-  - Temporal vencida (ajustar `temp_password_expira` en la BD) → `401`.
+  - Temporal vencida → `401`: cubierta por las pruebas unitarias de `TemporalVigente`; la prueba manual requiere editar `temp_password_expira` en la BD y queda opcional (se puede hacer desde un cliente de PostgreSQL).
+  - ✅ Pendiente de T8: logout con el token de la temporal → `204`.
   - 11 logins en un minuto → el último `429`; 6 olvidos → el último `429`.
 - Files: `src/Matricula.Application/Auth/{OlvidoContrasenaRequest,OlvidoContrasenaRequestValidator}.cs`, `AuthService.cs`, `AuthController.cs`, `src/Matricula.Api/Program.cs`
 
@@ -156,8 +161,9 @@ Al completarlas se marcan como cumplidas en el mapa.
   - Registro válido → `201`; temporal en smtp4dev con el nombre; la respuesta no trae la contraseña; las temporales cumplen RN-26.
   - Correo existente con otra capitalización → `409 RN-13`; cédula repetida → `409 RN-13`.
   - Con smtp4dev apagado → `201` con `correoEnviado: false`.
-  - Token de no administrador → `403`.
-  - ⬜ **Heredada:** dos registros simultáneos con el mismo correo → uno `201` y otro `409 RN-13` sin el nombre de la restricción (ver el riesgo correspondiente del plan).
+  - Token con cambio pendiente → `403 RN-24`; sin token → `401`. ⏳ Token de otro rol → `403`: lo verifica `estudiantes`, cuando existan cuentas de otro rol.
+  - ✅ **Heredada:** dos registros simultáneos con el mismo correo → uno `201` y otro `409 RN-13` ("Dato duplicado"), sin el nombre de la restricción, que solo queda en el log.
+  - `GET /api/v1/administradores/{id}` se adelantó de T11 para que el `Location` del `201` sea válido.
 - Files: `src/Matricula.Application/Cuentas/CuentaService.cs`, `src/Matricula.Application/Common/Validacion/DatosPersonalesRules.cs`, `src/Matricula.Application/Administradores/{AdministradorService,RegistrarAdministradorRequest,RegistrarAdministradorRequestValidator,AdministradorResponse}.cs`, `src/Matricula.Api/Controllers/AdministradoresController.cs`, `DependencyInjection.cs`
 
 ### T11. Listar, consultar y editar administradores
@@ -166,7 +172,7 @@ Al completarlas se marcan como cumplidas en el mapa.
   - `GET /api/v1/administradores/{id}` → `200` o `404`.
   - `PUT /api/v1/administradores/{id}` con `ActualizarAdministradorRequest` + validador: cédula de otro → `409 RN-13`; cambio de correo vía `CuentaService.CambiarCorreoAsync`.
 - Verify:
-  - El listado oculta los inactivos sin el filtro (usar la desactivación directa en la BD o esperar a T12) y los incluye con él.
+  - El listado pagina, ordena por apellidos y busca en nombre, apellidos, cédula y correo. El filtro de inactivos se verifica en T12.
   - Editar a "John Doe" con datos reales → `200`; `GET /api/v1/me` los muestra.
   - Cambiar el correo → el login funciona con el nuevo y no con el anterior; correo de otra cuenta → `409 RN-13`.
 - Files: `src/Matricula.Application/Administradores/{AdministradorService,ActualizarAdministradorRequest,ActualizarAdministradorRequestValidator,ListarAdministradoresRequest}.cs`, `AdministradoresController.cs`
@@ -182,6 +188,8 @@ Al completarlas se marcan como cumplidas en el mapa.
   - Desactivar una cuenta con sesión abierta → su token `401`; su login `403 RN-29`; su olvido no envía correo.
   - Desactivar al último administrador activo (también a sí mismo) → `409 RN-30`.
   - Reactivar → vuelve a iniciar sesión.
+  - ✅ Pendiente de T10: registrar un administrador con la cédula de uno inactivo → `409 RN-39` con su `usuarioId`.
+  - ✅ Pendiente de T11: el listado de administradores oculta al inactivo sin `incluirInactivos` y lo muestra con `incluirInactivos=true`.
 - Files: `src/Matricula.Application/Cuentas/{UsuarioService,ReenvioTemporalResponse}.cs`, `src/Matricula.Api/Controllers/UsuariosController.cs`, `DependencyInjection.cs`
 
 ### T13. README y cierre
@@ -190,10 +198,18 @@ Al completarlas se marcan como cumplidas en el mapa.
   - `Matricula.Api.http` con el recorrido completo de la spec.
   - Recorrido completo de la tabla de verificación manual de la spec; consola revisada sin contraseñas ni temporales.
   - Verificaciones heredadas marcadas como cumplidas en `specs/mapa-modulos.md`.
-- Verify: revisión manual del README siguiéndolo desde cero en una BD vacía.
+- Verify: revisión manual del README. No se recreó la BD de desarrollo para no perder datos; el arranque desde una BD vacía (seed, mensajes de error de configuración) ya se verificó en T4, y el primer ingreso completo en T5 y T7.
 - Files: `README.md`, `src/Matricula.Api/Matricula.Api.http`, `specs/mapa-modulos.md`
 
 ## Cierre del módulo
-- ⬜ Criterios de éxito de la spec cumplidos.
-- ⬜ Verificaciones heredadas de `fundacion` cumplidas y marcadas en el mapa.
-- ⬜ Estados actualizados en la spec, el mapa y esta lista.
+- ✅ Criterios de éxito de la spec cumplidos (2026-10-19):
+  1. Migración `AgregaUsuarioYAdministrador` con índices únicos y FK sin cascada: revisión de la migración y `dotnet ef migrations list` (T2).
+  2. Flujos de §3.2: login con definitiva y temporal (T5), cambio obligatorio (T7), cambio propio y logout (T8), olvido (T9), reenvío (T12).
+  3. Administradores con datos personales: registro (T10), listado, detalle y edición (T11); "John Doe" editable (T11).
+  4. Sin token solo responden los anónimos; con cambio pendiente solo el cambio obligatorio y el logout (T6, T7, T9, T10).
+  5. Logout, desactivación y cambio de contraseña invalidan los tokens (T7, T8, T12).
+  6. Tabla de verificación manual de la spec recorrida tarea por tarea; prueba de humo final en T13. Sin verificar a mano: la temporal vencida (cubierta por pruebas unitarias) y el `403` con un token de otro rol (⏳ heredada a `estudiantes`).
+  7. `dotnet build` sin warnings; 39/39 pruebas unitarias en verde.
+- ✅ Verificaciones heredadas de `fundacion` cumplidas (T5 y T10) y marcadas en el mapa. Se dejó una nueva para `estudiantes` (el `403` con un token de otro rol).
+- ✅ Estados actualizados en la spec, el mapa y esta lista.
+- Datos de prueba en la BD de desarrollo: administradores Ana Mora, Pedro Castro, Lucía Vargas, Mario Rojas y "Carrera Uno" (activos). Credenciales del inicial: `admin@instituto.local` / `NuevaClave2026`.

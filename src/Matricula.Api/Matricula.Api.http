@@ -1,5 +1,154 @@
 @host = http://localhost:5022
 
+# Recorrido del módulo acceso. Ejecuta primero el login con tus credenciales: las demás peticiones usan
+# {{token}}. Primer ingreso: login con la temporal de AdminSeed → cambio-obligatorio → login con la nueva.
+
 GET {{host}}/health
+
+###
+
+# Login (RF-06). Con la temporal del administrador inicial responde debeCambiarContrasena: true.
+# @name login
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "correo": "admin@instituto.local",
+  "contrasena": "TuTemporal123"
+}
+
+###
+
+@token = {{login.response.body.$.accessToken}}
+
+# Credenciales inválidas → 401 con mensaje genérico.
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "correo": "admin@instituto.local",
+  "contrasena": "Incorrecta123"
+}
+
+###
+
+# Validación → 400 con traceId.
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{}
+
+###
+
+# Perfil propio (RF-13). Con el token de una temporal responde 403 RN-24.
+GET {{host}}/api/v1/me
+Authorization: Bearer {{token}}
+
+###
+
+# Sin token → 401.
+GET {{host}}/api/v1/me
+
+###
+
+# Cambio obligatorio (RF-07) con el token de la temporal. Devuelve un token nuevo; el anterior deja de valer.
+# Confirmación distinta → 400; nueva igual a la temporal → 409 RN-25; sin cambio pendiente → 403.
+POST {{host}}/api/v1/auth/cambio-obligatorio
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nuevaContrasena": "NuevaClave2026",
+  "confirmacion": "NuevaClave2026"
+}
+
+###
+
+# Cambiar la contraseña propia (RF-09). Actual incorrecta → 409 RF-09; nueva igual a la actual → 409 RN-25.
+POST {{host}}/api/v1/auth/cambiar-contrasena
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "contrasenaActual": "NuevaClave2026",
+  "nuevaContrasena": "OtraClave2026",
+  "confirmacion": "OtraClave2026"
+}
+
+###
+
+# Logout (RF-08): 204 y todos los tokens del usuario dejan de valer.
+POST {{host}}/api/v1/auth/logout
+Authorization: Bearer {{token}}
+
+###
+
+# Olvido de contraseña (RF-10). Siempre 200 con el mismo mensaje; la temporal (1 hora) llega a smtp4dev.
+# Límite: 5 solicitudes cada 15 minutos por IP (después 429).
+POST {{host}}/api/v1/auth/olvido-contrasena
+Content-Type: application/json
+
+{
+  "correo": "admin@instituto.local"
+}
+
+###
+
+# Registrar un administrador (RF-04). Requiere el token de un administrador sin cambio pendiente.
+# 201 + Location; la temporal llega a smtp4dev y nunca a la respuesta. Correo o cédula repetidos → 409 RN-13.
+POST {{host}}/api/v1/administradores
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cedula": "1-2345-6789",
+  "nombre": "Ana",
+  "apellidos": "Mora Solís",
+  "telefono": "8888-8888",
+  "correo": "ana@instituto.local"
+}
+
+###
+
+GET {{host}}/api/v1/administradores/1
+Authorization: Bearer {{token}}
+
+###
+
+# Listar administradores (RF-55): paginado, solo activos salvo incluirInactivos=true.
+GET {{host}}/api/v1/administradores?page=1&pageSize=20&search=&incluirInactivos=false
+Authorization: Bearer {{token}}
+
+###
+
+# Editar un administrador, incluido el propio (RF-55). Cambiar el correo cambia el de su cuenta.
+PUT {{host}}/api/v1/administradores/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cedula": "000000000",
+  "nombre": "John",
+  "apellidos": "Doe",
+  "telefono": "00000000",
+  "correo": "admin@instituto.local"
+}
+
+###
+
+# Reenviar una temporal (RF-12). El id es el usuarioId. Cuenta inactiva → 409 RN-29.
+POST {{host}}/api/v1/usuarios/2/reenviar-temporal
+Authorization: Bearer {{token}}
+
+###
+
+# Desactivar una cuenta (RF-14): sus tokens dejan de valer. Último administrador activo → 409 RN-30.
+POST {{host}}/api/v1/usuarios/2/desactivar
+Authorization: Bearer {{token}}
+
+###
+
+POST {{host}}/api/v1/usuarios/2/reactivar
+Authorization: Bearer {{token}}
 
 ###

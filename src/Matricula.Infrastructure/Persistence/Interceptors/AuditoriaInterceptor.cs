@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 namespace Matricula.Infrastructure.Persistence.Interceptors;
 
 /// <summary>
-/// Asigna FechaCreacion y FechaModificacion automáticamente al guardar.
+/// Asigna FechaCreacion y FechaModificacion automáticamente al guardar o actualizar un registro
 /// </summary>
 public class AuditoriaInterceptor(TimeProvider timeProvider) : SaveChangesInterceptor
 {

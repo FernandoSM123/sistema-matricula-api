@@ -27,7 +27,8 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
             BusinessRuleException e => (StatusCodes.Status409Conflict, "Regla de negocio incumplida", e.Code),
             NotFoundException => (StatusCodes.Status404NotFound, "Recurso no encontrado", null),
             ConflictException => (StatusCodes.Status409Conflict, "Conflicto", null),
-            ForbiddenException => (StatusCodes.Status403Forbidden, "Acceso denegado", null),
+            ForbiddenException e => (StatusCodes.Status403Forbidden, "Acceso denegado", e.Code),
+            UnauthorizedException => (StatusCodes.Status401Unauthorized, "No autenticado", null),
             DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, "Conflicto de concurrencia", "CONCURRENCIA"),
             _ when violacionUnicidad is not null => (StatusCodes.Status409Conflict, "Dato duplicado", "RN-13"),
             _ => (StatusCodes.Status500InternalServerError, "Error interno", (string?)null)
@@ -61,6 +62,14 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
         if (code is not null)
         {
             problem.Extensions["code"] = code;
+        }
+
+        if (exception is BusinessRuleException { Datos: var datos })
+        {
+            foreach (var (clave, valor) in datos)
+            {
+                problem.Extensions[clave] = valor;
+            }
         }
 
         return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext

@@ -1,3 +1,6 @@
+using Matricula.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+
 namespace Matricula.Application.Abstractions;
 
 /// <summary>
@@ -5,8 +8,8 @@ namespace Matricula.Application.Abstractions;
 /// </summary>
 public interface IAppDbContext
 {
-    // Agregar aquí los DbSet<> a medida que se creen las entidades, por ejemplo:
-    // DbSet<Estudiante> Estudiantes { get; }
+    DbSet<Usuario> Usuarios { get; }
+    DbSet<Administrador> Administradores { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -108,6 +108,46 @@ $env:Cors__OrigenesPermitidos__1 = "https://admin.ejemplo.com"
 
 La lista se lee al arrancar, así que hay que reiniciar la API después de cambiarla. CORS solo afecta a los navegadores; herramientas como `curl` o Scalar no lo necesitan.
 
+### Jwt
+
+La API emite tokens JWT firmados con una clave simétrica (HS256). `Issuer`, `Audience` y `MinutosVigencia` (60) están en `appsettings.json`; la **clave** va solo en user-secrets o en la variable de entorno `Jwt__Clave`. Sin una clave de al menos 32 caracteres, **la API no arranca** y lo indica en el error.
+
+Para generar una clave aleatoria en PowerShell:
+
+```powershell
+[Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(48))
+```
+
+y agrégala a tu `secrets.json`:
+
+```json
+"Jwt": { "Clave": "<la clave generada>" }
+```
+
+Cambiar la clave invalida todos los tokens emitidos (hay que volver a iniciar sesión).
+
+### AdminSeed (primer administrador)
+
+Al arrancar, si no existe ningún administrador, la API crea uno con los datos genéricos de `appsettings.json` (`admin@instituto.local`, John Doe, cédula `000000000`) y la contraseña temporal de `AdminSeed:ContrasenaTemporal`, que va solo en user-secrets o en `AdminSeed__ContrasenaTemporal`:
+
+```json
+"AdminSeed": { "ContrasenaTemporal": "TuTemporal123" }
+```
+
+- La temporal debe cumplir la política de contraseñas: al menos 8 caracteres, una mayúscula y un número.
+- No se envía por correo: es la que configuras.
+- Si no hay administradores y falta la temporal, la API no arranca y lo indica.
+- Mientras el administrador inicial no defina su contraseña, cada arranque renueva su temporal desde la configuración (vence a las 72 horas). Después de definirla, `ContrasenaTemporal` deja de usarse.
+
+**Primer ingreso:**
+
+1. Aplica las migraciones y arranca la API (ver arriba).
+2. `POST /api/v1/auth/login` con `admin@instituto.local` y la temporal → la respuesta trae `debeCambiarContrasena: true`. Ese token solo sirve para el cambio obligatorio y el logout.
+3. `POST /api/v1/auth/cambio-obligatorio` con la nueva contraseña y su confirmación → devuelve un token normal.
+4. Con ese token, `PUT /api/v1/administradores/1` reemplaza los datos genéricos por los reales.
+
+En Scalar, pega el `accessToken` en la autenticación Bearer. `src/Matricula.Api/Matricula.Api.http` tiene el recorrido completo.
+
 ## Migraciones
 
 ```bash

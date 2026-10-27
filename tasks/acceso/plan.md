@@ -2,7 +2,7 @@
 
 Módulo `acceso` del [mapa](../../specs/mapa-modulos.md). Spec: [`specs/SPEC-acceso.md`](../../specs/SPEC-acceso.md) · Tareas: [`todo.md`](todo.md)
 
-**Estado del plan:** En revisión (2026-10-19)
+**Estado del plan:** Aprobado (2026-10-19)
 
 ## Enfoque
 
@@ -39,7 +39,7 @@ El login llega pronto (paso 5) porque todo lo demás se prueba con un token. `Ma
 - **Correos:** un helper en Application (`EnviarSinFallarAsync`) que envuelve `IEmailSender` y devuelve `bool`; registra el error sin el cuerpo del correo.
 - **Validadores compartidos:** reglas de FluentValidation reutilizables para la nueva contraseña (RN-26 + confirmación) y para los datos personales (cédula, nombres, teléfono), que luego usarán `estudiantes` y `profesores`.
 - **Rate limiting:** `AddRateLimiter` con dos políticas de ventana fija particionadas por `RemoteIpAddress`, `[EnableRateLimiting]` en las dos acciones, y `OnRejected` que escribe un `ProblemDetails` `429`.
-- **Seed:** `IHostedService` que crea un scope, consulta la BD y guarda. Valida `ContrasenaTemporal` solo cuando la necesita (no hay administradores o el inicial nunca definió su contraseña).
+- **Seed:** `AdminSeedService` (scoped) ejecutado al inicio de `Program` con `SembrarAdministradorInicialAsync`, en su propio scope. No se usa `IHostedService` porque Infrastructure no referencia `Microsoft.Extensions.Hosting` y no se añaden paquetes (§5 de la arquitectura admite ambas opciones). Valida `ContrasenaTemporal` solo cuando la necesita (no hay administradores o el inicial nunca definió su contraseña).
 
 ## Riesgos y mitigación
 
@@ -49,7 +49,7 @@ El login llega pronto (paso 5) porque todo lo demás se prueba con un token. `Ma
 | `OnTokenValidated` hace una consulta por petición | Es una consulta por clave primaria con proyección de dos columnas; aceptable para este tamaño. Se anota como posible caché futura |
 | El seed corre antes de aplicar la migración y la API cae con un error confuso | El seed captura la falta de tabla y lanza un error claro: "Aplique las migraciones (`dotnet ef database update`)". El README lo indica |
 | La política de respaldo bloquea `/health`, OpenAPI o Scalar | `.AllowAnonymous()` en sus `Map...`; se verifica en la tarea 6 |
-| El orden del pipeline rompe CORS, la autenticación o el rate limiting | `UseCors` → `UseAuthentication` → `UseAuthorization` → `UseRateLimiter`, antes de `MapControllers`. Se verifica con los `curl` de CORS de `fundacion` tras la tarea 6 |
+| El orden del pipeline rompe CORS, la autenticación o el rate limiting | `UseCors` → `UseRateLimiter` → `UseAuthentication` → `UseAuthorization`, antes de `MapControllers` (el limitador rechaza antes de autenticar). Se verifica con los `curl` de CORS de `fundacion` tras la tarea 6 |
 | Los claims se renombran al leer el token (`sub` → `NameIdentifier`) y `CurrentUser` no encuentra el id | `MapInboundClaims = false` y constantes compartidas para los nombres de claim |
 | La verificación heredada del `409 RN-13` desde la BD es difícil de disparar a mano, porque el servicio valida antes | Dos peticiones simultáneas con el mismo correo (dos terminales con `curl`). Si la carrera no se reproduce, se comenta temporalmente la validación previa, se verifica y se restaura sin commitear ese cambio |
 | El envío de correo falla después de guardar y el administrador no se entera | `correoEnviado: false` en la respuesta y reenvío disponible en la tarea 12 |

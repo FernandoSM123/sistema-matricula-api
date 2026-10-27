@@ -4,13 +4,16 @@ Módulo `acceso` del [mapa de módulos](mapa-modulos.md). Depende de `fundacion`
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [En revisión](../tasks/acceso/plan.md) | [En revisión](../tasks/acceso/todo.md) | 0/13 tareas completadas |
+| **Aprobada** | [Aprobado](../tasks/acceso/plan.md) | [Aprobadas](../tasks/acceso/todo.md) | 13/13 tareas completadas: **módulo completado** (2026-10-19) |
 
 **Historial:**
 - 2026-10-19: v1 en revisión.
 - 2026-10-19: v2 en revisión. Los administradores tienen datos personales (entidad `Administrador`, RF-55), la cédula es única por tabla, el correo vive solo en `Usuario` y el seed crea al administrador inicial con datos genéricos. Decisiones 6 y 7 del mapa. Se quitan el listado y detalle genéricos de `/usuarios`.
 - 2026-10-19: v3 en revisión. Dos endpoints para cambiar la contraseña y el rol de una cuenta no cambia (decisión 8 del mapa). Sin preguntas abiertas.
 - 2026-10-19: v3 aprobada.
+- 2026-10-19: módulo completado (13/13 tareas). Desviaciones registradas: seed al inicio de `Program` (no `IHostedService`), política `Politicas.Administrador` en lugar de `Roles`, rutas inexistentes sin token → `401` (supuesto 11), `GET /administradores/{id}` adelantado a T10.
+- 2026-10-19: T6, los endpoints de administrador usan la política `Politicas.Administrador` en lugar de `Roles`, y se documenta que una ruta inexistente sin token responde `401` (supuesto 11).
+- 2026-10-19: el seed se ejecuta al inicio de `Program` en lugar de en un `IHostedService` (sin paquetes nuevos; §5 de la arquitectura admite ambas opciones).
 
 ## Objetivo
 
@@ -66,7 +69,7 @@ Dar al sistema cuentas de usuario, autenticación y autorización, para que los 
 4. **Autorización**
    - Política de respaldo (`FallbackPolicy`) y por defecto: usuario autenticado **y sin** el claim `must_change_password` (RN-24). Los endpoints públicos llevan `[AllowAnonymous]`; también `/health`, OpenAPI y Scalar.
    - Política `PasswordChangePending`: solo exige autenticación. La usan únicamente el cambio obligatorio y el logout.
-   - Roles con `[Authorize(Roles = nameof(Rol.Administrador))]`.
+   - Roles con la política `[Authorize(Policy = Politicas.Administrador)]` (rol + sin cambio pendiente). **No** se usa `[Authorize(Roles = ...)]`: reemplaza la política por defecto y dejaría pasar a un administrador con cambio pendiente (RN-24). Los módulos siguientes siguen la misma regla.
    - Un usuario con cambio pendiente que llama a otro endpoint recibe `403` con `code: "RN-24"`.
    - Esquema Bearer en el documento OpenAPI, para probar con token desde Scalar.
 
@@ -109,7 +112,7 @@ Dar al sistema cuentas de usuario, autenticación y autorización, para que los 
 
 8. **Rate limiting** con el middleware integrado de ASP.NET Core (sin paquetes nuevos), por IP: `login` 10 peticiones por minuto y `olvido-contrasena` 5 cada 15 minutos. Al superarlo, `429` como `ProblemDetails`.
 
-9. **Seed del primer administrador** (`IHostedService`, `AdminSeedOptions`)
+9. **Seed del primer administrador** (`AdminSeedService`, ejecutado al inicio de `Program` antes de atender peticiones, y `AdminSeedOptions`)
    - Configuración: `Correo`, `Cedula`, `Nombre`, `Apellidos` y `Telefono` con valores genéricos y anónimos en `appsettings.json` (`admin@instituto.local`, `000000000`, `John`, `Doe`, `00000000`). `ContrasenaTemporal` solo en user-secrets o variables de entorno.
    - Si no existe ningún administrador, crea el `Usuario` y el `Administrador` con esos datos, motivo `CuentaNueva` y vencimiento de 72 horas. No envía correo. Los datos genéricos se corrigen después con `PUT /api/v1/administradores/{id}`.
    - Si el administrador inicial existe pero nunca definió su contraseña, en cada arranque renueva la temporal desde la configuración. Así un vencimiento no deja el sistema sin acceso.
@@ -282,6 +285,7 @@ Se aplican salvo que se corrijan en la revisión:
 8. **Límites de rate limiting** de 10 por minuto (login) y 5 cada 15 minutos (olvido), por IP.
 9. **Seed:** renueva la temporal mientras el administrador inicial no haya definido su contraseña.
 10. **Las pruebas unitarias cubren solo Domain**; el generador de temporales se verifica a mano (o con una prueba si se aprueba referenciar Infrastructure desde `Matricula.UnitTests`).
+11. **Rutas inexistentes:** la política de respaldo también se aplica a las peticiones sin ruta, así que sin token responden `401` (no revelan qué rutas existen) y con sesión `404`. Con cambio pendiente, `403 RN-24`.
 
 ## Decisiones
 

@@ -4,13 +4,14 @@ Módulo `estudiantes` del [mapa de módulos](mapa-modulos.md). Depende de `acces
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/estudiantes/plan.md) | [Aprobadas](../tasks/estudiantes/todo.md) | 8/9 tareas completadas |
+| **Aprobada** | [Aprobado](../tasks/estudiantes/plan.md) | [Aprobadas](../tasks/estudiantes/todo.md) | 9/9 tareas completadas: **módulo completado** (2026-10-27) |
 
 **Historial:**
 - 2026-10-27: v1 en revisión.
 - 2026-10-27: v1 aprobada. El estudiante edita solo teléfono y dirección; el correo lo cambia el administrador (decisiones 1 y 2).
 - 2026-10-27: plan aprobado; lista de 9 tareas en revisión.
 - 2026-10-27: lista de tareas aprobada; empieza la implementación (T1).
+- 2026-10-27: módulo completado (9/9 tareas). Desviaciones registradas: el perfil de `PUT /me/datos-contacto` lo arma el controller con `AuthService` (T8); una cédula con espacios al inicio o al final responde `400`, igual que en administradores (regla de `acceso`); en una carrera entre dos registros públicos con los mismos datos, el segundo recibe `409 RN-13` desde la BD en lugar de `RN-21` (riesgo aceptado en el plan).
 
 ## Objetivo
 

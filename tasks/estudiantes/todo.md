@@ -2,7 +2,7 @@
 
 Módulo `estudiantes` del [mapa](../../specs/mapa-modulos.md). Spec: [`specs/SPEC-estudiantes.md`](../../specs/SPEC-estudiantes.md) · Plan: [`plan.md`](plan.md)
 
-**Estado de la lista:** Aprobada (2026-10-27)
+**Estado de la lista:** Aprobada (2026-10-27) · **Módulo completado** (2026-10-27)
 
 Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula.UnitTests` en verde, la verificación indicada y un commit pequeño que cite los RF/RN. Las peticiones de cada flujo se agregan a `src/Matricula.Api/Matricula.Api.http` en la misma tarea.
 
@@ -18,7 +18,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T6. Registro público y rate limiting | Completada | ✅ | ➖ | ✅ | ✅ |
 | T7. Claim `estudiante_id` y perfil | Completada | ✅ | ➖ | ✅ | ✅ |
 | T8. Datos de contacto propios | Completada | ✅ | ➖ | ✅ | ✅ |
-| T9. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T9. Cierre del módulo | Completada | ✅ | ➖ | ✅ | ✅ |
 
 **Estados de tarea:**
 - **Pendiente:** no se ha empezado.
@@ -142,5 +142,18 @@ Al completarlas se marcan como cumplidas en el mapa.
   - README: paso de la migración `AgregaEstudiante` si hace falta mencionarlo y la sección de rate limiting con la nueva política.
   - Recorrido de la tabla de verificación manual de la spec; consola revisada sin contraseñas ni temporales.
   - Verificación heredada marcada como cumplida en `specs/mapa-modulos.md`; estados de la spec, el mapa y esta lista al día.
-- Verify: revisión manual del README y de los estados.
+- Verify: revisión manual del README y de los estados. La migración ya la cubre la sección genérica del README ("cada vez que haya migraciones nuevas"); se agregó la sección "Endpoints sin sesión y límites de peticiones". Prueba de humo final con datos nuevos: 37/37 verificaciones de la tabla de la spec correctas; consola sin contraseñas ni temporales.
 - Files: `README.md`, `src/Matricula.Api/Matricula.Api.http`, `specs/mapa-modulos.md`, `specs/SPEC-estudiantes.md`, `tasks/estudiantes/todo.md`
+
+## Cierre del módulo
+- ✅ Criterios de éxito de la spec cumplidos (2026-10-27):
+  1. Migración `AgregaEstudiante` con índices únicos en `cedula` y `usuario_id` y FK sin cascada: `\d estudiante` en `psql` (T2).
+  2. Registro público con contraseña propia (T6) y registro por administrador con temporal por correo (T3).
+  3. Listado con búsqueda, filtro de inactivos y paginación, detalle, edición, desactivar y reactivar (T3, T4, T5).
+  4. Desactivar al estudiante o a su cuenta es la misma operación (T5, RN-38).
+  5. `GET /me` con los datos del estudiante, edición de solo teléfono y dirección, y `estudiante_id` en el token (T7, T8).
+  6. Tabla de verificación manual de la spec recorrida tarea por tarea y en la prueba de humo final (T9), incluida la heredada de `acceso`. Sin verificar a mano: el `403` de un token de estudiante sin `estudiante_id` (ya no se emiten tokens así).
+  7. `dotnet build` sin warnings; 52/52 pruebas unitarias en verde.
+- ✅ Verificación heredada de `acceso` cumplida (T3) y marcada en el mapa.
+- ✅ Estados actualizados en la spec, el mapa y esta lista.
+- Datos de prueba en la BD de desarrollo (contraseñas): Laura Jiménez `laura.nueva@correo.local` / `Estudiante2026`, Andrés Alvarado `andres@correo.local` / `Andres2026`, Carlos Quesada `carlos.q@correo.local` / `Registro2026`, Sofía Arias `sofia.arias@correo.local` / `Humo2026A`, Tomás Brenes `tomas.nuevo@correo.local` / `Humo2026B`. Beatriz Zúñiga tiene una temporal pendiente.

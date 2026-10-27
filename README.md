@@ -148,6 +148,18 @@ Al arrancar, si no existe ningún administrador, la API crea uno con los datos g
 
 En Scalar, pega el `accessToken` en la autenticación Bearer. `src/Matricula.Api/Matricula.Api.http` tiene el recorrido completo.
 
+## Endpoints sin sesión y límites de peticiones
+
+Todo endpoint exige un token, salvo estos, que tienen un límite de peticiones por IP. Al superarlo responden `429` con `Retry-After`. Los contadores viven en memoria y se reinician al reiniciar la API.
+
+| Endpoint | Límite |
+|---|---|
+| `POST /api/v1/auth/login` | 10 por minuto |
+| `POST /api/v1/auth/olvido-contrasena` | 5 cada 15 minutos |
+| `POST /api/v1/estudiantes/registro` (registro público de estudiantes) | 10 cada 15 minutos |
+
+`/health`, OpenAPI y Scalar también están abiertos, sin límite.
+
 ## Migraciones
 
 ```bash

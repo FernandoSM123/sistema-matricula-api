@@ -218,3 +218,24 @@ POST {{host}}/api/v1/estudiantes/1/reactivar
 Authorization: Bearer {{token}}
 
 ###
+
+
+# Registro público de estudiantes (RF-01), sin token. Siempre crea una cuenta de estudiante (RN-19): un campo rol se ignora.
+# 201 con un mensaje, sin Location; después se inicia sesión con /auth/login. Cédula o correo existentes → 409 RN-21.
+# Rate limiting: 10 cada 15 minutos por IP (429).
+POST {{host}}/api/v1/estudiantes/registro
+Content-Type: application/json
+
+{
+  "cedula": "4-4444-4444",
+  "nombre": "Carlos",
+  "apellidos": "Quesada Ruiz",
+  "telefono": "8888-4444",
+  "correo": "carlos.q@correo.local",
+  "fechaNacimiento": null,
+  "direccion": null,
+  "contrasena": "Registro2026",
+  "confirmacion": "Registro2026"
+}
+
+###

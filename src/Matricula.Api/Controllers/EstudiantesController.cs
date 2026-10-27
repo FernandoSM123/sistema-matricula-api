@@ -1,9 +1,11 @@
 using Matricula.Api.Common;
 using Matricula.Api.Seguridad;
+using Matricula.Application.Auth;
 using Matricula.Application.Common.Paginacion;
 using Matricula.Application.Estudiantes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Matricula.Api.Controllers;
 
@@ -26,6 +28,22 @@ public class EstudiantesController(EstudianteService estudianteService) : ApiCon
         var registrado = await estudianteService.RegistrarAsync(request, cancellationToken);
         return CreatedAtAction(nameof(Obtener), new { id = registrado.Estudiante.Id }, registrado);
     }
+
+    /// <summary>
+    /// Registro público de estudiantes (RF-01), sin sesión. Siempre crea una cuenta de estudiante (RN-19); si la
+    /// cédula o el correo ya existen, responde 409 RN-21. Después se inicia sesión con /auth/login.
+    /// </summary>
+    [HttpPost("registro")]
+    [AllowAnonymous]
+    [EnableRateLimiting(LimitesPeticiones.RegistroEstudiante)]
+    [ProducesResponseType<MensajeResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
+    public async Task<ActionResult<MensajeResponse>> RegistroPublico(
+        RegistroPublicoRequest request, CancellationToken cancellationToken) =>
+        // Sin Location: el visitante no puede consultar el recurso creado.
+        StatusCode(StatusCodes.Status201Created, await estudianteService.RegistrarPublicoAsync(request, cancellationToken));
 
     /// <summary>
     /// Lista los estudiantes (RF-16). Por defecto solo los activos; search busca en nombre, apellidos, cédula

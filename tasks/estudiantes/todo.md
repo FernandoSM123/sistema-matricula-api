@@ -15,7 +15,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T3. Registro por administrador y detalle | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Listar y editar estudiantes | Completada | ✅ | ➖ | ✅ | ✅ |
 | T5. Desactivar y reactivar | Completada | ✅ | ➖ | ✅ | ✅ |
-| T6. Registro público y rate limiting | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T6. Registro público y rate limiting | Completada | ✅ | ➖ | ✅ | ✅ |
 | T7. Claim `estudiante_id` y perfil | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T8. Datos de contacto propios | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T9. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |

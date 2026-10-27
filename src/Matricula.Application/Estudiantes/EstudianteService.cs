@@ -1,4 +1,5 @@
 using Matricula.Application.Abstractions;
+using Matricula.Application.Auth;
 using Matricula.Application.Common.Exceptions;
 using Matricula.Application.Common.Paginacion;
 using Matricula.Application.Cuentas;
@@ -40,6 +41,42 @@ public class EstudianteService(
 
         var correoEnviado = await cuentaService.EnviarTemporalAsync(cuenta, cancellationToken);
         return new EstudianteRegistradoResponse(estudiante.ToResponse(), correoEnviado);
+    }
+
+    /// <summary>
+    /// RF-01: la persona define su contraseña y la cuenta siempre es de estudiante (RN-19). Cuenta y estudiante
+    /// en un solo guardado; no se envía correo ni se inicia sesión.
+    /// </summary>
+    public async Task<MensajeResponse> RegistrarPublicoAsync(RegistroPublicoRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        // RN-21. Se valida antes que CuentaService, que respondería RN-13 por el correo. No se dice si el registro
+        // existente está inactivo ni se dan sus ids: solo un administrador reactiva (RN-39).
+        var cedula = request.Cedula.Trim();
+        var correo = Usuario.NormalizarCorreo(request.Correo);
+        if (await db.Estudiantes.AnyAsync(e => e.Cedula == cedula, cancellationToken)
+            || await db.Usuarios.AnyAsync(u => u.Correo == correo, cancellationToken))
+        {
+            throw new BusinessRuleException(
+                "RN-21",
+                "Ya existe una cuenta con esa cédula o ese correo. Inicie sesión, solicite una contraseña temporal si "
+                + "olvidó la suya o contacte a la administración.");
+        }
+
+        var usuario = await cuentaService.CrearCuentaPublicaAsync(request.Correo, request.Contrasena, cancellationToken);
+        db.Estudiantes.Add(new Estudiante(
+            usuario,
+            request.Cedula,
+            request.Nombre,
+            request.Apellidos,
+            request.Telefono,
+            request.FechaNacimiento,
+            request.Direccion,
+            Hoy()));
+        await db.SaveChangesAsync(cancellationToken);
+
+        return new MensajeResponse("Registro completado. Ya puede iniciar sesión con su correo y contraseña.");
     }
 
     /// <summary>

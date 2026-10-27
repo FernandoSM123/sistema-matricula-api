@@ -12,6 +12,7 @@ public static class LimitesPeticiones
 {
     public const string Login = "login";
     public const string OlvidoContrasena = "olvido-contrasena";
+    public const string RegistroEstudiante = "registro-estudiante";
 
     public static IServiceCollection AddLimitesPeticiones(this IServiceCollection services)
     {
@@ -19,6 +20,8 @@ public static class LimitesPeticiones
         {
             options.AddPolicy(Login, context => PorIp(context, limite: 10, ventana: TimeSpan.FromMinutes(1)));
             options.AddPolicy(OlvidoContrasena, context => PorIp(context, limite: 5, ventana: TimeSpan.FromMinutes(15)));
+            // Más holgado que el olvido: varios estudiantes pueden registrarse desde la red del instituto.
+            options.AddPolicy(RegistroEstudiante, context => PorIp(context, limite: 10, ventana: TimeSpan.FromMinutes(15)));
             options.OnRejected = ResponderAsync;
         });
 

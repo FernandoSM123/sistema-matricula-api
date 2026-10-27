@@ -17,7 +17,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T5. Desactivar y reactivar | Completada | ✅ | ➖ | ✅ | ✅ |
 | T6. Registro público y rate limiting | Completada | ✅ | ➖ | ✅ | ✅ |
 | T7. Claim `estudiante_id` y perfil | Completada | ✅ | ➖ | ✅ | ✅ |
-| T8. Datos de contacto propios | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T8. Datos de contacto propios | Completada | ✅ | ➖ | ✅ | ✅ |
 | T9. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 
 **Estados de tarea:**
@@ -128,7 +128,7 @@ Al completarlas se marcan como cumplidas en el mapa.
 - Acceptance:
   - Política `Politicas.Estudiante`: rol `Estudiante` + sin cambio pendiente (RN-24), registrada en `AddPoliticas`.
   - `ActualizarContactoRequest` (`telefono`, `direccion?`) + validador.
-  - `EstudianteService.ActualizarContactoAsync`: identifica al estudiante con `ICurrentUser.EstudianteId` (sin el claim → `403` con un mensaje que pide iniciar sesión de nuevo), `ActualizarContacto` y guarda. Devuelve el perfil (`AuthService.ObtenerPerfilAsync`).
+  - `EstudianteService.ActualizarContactoAsync`: identifica al estudiante con `ICurrentUser.EstudianteId` (sin el claim → `403` con un mensaje que pide iniciar sesión de nuevo), `ActualizarContacto` y guarda. El controller devuelve el perfil con `AuthService.ObtenerPerfilAsync`, así `EstudianteService` no depende de `AuthService`.
   - `PUT /api/v1/me/datos-contacto` en `MeController` con `Politicas.Estudiante`.
 - Verify:
   - Como estudiante → `200` con el perfil actualizado; `GET /api/v1/me` lo muestra.

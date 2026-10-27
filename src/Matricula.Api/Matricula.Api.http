@@ -239,3 +239,17 @@ Content-Type: application/json
 }
 
 ###
+
+
+# Datos de contacto propios: el estudiante edita su teléfono y su dirección y recibe su perfil actualizado.
+# Requiere el token de un estudiante; otro rol → 403. Correo, cédula o nombre en el cuerpo se ignoran.
+PUT {{host}}/api/v1/me/datos-contacto
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "telefono": "7777-0001",
+  "direccion": "San Pedro, Montes de Oca"
+}
+
+###

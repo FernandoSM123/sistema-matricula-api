@@ -14,6 +14,7 @@ public class EstudianteService(
     IAppDbContext db,
     CuentaService cuentaService,
     UsuarioService usuarioService,
+    ICurrentUser currentUser,
     TimeProvider timeProvider)
 {
     /// <summary>
@@ -147,6 +148,25 @@ public class EstudianteService(
             .Select(EstudianteProyecciones.AResponse)
             .SingleOrDefaultAsync(cancellationToken)
         ?? throw new NotFoundException($"No existe el estudiante {id}.");
+
+    /// <summary>
+    /// El estudiante actual edita su teléfono y su dirección (matriz §2.2). Se identifica por el claim
+    /// estudiante_id, no por un id que envíe el cliente (RN-18).
+    /// </summary>
+    public async Task ActualizarContactoAsync(ActualizarContactoRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        // Un token emitido antes de que existiera el claim no lo trae: basta con iniciar sesión de nuevo.
+        var estudianteId = currentUser.EstudianteId
+            ?? throw new ForbiddenException("Su sesión no identifica a un estudiante. Inicie sesión de nuevo.");
+
+        var estudiante = await db.Estudiantes.SingleOrDefaultAsync(e => e.Id == estudianteId, cancellationToken)
+            ?? throw new NotFoundException("El estudiante ya no existe.");
+
+        estudiante.ActualizarContacto(request.Telefono, request.Direccion);
+        await db.SaveChangesAsync(cancellationToken);
+    }
 
     /// <summary>
     /// RF-19 y RN-38: el estado del estudiante es el de su cuenta, así que se desactiva la cuenta. El módulo

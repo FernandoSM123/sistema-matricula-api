@@ -37,6 +37,10 @@ public class GeneradorToken(IOptions<JwtOptions> options, TimeProvider timeProvi
         {
             claims[ClaimsToken.DebeCambiarContrasena] = "true";
         }
+        if (datos.EstudianteId is { } estudianteId)
+        {
+            claims[ClaimsToken.EstudianteId] = estudianteId.ToString(CultureInfo.InvariantCulture);
+        }
 
         var descriptor = new SecurityTokenDescriptor
         {

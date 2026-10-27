@@ -4,7 +4,7 @@ Módulo `estudiantes` del [mapa de módulos](mapa-modulos.md). Depende de `acces
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/estudiantes/plan.md) | [Aprobadas](../tasks/estudiantes/todo.md) | 6/9 tareas completadas |
+| **Aprobada** | [Aprobado](../tasks/estudiantes/plan.md) | [Aprobadas](../tasks/estudiantes/todo.md) | 7/9 tareas completadas |
 
 **Historial:**
 - 2026-10-27: v1 en revisión.

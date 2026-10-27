@@ -204,3 +204,17 @@ Content-Type: application/json
 }
 
 ###
+
+
+# Desactivar un estudiante (RF-19, RN-38): desactiva su cuenta y cierra sus sesiones. Es lo mismo que
+# /usuarios/{usuarioId}/desactivar. La guarda RN-36 la añade el módulo matriculas.
+POST {{host}}/api/v1/estudiantes/1/desactivar
+Authorization: Bearer {{token}}
+
+###
+
+# Reactivar un estudiante (RF-19, RN-39): un estudiante que regresa se reactiva, no se registra de nuevo.
+POST {{host}}/api/v1/estudiantes/1/reactivar
+Authorization: Bearer {{token}}
+
+###

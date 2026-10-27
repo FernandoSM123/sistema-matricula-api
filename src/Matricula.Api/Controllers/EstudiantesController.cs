@@ -50,6 +50,31 @@ public class EstudiantesController(EstudianteService estudianteService) : ApiCon
         Ok(await estudianteService.ActualizarAsync(id, request, cancellationToken));
 
     /// <summary>
+    /// Desactiva al estudiante y su cuenta (RF-19, RN-38): no puede ingresar y sus sesiones se cierran.
+    /// </summary>
+    [HttpPost("{id:int}/desactivar")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Desactivar(int id, CancellationToken cancellationToken)
+    {
+        await estudianteService.DesactivarAsync(id, cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Reactiva al estudiante y su cuenta (RF-19, RN-38, RN-39).
+    /// </summary>
+    [HttpPost("{id:int}/reactivar")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Reactivar(int id, CancellationToken cancellationToken)
+    {
+        await estudianteService.ReactivarAsync(id, cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
     /// Detalle de un estudiante (RF-17).
     /// </summary>
     [HttpGet("{id:int}")]

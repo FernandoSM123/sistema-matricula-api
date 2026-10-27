@@ -9,7 +9,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Matricula.Application.Estudiantes;
 
-public class EstudianteService(IAppDbContext db, CuentaService cuentaService, TimeProvider timeProvider)
+public class EstudianteService(
+    IAppDbContext db,
+    CuentaService cuentaService,
+    UsuarioService usuarioService,
+    TimeProvider timeProvider)
 {
     /// <summary>
     /// RF-02: crea la cuenta (rol Estudiante, temporal de 72 horas) y el registro del estudiante en un solo
@@ -106,6 +110,29 @@ public class EstudianteService(IAppDbContext db, CuentaService cuentaService, Ti
             .Select(EstudianteProyecciones.AResponse)
             .SingleOrDefaultAsync(cancellationToken)
         ?? throw new NotFoundException($"No existe el estudiante {id}.");
+
+    /// <summary>
+    /// RF-19 y RN-38: el estado del estudiante es el de su cuenta, así que se desactiva la cuenta. El módulo
+    /// matriculas añade RN-36 en UsuarioService, que aplica también a /usuarios/{id}/desactivar.
+    /// </summary>
+    public async Task DesactivarAsync(int id, CancellationToken cancellationToken) =>
+        await usuarioService.DesactivarAsync(await ObtenerUsuarioIdAsync(id, cancellationToken), cancellationToken);
+
+    /// <summary>
+    /// RF-19, RN-38 y RN-39: un estudiante que regresa se reactiva, no se registra de nuevo.
+    /// </summary>
+    public async Task ReactivarAsync(int id, CancellationToken cancellationToken) =>
+        await usuarioService.ReactivarAsync(await ObtenerUsuarioIdAsync(id, cancellationToken), cancellationToken);
+
+    private async Task<int> ObtenerUsuarioIdAsync(int id, CancellationToken cancellationToken)
+    {
+        var usuarioId = await db.Estudiantes.AsNoTracking()
+            .Where(e => e.Id == id)
+            .Select(e => (int?)e.UsuarioId)
+            .SingleOrDefaultAsync(cancellationToken);
+
+        return usuarioId ?? throw new NotFoundException($"No existe el estudiante {id}.");
+    }
 
     private DateOnly Hoy() => DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
 

@@ -14,7 +14,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T2. Persistencia y migración | Completada | ✅ | ➖ | ✅ | ✅ |
 | T3. Registro por administrador y detalle | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Listar y editar estudiantes | Completada | ✅ | ➖ | ✅ | ✅ |
-| T5. Desactivar y reactivar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T5. Desactivar y reactivar | Completada | ✅ | ➖ | ✅ | ✅ |
 | T6. Registro público y rate limiting | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T7. Claim `estudiante_id` y perfil | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T8. Datos de contacto propios | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -95,8 +95,8 @@ Al completarlas se marcan como cumplidas en el mapa.
   - Desactivar un estudiante con sesión abierta → su token `401`; su login `403 RN-29`; el detalle muestra `activo: false`.
   - Reactivar → vuelve a iniciar sesión; el detalle muestra `activo: true`.
   - Desactivarlo por `/api/v1/usuarios/{usuarioId}/desactivar` tiene el mismo efecto en el detalle del estudiante (RN-38).
-  - Pendiente de T3: registrar con la cédula de un inactivo → `409 RN-39` con `estudianteId` y `usuarioId`.
-  - Pendiente de T4: el listado oculta al inactivo sin `incluirInactivos` y lo muestra con `incluirInactivos=true`.
+  - ✅ Pendiente de T3: registrar con la cédula de un inactivo → `409 RN-39` con `estudianteId` y `usuarioId`.
+  - ✅ Pendiente de T4: el listado oculta al inactivo sin `incluirInactivos` y lo muestra con `incluirInactivos=true`.
 - Files: `src/Matricula.Application/Estudiantes/EstudianteService.cs`, `EstudiantesController.cs`
 
 ### T6. Registro público y rate limiting

@@ -152,3 +152,30 @@ POST {{host}}/api/v1/usuarios/2/reactivar
 Authorization: Bearer {{token}}
 
 ###
+
+
+# --- Módulo estudiantes ---
+
+# Registrar un estudiante por un administrador (RF-02). 201 + Location; la temporal llega a smtp4dev.
+# Correo o cédula de un activo repetidos → 409 RN-13; cédula de un inactivo → 409 RN-39 con estudianteId y usuarioId.
+POST {{host}}/api/v1/estudiantes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cedula": "1-1111-1111",
+  "nombre": "Laura",
+  "apellidos": "Jiménez Vega",
+  "telefono": "8888-1111",
+  "correo": "laura.jimenez@correo.local",
+  "fechaNacimiento": "2002-03-15",
+  "direccion": "Cartago"
+}
+
+###
+
+# Detalle de un estudiante (RF-17). Inexistente → 404; con token de estudiante → 403.
+GET {{host}}/api/v1/estudiantes/1
+Authorization: Bearer {{token}}
+
+###

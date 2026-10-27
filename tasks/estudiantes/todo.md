@@ -12,7 +12,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 |---|---|:---:|:---:|:---:|:---:|
 | T1. Dominio `Estudiante` | Completada | ✅ | ✅ | ➖ | ✅ |
 | T2. Persistencia y migración | Completada | ✅ | ➖ | ✅ | ✅ |
-| T3. Registro por administrador y detalle | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T3. Registro por administrador y detalle | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Listar y editar estudiantes | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T5. Desactivar y reactivar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T6. Registro público y rate limiting | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -35,7 +35,7 @@ Copiadas de `specs/mapa-modulos.md` ("Verificaciones heredadas"):
 
 | Origen | Verificación | Tarea |
 |---|---|---|
-| `acceso` T10 | Un endpoint de administrador (por ejemplo, `POST /api/v1/administradores`) con el token de un estudiante responde `403`, no `401` ni `200` | T3 ⬜ |
+| `acceso` T10 | Un endpoint de administrador (por ejemplo, `POST /api/v1/administradores`) con el token de un estudiante responde `403`, no `401` ni `200` | T3 ✅ |
 
 Al completarlas se marcan como cumplidas en el mapa.
 
@@ -71,7 +71,7 @@ Al completarlas se marcan como cumplidas en el mapa.
   - Fecha de nacimiento futura, dirección de más de 250 caracteres o cuerpo vacío → `400` en español.
   - Detalle de un id inexistente → `404`.
   - El estudiante entra con la temporal, hace el cambio obligatorio y accede normalmente.
-  - **Heredada:** `POST /api/v1/administradores` con el token del estudiante → `403`, no `401` ni `200`. También `GET /api/v1/estudiantes/{id}` → `403`.
+  - ✅ **Heredada:** `POST /api/v1/administradores` con el token del estudiante → `403`, no `401` ni `200`. También `GET` y `POST /api/v1/estudiantes` → `403`; sin token → `401`.
   - Se verifica en T5 (necesita un estudiante inactivo): cédula de un inactivo → `409 RN-39` con `estudianteId` y `usuarioId`.
 - Files: `src/Matricula.Application/Common/Validacion/DatosPersonalesRules.cs`, `src/Matricula.Application/Estudiantes/{EstudianteService,RegistrarEstudianteRequest,RegistrarEstudianteRequestValidator,EstudianteResponse,EstudianteRegistradoResponse,EstudianteProyecciones}.cs`, `src/Matricula.Application/Correos/EnvioCorreos.cs`, `src/Matricula.Api/Controllers/EstudiantesController.cs`, `src/Matricula.Application/DependencyInjection.cs`
 

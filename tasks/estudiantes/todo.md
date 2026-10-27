@@ -13,7 +13,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T1. Dominio `Estudiante` | Completada | ✅ | ✅ | ➖ | ✅ |
 | T2. Persistencia y migración | Completada | ✅ | ➖ | ✅ | ✅ |
 | T3. Registro por administrador y detalle | Completada | ✅ | ➖ | ✅ | ✅ |
-| T4. Listar y editar estudiantes | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T4. Listar y editar estudiantes | Completada | ✅ | ➖ | ✅ | ✅ |
 | T5. Desactivar y reactivar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T6. Registro público y rate limiting | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T7. Claim `estudiante_id` y perfil | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |

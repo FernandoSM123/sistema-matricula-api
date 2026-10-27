@@ -1,5 +1,6 @@
 using Matricula.Api.Common;
 using Matricula.Api.Seguridad;
+using Matricula.Application.Common.Paginacion;
 using Matricula.Application.Estudiantes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +26,28 @@ public class EstudiantesController(EstudianteService estudianteService) : ApiCon
         var registrado = await estudianteService.RegistrarAsync(request, cancellationToken);
         return CreatedAtAction(nameof(Obtener), new { id = registrado.Estudiante.Id }, registrado);
     }
+
+    /// <summary>
+    /// Lista los estudiantes (RF-16). Por defecto solo los activos; search busca en nombre, apellidos, cédula
+    /// y correo.
+    /// </summary>
+    [HttpGet]
+    [ProducesResponseType<PagedResult<EstudianteResponse>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<EstudianteResponse>>> Listar(
+        [FromQuery] ListarEstudiantesRequest request, CancellationToken cancellationToken) =>
+        Ok(await estudianteService.ListarAsync(request, cancellationToken));
+
+    /// <summary>
+    /// Modifica los datos personales y el correo de un estudiante (RF-18). La fecha de registro no cambia.
+    /// </summary>
+    [HttpPut("{id:int}")]
+    [ProducesResponseType<EstudianteResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<EstudianteResponse>> Actualizar(
+        int id, ActualizarEstudianteRequest request, CancellationToken cancellationToken) =>
+        Ok(await estudianteService.ActualizarAsync(id, request, cancellationToken));
 
     /// <summary>
     /// Detalle de un estudiante (RF-17).

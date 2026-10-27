@@ -179,3 +179,28 @@ GET {{host}}/api/v1/estudiantes/1
 Authorization: Bearer {{token}}
 
 ###
+
+
+# Listar estudiantes (RF-16): paginado, solo activos salvo incluirInactivos=true; search en nombre, apellidos, cédula y correo.
+GET {{host}}/api/v1/estudiantes?page=1&pageSize=20&search=&incluirInactivos=false
+Authorization: Bearer {{token}}
+
+###
+
+# Editar un estudiante (RF-18). Cambiar el correo cambia el de su cuenta (RN-31); la fecha de registro no cambia.
+# Cédula de otro estudiante o correo de otra cuenta → 409 RN-13.
+PUT {{host}}/api/v1/estudiantes/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cedula": "1-1111-1111",
+  "nombre": "Laura María",
+  "apellidos": "Jiménez Vega",
+  "telefono": "8888-1212",
+  "correo": "laura.nueva@correo.local",
+  "fechaNacimiento": "2002-03-16",
+  "direccion": null
+}
+
+###

@@ -3,8 +3,8 @@ using Matricula.Domain.Enums;
 namespace Matricula.Application.Auth;
 
 /// <summary>
-/// RF-13. <see cref="DatosPersonales"/> viene de la persona asociada a la cuenta; por ahora solo los
-/// administradores, los módulos estudiantes y profesores lo completan para sus roles.
+/// RF-13. <see cref="DatosPersonales"/> viene de la persona asociada a la cuenta: administradores y
+/// estudiantes; el módulo profesores lo completa para su rol.
 /// </summary>
 public record PerfilResponse(
     int UsuarioId,

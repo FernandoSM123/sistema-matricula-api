@@ -9,6 +9,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     // Un DbSet<T> representa una tabla y es el punto de entrada para consultarla o agregarle filas.
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<Administrador> Administradores => Set<Administrador>();
+    public DbSet<Estudiante> Estudiantes => Set<Estudiante>();
 
 
     // cómo se mapean las clases a tablas

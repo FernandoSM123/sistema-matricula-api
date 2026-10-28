@@ -20,7 +20,7 @@
 |---|---|---|---|---|---|
 | `fundacion` | [Aprobada](SPEC-fundacion.md) | [Aprobado](../tasks/fundacion/plan.md) | [Aprobadas](../tasks/fundacion/todo.md) | 6/6 | Completado |
 | `acceso` | [Aprobada](SPEC-acceso.md) | [Aprobado](../tasks/acceso/plan.md) | [Aprobadas](../tasks/acceso/todo.md) | 13/13 | Completado |
-| `estudiantes` | — | — | — | — | Sin empezar |
+| `estudiantes` | [Aprobada](SPEC-estudiantes.md) | [Aprobado](../tasks/estudiantes/plan.md) | [Aprobadas](../tasks/estudiantes/todo.md) | 9/9 | Completado |
 | `profesores` | — | — | — | — | Sin empezar |
 | `catalogos` | — | — | — | — | Sin empezar |
 | `grupos` | — | — | — | — | Sin empezar |
@@ -49,7 +49,7 @@ Verificaciones que un módulo no pudo hacer por falta de datos o endpoints. Se c
 | `fundacion` T1 | `acceso` | Un dato duplicado que llegue a la BD (por ejemplo, el correo de `usuario`) responde `409` con `code: "RN-13"`, sin el nombre de la restricción — ✅ cumplida en `acceso` T10 (2026-10-19) |
 | `fundacion` T1 | `acceso` | El `400` de validación (primer DTO con validador, por ejemplo el login) incluye `traceId` — ✅ cumplida en `acceso` T5 (2026-10-19) |
 | `fundacion` T3 | primer módulo con un controller de nombre compuesto | Su ruta sale en kebab-case (por ejemplo, `/api/v1/cambio-grupo`) |
-| `acceso` T10 | `estudiantes` | Un endpoint de administrador (por ejemplo, `POST /api/v1/administradores`) con el token de un estudiante responde `403`, no `401` ni `200` |
+| `acceso` T10 | `estudiantes` | Un endpoint de administrador (por ejemplo, `POST /api/v1/administradores`) con el token de un estudiante responde `403`, no `401` ni `200` — ✅ cumplida en `estudiantes` T3 (2026-10-27) |
 
 ## Decisiones aprobadas
 

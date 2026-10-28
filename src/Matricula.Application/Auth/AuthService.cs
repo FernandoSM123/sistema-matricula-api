@@ -74,7 +74,7 @@ public class AuthService(
         await db.SaveChangesAsync(cancellationToken);
 
         await envioCorreos.EnviarAvisoCambioContrasenaAsync(usuario, cancellationToken);
-        return EmitirToken(usuario, debeCambiarContrasena: false);
+        return await EmitirTokenAsync(usuario, debeCambiarContrasena: false, cancellationToken);
     }
 
     /// <summary>
@@ -99,7 +99,7 @@ public class AuthService(
         await db.SaveChangesAsync(cancellationToken);
 
         await envioCorreos.EnviarAvisoCambioContrasenaAsync(usuario, cancellationToken);
-        return EmitirToken(usuario, debeCambiarContrasena: false);
+        return await EmitirTokenAsync(usuario, debeCambiarContrasena: false, cancellationToken);
     }
 
     /// <summary>
@@ -114,28 +114,40 @@ public class AuthService(
     }
 
     /// <summary>
-    /// RF-13: datos de la cuenta del usuario actual y, si los tiene, sus datos personales.
+    /// RF-13: datos de la cuenta del usuario actual y, si los tiene, sus datos personales (de administrador o de
+    /// estudiante).
     /// </summary>
     public async Task<PerfilResponse> ObtenerPerfilAsync(CancellationToken cancellationToken)
     {
         var usuarioId = currentUser.UsuarioId ?? throw new UnauthorizedException("No hay una sesión activa.");
 
-        return await db.Usuarios.AsNoTracking()
+        var resultado = await db.Usuarios.AsNoTracking()
             .Where(u => u.Id == usuarioId)
-            .Select(u => new PerfilResponse(
-                u.Id,
-                u.Correo,
-                u.Rol,
-                u.Activo,
-                u.FechaCreacion,
-                u.UltimoIngreso,
-                u.FechaCambioContrasena,
-                db.Administradores
+            .Select(u => new
+            {
+                Perfil = new PerfilResponse(
+                    u.Id,
+                    u.Correo,
+                    u.Rol,
+                    u.Activo,
+                    u.FechaCreacion,
+                    u.UltimoIngreso,
+                    u.FechaCambioContrasena,
+                    null),
+                Administrador = db.Administradores
                     .Where(a => a.UsuarioId == u.Id)
-                    .Select(a => new DatosPersonalesResponse(a.Cedula, a.Nombre, a.Apellidos, a.Telefono))
-                    .FirstOrDefault()))
+                    .Select(a => new DatosPersonalesResponse(a.Cedula, a.Nombre, a.Apellidos, a.Telefono, null, null, null))
+                    .FirstOrDefault(),
+                Estudiante = db.Estudiantes
+                    .Where(e => e.UsuarioId == u.Id)
+                    .Select(e => new DatosPersonalesResponse(
+                        e.Cedula, e.Nombre, e.Apellidos, e.Telefono, e.FechaNacimiento, e.Direccion, e.FechaRegistro))
+                    .FirstOrDefault()
+            })
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException("La cuenta ya no existe.");
+
+        return resultado.Perfil with { DatosPersonales = resultado.Administrador ?? resultado.Estudiante };
     }
 
     /// <summary>
@@ -164,7 +176,7 @@ public class AuthService(
 
             usuario.RegistrarIngresoConDefinitiva(ahora);
             await db.SaveChangesAsync(cancellationToken);
-            return EmitirToken(usuario, debeCambiarContrasena: false);
+            return await EmitirTokenAsync(usuario, debeCambiarContrasena: false, cancellationToken);
         }
 
         if (usuario.TemporalVigente(ahora)
@@ -173,7 +185,7 @@ public class AuthService(
             ValidarActiva(usuario);
             usuario.RegistrarIngresoConTemporal(ahora);
             await db.SaveChangesAsync(cancellationToken);
-            return EmitirToken(usuario, debeCambiarContrasena: true);
+            return await EmitirTokenAsync(usuario, debeCambiarContrasena: true, cancellationToken);
         }
 
         throw new UnauthorizedException();
@@ -214,10 +226,18 @@ public class AuthService(
         }
     }
 
-    private TokenResponse EmitirToken(Usuario usuario, bool debeCambiarContrasena)
+    private async Task<TokenResponse> EmitirTokenAsync(Usuario usuario, bool debeCambiarContrasena, CancellationToken cancellationToken)
     {
+        // RN-18: matriculas identifica al estudiante por este claim, sin que el cliente envíe su id.
+        var estudianteId = usuario.Rol == Rol.Estudiante
+            ? await db.Estudiantes.AsNoTracking()
+                .Where(e => e.UsuarioId == usuario.Id)
+                .Select(e => (int?)e.Id)
+                .SingleOrDefaultAsync(cancellationToken)
+            : null;
+
         var token = generadorToken.Generar(
-            new DatosToken(usuario.Id, usuario.Correo, usuario.Rol, usuario.SecurityStamp, debeCambiarContrasena));
+            new DatosToken(usuario.Id, usuario.Correo, usuario.Rol, usuario.SecurityStamp, debeCambiarContrasena, estudianteId));
 
         return new TokenResponse(token.AccessToken, token.ExpiraEn, usuario.Rol, debeCambiarContrasena);
     }

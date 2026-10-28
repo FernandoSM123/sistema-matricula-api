@@ -1,6 +1,6 @@
 @host = http://localhost:5022
 
-# Recorrido del módulo acceso. Ejecuta primero el login con tus credenciales: las demás peticiones usan
+# Recorrido de los módulos acceso y estudiantes. Ejecuta primero el login con tus credenciales: las demás peticiones usan
 # {{token}}. Primer ingreso: login con la temporal de AdminSeed → cambio-obligatorio → login con la nueva.
 
 GET {{host}}/health
@@ -150,5 +150,106 @@ Authorization: Bearer {{token}}
 
 POST {{host}}/api/v1/usuarios/2/reactivar
 Authorization: Bearer {{token}}
+
+###
+
+
+# --- Módulo estudiantes ---
+
+# Registrar un estudiante por un administrador (RF-02). 201 + Location; la temporal llega a smtp4dev.
+# Correo o cédula de un activo repetidos → 409 RN-13; cédula de un inactivo → 409 RN-39 con estudianteId y usuarioId.
+POST {{host}}/api/v1/estudiantes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cedula": "1-1111-1111",
+  "nombre": "Laura",
+  "apellidos": "Jiménez Vega",
+  "telefono": "8888-1111",
+  "correo": "laura.jimenez@correo.local",
+  "fechaNacimiento": "2002-03-15",
+  "direccion": "Cartago"
+}
+
+###
+
+# Detalle de un estudiante (RF-17). Inexistente → 404; con token de estudiante → 403.
+GET {{host}}/api/v1/estudiantes/1
+Authorization: Bearer {{token}}
+
+###
+
+
+# Listar estudiantes (RF-16): paginado, solo activos salvo incluirInactivos=true; search en nombre, apellidos, cédula y correo.
+GET {{host}}/api/v1/estudiantes?page=1&pageSize=20&search=&incluirInactivos=false
+Authorization: Bearer {{token}}
+
+###
+
+# Editar un estudiante (RF-18). Cambiar el correo cambia el de su cuenta (RN-31); la fecha de registro no cambia.
+# Cédula de otro estudiante o correo de otra cuenta → 409 RN-13.
+PUT {{host}}/api/v1/estudiantes/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cedula": "1-1111-1111",
+  "nombre": "Laura María",
+  "apellidos": "Jiménez Vega",
+  "telefono": "8888-1212",
+  "correo": "laura.nueva@correo.local",
+  "fechaNacimiento": "2002-03-16",
+  "direccion": null
+}
+
+###
+
+
+# Desactivar un estudiante (RF-19, RN-38): desactiva su cuenta y cierra sus sesiones. Es lo mismo que
+# /usuarios/{usuarioId}/desactivar. La guarda RN-36 la añade el módulo matriculas.
+POST {{host}}/api/v1/estudiantes/1/desactivar
+Authorization: Bearer {{token}}
+
+###
+
+# Reactivar un estudiante (RF-19, RN-39): un estudiante que regresa se reactiva, no se registra de nuevo.
+POST {{host}}/api/v1/estudiantes/1/reactivar
+Authorization: Bearer {{token}}
+
+###
+
+
+# Registro público de estudiantes (RF-01), sin token. Siempre crea una cuenta de estudiante (RN-19): un campo rol se ignora.
+# 201 con un mensaje, sin Location; después se inicia sesión con /auth/login. Cédula o correo existentes → 409 RN-21.
+# Rate limiting: 10 cada 15 minutos por IP (429).
+POST {{host}}/api/v1/estudiantes/registro
+Content-Type: application/json
+
+{
+  "cedula": "4-4444-4444",
+  "nombre": "Carlos",
+  "apellidos": "Quesada Ruiz",
+  "telefono": "8888-4444",
+  "correo": "carlos.q@correo.local",
+  "fechaNacimiento": null,
+  "direccion": null,
+  "contrasena": "Registro2026",
+  "confirmacion": "Registro2026"
+}
+
+###
+
+
+# Datos de contacto propios: el estudiante edita su teléfono y su dirección y recibe su perfil actualizado.
+# Requiere el token de un estudiante; otro rol → 403. Correo, cédula o nombre en el cuerpo se ignoran.
+PUT {{host}}/api/v1/me/datos-contacto
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "telefono": "7777-0001",
+  "direccion": "San Pedro, Montes de Oca"
+}
 
 ###

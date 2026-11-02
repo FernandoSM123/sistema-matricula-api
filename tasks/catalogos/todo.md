@@ -14,7 +14,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T2. Dominio y persistencia de `Curso` | Completada | ✅ | ✅ | ✅ | ✅ |
 | T3. Cursos: registro y detalle | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Cursos: listar, editar, desactivar y reactivar | Completada | ✅ | ➖ | ⏳ | ✅ |
-| T5. Dominio y persistencia de `Aula` | Pendiente | ⬜ | ⬜ | ⬜ | ⬜ |
+| T5. Dominio y persistencia de `Aula` | Completada | ✅ | ✅ | ✅ | ✅ |
 | T6. Aulas: API completa | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T7. Dominio y persistencia de `Periodo` | Pendiente | ⬜ | ⬜ | ⬜ | ⬜ |
 | T8. Periodos: registrar, listar, consultar y editar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -106,6 +106,7 @@ Ninguna se copia a este módulo. La de `fundacion` T3 (ruta en kebab-case de un 
 - Verify:
   - `AulaTests`: normaliza el código, recorta textos, ubicación en blanco → `null`, se crea activa, `ActualizarDatos` cambia todos los datos, `Desactivar` y `Reactivar` cambian el estado.
   - `dotnet ef database update`; `\d aula` muestra el índice único.
+  - Resultado (2026-11-02): `AgregaAula` aplicada a la BD de desarrollo y sin cambios de modelo pendientes. `\d aula` no se ejecutó, por el mismo motivo que `\d curso` en T2; la salida de `dotnet ef database update` muestra `CREATE UNIQUE INDEX ix_aula_codigo ON aula (codigo)`.
 - Files: `src/Matricula.Domain/Entities/Aula.cs`, `src/Matricula.Infrastructure/Persistence/Configurations/AulaConfiguration.cs`, `IAppDbContext.cs`, `AppDbContext.cs`, migración, `tests/Matricula.UnitTests/Domain/AulaTests.cs`
 
 ### T6. Aulas: API completa

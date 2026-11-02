@@ -12,6 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Estudiante> Estudiantes => Set<Estudiante>();
     public DbSet<Profesor> Profesores => Set<Profesor>();
     public DbSet<Curso> Cursos => Set<Curso>();
+    public DbSet<Aula> Aulas => Set<Aula>();
 
 
     // cómo se mapean las clases a tablas

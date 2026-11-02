@@ -81,6 +81,52 @@ namespace Matricula.Infrastructure.Persistence.Migrations
                     b.ToTable("administrador", (string)null);
                 });
 
+            modelBuilder.Entity("Matricula.Domain.Entities.Aula", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("activo");
+
+                    b.Property<int>("Capacidad")
+                        .HasColumnType("integer")
+                        .HasColumnName("capacidad");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("codigo");
+
+                    b.Property<DateTimeOffset>("FechaCreacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_creacion");
+
+                    b.Property<DateTimeOffset?>("FechaModificacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_modificacion");
+
+                    b.Property<string>("Ubicacion")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("ubicacion");
+
+                    b.HasKey("Id")
+                        .HasName("pk_aula");
+
+                    b.HasIndex("Codigo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_aula_codigo");
+
+                    b.ToTable("aula", (string)null);
+                });
+
             modelBuilder.Entity("Matricula.Domain.Entities.Curso", b =>
                 {
                     b.Property<int>("Id")

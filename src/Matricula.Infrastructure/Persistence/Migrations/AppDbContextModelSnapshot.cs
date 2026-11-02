@@ -262,6 +262,59 @@ namespace Matricula.Infrastructure.Persistence.Migrations
                     b.ToTable("estudiante", (string)null);
                 });
 
+            modelBuilder.Entity("Matricula.Domain.Entities.Periodo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("FechaCreacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_creacion");
+
+                    b.Property<DateOnly>("FechaLimiteRetiro")
+                        .HasColumnType("date")
+                        .HasColumnName("fecha_limite_retiro");
+
+                    b.Property<DateTimeOffset?>("FechaModificacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_modificacion");
+
+                    b.Property<DateOnly>("FinClases")
+                        .HasColumnType("date")
+                        .HasColumnName("fin_clases");
+
+                    b.Property<DateOnly>("FinMatricula")
+                        .HasColumnType("date")
+                        .HasColumnName("fin_matricula");
+
+                    b.Property<DateOnly>("InicioClases")
+                        .HasColumnType("date")
+                        .HasColumnName("inicio_clases");
+
+                    b.Property<DateOnly>("InicioMatricula")
+                        .HasColumnType("date")
+                        .HasColumnName("inicio_matricula");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("nombre");
+
+                    b.HasKey("Id")
+                        .HasName("pk_periodo");
+
+                    b.HasIndex("Nombre")
+                        .IsUnique()
+                        .HasDatabaseName("ix_periodo_nombre");
+
+                    b.ToTable("periodo", (string)null);
+                });
+
             modelBuilder.Entity("Matricula.Domain.Entities.Profesor", b =>
                 {
                     b.Property<int>("Id")

@@ -16,7 +16,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T4. Cursos: listar, editar, desactivar y reactivar | Completada | ✅ | ➖ | ⏳ | ✅ |
 | T5. Dominio y persistencia de `Aula` | Completada | ✅ | ✅ | ✅ | ✅ |
 | T6. Aulas: API completa | Completada | ✅ | ➖ | ⏳ | ✅ |
-| T7. Dominio y persistencia de `Periodo` | Pendiente | ⬜ | ⬜ | ⬜ | ⬜ |
+| T7. Dominio y persistencia de `Periodo` | Completada | ✅ | ✅ | ✅ | ✅ |
 | T8. Periodos: registrar, listar, consultar y editar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T9. Periodo vigente | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T10. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -134,6 +134,7 @@ Ninguna se copia a este módulo. La de `fundacion` T3 (ruta en kebab-case de un 
   - `ReglasPeriodoTests`: cada condición en su límite (iguales, un día antes y un día después), incluido `FinMatricula == FinClases` válido y `FechaLimiteRetiro` antes de `InicioClases` válida.
   - `PeriodoTests`: normaliza el nombre, rechaza fechas incoherentes, `EnRangoMatricula` y `PermiteRetiro` en los límites.
   - `dotnet ef database update`; `\d periodo` muestra el índice único.
+  - Resultado (2026-11-02): `AgregaPeriodo` aplicada a la BD de desarrollo y sin cambios de modelo pendientes. `\d periodo` no se ejecutó, por el mismo motivo que en T2 y T5; la salida de `dotnet ef database update` muestra `CREATE UNIQUE INDEX ix_periodo_nombre ON periodo (nombre)`. `PermiteRetiro` no tiene límite inferior, porque RN-10 solo fija "hasta la fecha límite".
 - Files: `src/Matricula.Domain/Reglas/ReglasPeriodo.cs`, `src/Matricula.Domain/Entities/Periodo.cs`, `src/Matricula.Infrastructure/Persistence/Configurations/PeriodoConfiguration.cs`, `IAppDbContext.cs`, `AppDbContext.cs`, migración, `tests/Matricula.UnitTests/Domain/{ReglasPeriodoTests,PeriodoTests}.cs`
 
 ### T8. Periodos: registrar, listar, consultar y editar

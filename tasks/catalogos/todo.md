@@ -13,7 +13,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T1. Fecha local del instituto | Completada | ✅ | ✅ | ✅ | ✅ |
 | T2. Dominio y persistencia de `Curso` | Completada | ✅ | ✅ | ✅ | ✅ |
 | T3. Cursos: registro y detalle | Completada | ✅ | ➖ | ✅ | ✅ |
-| T4. Cursos: listar, editar, desactivar y reactivar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T4. Cursos: listar, editar, desactivar y reactivar | Completada | ✅ | ➖ | ⏳ | ✅ |
 | T5. Dominio y persistencia de `Aula` | Pendiente | ⬜ | ⬜ | ⬜ | ⬜ |
 | T6. Aulas: API completa | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T7. Dominio y persistencia de `Periodo` | Pendiente | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -95,6 +95,7 @@ Ninguna se copia a este módulo. La de `fundacion` T3 (ruta en kebab-case de un 
   - ✅ Pendiente de T3: registrar el código de un inactivo → `409 RN-39` con `cursoId`.
   - Escrituras con token de profesor o estudiante → `403`; listado con esos tokens → `200`.
   - ⏳ La guarda RN-37 la añade `grupos`.
+  - Resultado (2026-11-02): todos los casos dieron lo esperado, incluido el pendiente de T3. También se comprobó editar un curso inactivo (`200`, sigue inactivo), editar al código de un inactivo (`409 RN-13`) y desactivar o reactivar un id inexistente (`404`). En la consulta, un `nivel` numérico fuera de rango → `400`.
 - Files: `src/Matricula.Application/Cursos/{CursoService,ListarCursosRequest,ActualizarCursoRequest,ActualizarCursoRequestValidator}.cs`, `src/Matricula.Api/Controllers/CursosController.cs`
 
 ### T5. Dominio y persistencia de `Aula`

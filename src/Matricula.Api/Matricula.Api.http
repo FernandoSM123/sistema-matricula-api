@@ -345,3 +345,38 @@ GET {{host}}/api/v1/cursos/1
 Authorization: Bearer {{token}}
 
 ###
+
+# Listar cursos (RF-30), con cualquier sesión: paginado por nombre, solo activos salvo incluirInactivos=true (RN-41).
+# search busca en nombre y código; nivel es Basico, Intermedio o Avanzado (otro valor → 400).
+GET {{host}}/api/v1/cursos?page=1&pageSize=20&search=prog&nivel=Basico&incluirInactivos=false
+Authorization: Bearer {{token}}
+
+###
+
+# Editar un curso (RF-32), también si está inactivo. Código de otro curso, activo o inactivo → 409 RN-13.
+PUT {{host}}/api/v1/cursos/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "codigo": "PROG-101",
+  "nombre": "Programación I",
+  "descripcion": null,
+  "duracionHoras": 48,
+  "costo": 175000.00,
+  "nivel": "Intermedio"
+}
+
+###
+
+# Desactivar un curso (RF-33): 204, también al repetir. La guarda RN-37 la añade el módulo grupos.
+POST {{host}}/api/v1/cursos/1/desactivar
+Authorization: Bearer {{token}}
+
+###
+
+# Reactivar un curso (RF-33, RN-39): 204, también al repetir.
+POST {{host}}/api/v1/cursos/1/reactivar
+Authorization: Bearer {{token}}
+
+###

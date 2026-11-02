@@ -380,3 +380,55 @@ POST {{host}}/api/v1/cursos/1/reactivar
 Authorization: Bearer {{token}}
 
 ###
+
+# Registrar un aula (RF-39). 201 + Location. El código se guarda en mayúsculas.
+# Código de un aula activa → 409 RN-13; de una inactiva → 409 RN-39 con aulaId. Otro rol → 403.
+POST {{host}}/api/v1/aulas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "codigo": "lab-1",
+  "ubicacion": "Edificio A, segundo piso",
+  "capacidad": 25
+}
+
+###
+
+# Detalle de un aula (RF-40), para administrador o profesor. Con token de estudiante → 403.
+GET {{host}}/api/v1/aulas/1
+Authorization: Bearer {{token}}
+
+###
+
+# Listar aulas (RF-40), para administrador o profesor: paginado por código, solo activas salvo incluirInactivos=true.
+# search busca en código y ubicación.
+GET {{host}}/api/v1/aulas?page=1&pageSize=20&search=edificio&incluirInactivos=false
+Authorization: Bearer {{token}}
+
+###
+
+# Editar un aula (RF-40), también si está inactiva. Código de otra aula, activa o inactiva → 409 RN-13.
+PUT {{host}}/api/v1/aulas/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "codigo": "LAB-1",
+  "ubicacion": null,
+  "capacidad": 30
+}
+
+###
+
+# Desactivar un aula (RF-40): 204, también al repetir. La guarda RN-37 la añade el módulo grupos.
+POST {{host}}/api/v1/aulas/1/desactivar
+Authorization: Bearer {{token}}
+
+###
+
+# Reactivar un aula (RF-40, RN-39): 204, también al repetir.
+POST {{host}}/api/v1/aulas/1/reactivar
+Authorization: Bearer {{token}}
+
+###

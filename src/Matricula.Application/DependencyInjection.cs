@@ -1,5 +1,6 @@
 using FluentValidation;
 using Matricula.Application.Administradores;
+using Matricula.Application.Aulas;
 using Matricula.Application.Auth;
 using Matricula.Application.Correos;
 using Matricula.Application.Cuentas;
@@ -24,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<EstudianteService>();
         services.AddScoped<ProfesorService>();
         services.AddScoped<CursoService>();
+        services.AddScoped<AulaService>();
 
         return services;
     }

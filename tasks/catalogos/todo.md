@@ -15,7 +15,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T3. Cursos: registro y detalle | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Cursos: listar, editar, desactivar y reactivar | Completada | ✅ | ➖ | ⏳ | ✅ |
 | T5. Dominio y persistencia de `Aula` | Completada | ✅ | ✅ | ✅ | ✅ |
-| T6. Aulas: API completa | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T6. Aulas: API completa | Completada | ✅ | ➖ | ⏳ | ✅ |
 | T7. Dominio y persistencia de `Periodo` | Pendiente | ⬜ | ⬜ | ⬜ | ⬜ |
 | T8. Periodos: registrar, listar, consultar y editar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T9. Periodo vigente | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -121,7 +121,8 @@ Ninguna se copia a este módulo. La de `fundacion` T3 (ruta en kebab-case de un 
   - Listado con búsqueda, paginación e `incluirInactivos`; editar, desactivar y reactivar como en cursos.
   - Lecturas: administrador y profesor → `200`; estudiante → `403`. Escrituras: profesor y estudiante → `403`.
   - ⏳ RN-37 y la guarda de capacidad las añade `grupos`.
-- Files: `src/Matricula.Api/Seguridad/Politicas.cs`, `src/Matricula.Application/Aulas/{AulaService,RegistrarAulaRequest,RegistrarAulaRequestValidator,ActualizarAulaRequest,ActualizarAulaRequestValidator,ListarAulasRequest,AulaResponse,AulaProyecciones}.cs`, `src/Matricula.Application/DependencyInjection.cs`, `src/Matricula.Api/Controllers/AulasController.cs`
+  - Resultado (2026-11-02): todos los casos dieron lo esperado. La nueva política también rechaza a un profesor con cambio de contraseña pendiente (`403 RN-24`). Sin token, lecturas y escrituras → `401`.
+- Files: `src/Matricula.Api/Seguridad/Politicas.cs`, `src/Matricula.Application/Aulas/{AulaService,RegistrarAulaRequest,RegistrarAulaRequestValidator,ActualizarAulaRequest,ActualizarAulaRequestValidator,AulaRules,ListarAulasRequest,AulaResponse,AulaProyecciones}.cs`, `src/Matricula.Application/DependencyInjection.cs`, `src/Matricula.Api/Controllers/AulasController.cs`
 
 ### T7. Dominio y persistencia de `Periodo`
 - Acceptance:

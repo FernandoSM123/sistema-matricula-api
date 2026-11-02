@@ -17,6 +17,8 @@ public static class Politicas
 
     public const string Estudiante = nameof(Estudiante);
 
+    public const string AdministradorOProfesor = nameof(AdministradorOProfesor);
+
     public static IServiceCollection AddPoliticas(this IServiceCollection services)
     {
         var conSesionSinCambioPendiente = new AuthorizationPolicyBuilder()
@@ -34,7 +36,10 @@ public static class Politicas
                 .RequireRole(nameof(Rol.Administrador)))
             .AddPolicy(Estudiante, policy => policy
                 .Combine(conSesionSinCambioPendiente)
-                .RequireRole(nameof(Rol.Estudiante)));
+                .RequireRole(nameof(Rol.Estudiante)))
+            .AddPolicy(AdministradorOProfesor, policy => policy
+                .Combine(conSesionSinCambioPendiente)
+                .RequireRole(nameof(Rol.Administrador), nameof(Rol.Profesor)));
 
         return services;
     }

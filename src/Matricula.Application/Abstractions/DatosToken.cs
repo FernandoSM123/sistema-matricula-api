@@ -4,7 +4,7 @@ namespace Matricula.Application.Abstractions;
 
 /// <summary>
 /// Lo que viaja en el token. <see cref="DebeCambiarContrasena"/> marca un ingreso con temporal (RN-24).
-/// <see cref="EstudianteId"/> solo lo tienen las cuentas de estudiante (RN-18).
+/// <see cref="EstudianteId"/> solo lo tienen las cuentas de estudiante y <see cref="ProfesorId"/> las de profesor (RN-18).
 /// </summary>
 public record DatosToken(
     int UsuarioId,
@@ -12,4 +12,5 @@ public record DatosToken(
     Rol Rol,
     string SecurityStamp,
     bool DebeCambiarContrasena,
-    int? EstudianteId);
+    int? EstudianteId,
+    int? ProfesorId);

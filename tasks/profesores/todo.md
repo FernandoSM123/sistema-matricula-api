@@ -15,7 +15,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T3. Registro y detalle | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Listar y editar profesores | Completada | ✅ | ➖ | ✅ | ✅ |
 | T5. Desactivar y reactivar | Completada | ✅ | ➖ | ✅ | ✅ |
-| T6. Claim `profesor_id` y perfil | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T6. Claim `profesor_id` y perfil | Completada | ✅ | ➖ | ✅ | ✅ |
 | T7. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 
 **Estados de tarea:**

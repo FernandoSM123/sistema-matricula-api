@@ -4,13 +4,14 @@ Módulo `catalogos` del [mapa de módulos](mapa-modulos.md). Depende de `acceso`
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/catalogos/plan.md) | [Aprobadas](../tasks/catalogos/todo.md) | 9/10 tareas completadas |
+| **Aprobada** | [Aprobado](../tasks/catalogos/plan.md) | [Aprobadas](../tasks/catalogos/todo.md) | 10/10 tareas completadas: **módulo completado** (2026-11-02) |
 
 **Historial:**
 - 2026-11-02: v1 en revisión, con tres preguntas abiertas.
 - 2026-11-02: resueltas las preguntas del periodo vigente y de RN-16 (decisiones 4 y 5). Queda abierta la de la zona horaria.
 - 2026-11-02: resuelta la zona horaria (decisión 6) y v1 aprobada, con sus seis supuestos. Plan y lista de 10 tareas en revisión.
 - 2026-11-02: plan y lista de tareas aprobados; la implementación empieza por T1.
+- 2026-11-02: módulo completado (10/10 tareas), sin cambios de alcance. Detalles de implementación que la spec no fijaba: `Costo`, `Nivel` y las fechas del periodo son anulables en los DTO para que un dato omitido responda `400`, y las reglas compartidas viven en `CursoRules`, `AulaRules` y `DatosPeriodoValidator`.
 
 ## Objetivo
 

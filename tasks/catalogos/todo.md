@@ -19,7 +19,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T7. Dominio y persistencia de `Periodo` | Completada | ✅ | ✅ | ✅ | ✅ |
 | T8. Periodos: registrar, listar, consultar y editar | Completada | ✅ | ➖ | ✅ | ✅ |
 | T9. Periodo vigente | Completada | ✅ | ➖ | ✅ | ✅ |
-| T10. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T10. Cierre del módulo | Completada | ✅ | ➖ | ✅ | ✅ |
 
 **Estados de tarea:**
 - **Pendiente:** no se ha empezado.
@@ -168,5 +168,19 @@ Ninguna se copia a este módulo. La de `fundacion` T3 (ruta en kebab-case de un 
   - `Matricula.Api.http` con el recorrido completo de la spec.
   - Recorrido de la tabla de verificación manual de la spec.
   - Estados de la spec, el mapa y esta lista al día.
-- Verify: revisión manual de los estados; prueba de humo final con datos nuevos sobre toda la tabla de verificación de la spec.
+- Verify: revisión manual de los estados; prueba de humo final con datos nuevos sobre toda la tabla de verificación de la spec. Resultado (2026-11-02): 148/148 verificaciones correctas, con los 17 endpoints revisados por rol, sin token y con cambio pendiente. Las dos de `fechaRegistro` fallaron primero por un error del script, que leía una propiedad inexistente de `/me`; se confirmaron con `GET /estudiantes` (Costa Rica 2026-11-02, Kiritimati 2026-11-03). Con 12 peticiones simultáneas por catálogo: un `201` y once `409`, ningún `500`.
 - Files: `src/Matricula.Api/Matricula.Api.http` (T3 a T9), `specs/mapa-modulos.md`, `specs/SPEC-catalogos.md`, `tasks/catalogos/todo.md`
+
+## Cierre del módulo
+- ✅ Criterios de éxito de la spec cumplidos (2026-11-02):
+  1. Migraciones `AgregaCurso`, `AgregaAula` y `AgregaPeriodo` aplicadas, con índices únicos y `costo numeric(10,2)` (T2, T5, T7). `\d` no se pudo ejecutar; los índices se comprobaron con la salida de la migración y con peticiones simultáneas (T10), y `numeric(10,2)` con la migración y guardando `99999999.99` (T3).
+  2. Registro, listado, consulta y edición de los tres catálogos; desactivar y reactivar cursos y aulas (T3, T4, T6, T8).
+  3. Código de un curso o aula inactivos → `409 RN-39` con su id (T4, T6, T10).
+  4. Ningún periodo incoherente se guarda (T7, T8, T10).
+  5. `GET /periodos/vigente` devuelve un solo periodo o `404` (T9, T10).
+  6. El acceso de cada rol coincide con la matriz §2.2 (T10).
+  7. "Hoy" usa `Instituto:ZonaHoraria`, documentada en el README (T1, T9, T10). El corte de las 18:00 de Costa Rica se comprobó con pruebas unitarias y con otra zona, no a esa hora real.
+  8. Tabla de verificación manual recorrida tarea por tarea y en la prueba de humo final (T10).
+  9. `dotnet build` sin warnings; 136/136 pruebas unitarias en verde.
+- ⏳ Quedan para `grupos`: la eliminación de cursos, aulas y periodos, RN-37 al desactivar cursos y aulas, y la guarda de capacidad de RN-09.
+- Sigue pendiente en el mapa la verificación de kebab-case de `fundacion` T3.

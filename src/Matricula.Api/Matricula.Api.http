@@ -281,3 +281,28 @@ GET {{host}}/api/v1/profesores/1
 Authorization: Bearer {{token}}
 
 ###
+
+# Listar profesores (RF-23): paginado, solo activos salvo incluirInactivos=true; search en nombre, apellidos, cédula,
+# especialidad y correo.
+GET {{host}}/api/v1/profesores?page=1&pageSize=20&search=redes&incluirInactivos=false
+Authorization: Bearer {{token}}
+
+###
+
+# Editar un profesor (RF-25). Cambiar el correo cambia el de su cuenta (RN-31). Especialidad vacía → se quita.
+# Cédula de otro profesor o correo de otra cuenta → 409 RN-13.
+PUT {{host}}/api/v1/profesores/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cedula": "5-5555-5555",
+  "nombre": "Elena",
+  "apellidos": "Vargas Solano",
+  "telefono": "8888-5556",
+  "correo": "elena.vargas@correo.local",
+  "especialidad": "Programación",
+  "fechaContratacion": "2026-02-01"
+}
+
+###

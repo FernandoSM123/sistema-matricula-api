@@ -1,5 +1,6 @@
 using Matricula.Api.Common;
 using Matricula.Api.Seguridad;
+using Matricula.Application.Common.Paginacion;
 using Matricula.Application.Profesores;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +26,28 @@ public class ProfesoresController(ProfesorService profesorService) : ApiControll
         var registrado = await profesorService.RegistrarAsync(request, cancellationToken);
         return CreatedAtAction(nameof(Obtener), new { id = registrado.Profesor.Id }, registrado);
     }
+
+    /// <summary>
+    /// Lista los profesores (RF-23). Por defecto solo los activos; search busca en nombre, apellidos, cédula,
+    /// especialidad y correo.
+    /// </summary>
+    [HttpGet]
+    [ProducesResponseType<PagedResult<ProfesorResponse>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<ProfesorResponse>>> Listar(
+        [FromQuery] ListarProfesoresRequest request, CancellationToken cancellationToken) =>
+        Ok(await profesorService.ListarAsync(request, cancellationToken));
+
+    /// <summary>
+    /// Modifica los datos personales y el correo de un profesor (RF-25).
+    /// </summary>
+    [HttpPut("{id:int}")]
+    [ProducesResponseType<ProfesorResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<ProfesorResponse>> Actualizar(
+        int id, ActualizarProfesorRequest request, CancellationToken cancellationToken) =>
+        Ok(await profesorService.ActualizarAsync(id, request, cancellationToken));
 
     /// <summary>
     /// Detalle de un profesor (RF-24).

@@ -22,7 +22,7 @@
 | `acceso` | [Aprobada](SPEC-acceso.md) | [Aprobado](../tasks/acceso/plan.md) | [Aprobadas](../tasks/acceso/todo.md) | 13/13 | Completado |
 | `estudiantes` | [Aprobada](SPEC-estudiantes.md) | [Aprobado](../tasks/estudiantes/plan.md) | [Aprobadas](../tasks/estudiantes/todo.md) | 9/9 | Completado |
 | `profesores` | [Aprobada](SPEC-profesores.md) | [Aprobado](../tasks/profesores/plan.md) | [Aprobadas](../tasks/profesores/todo.md) | 7/7 | Completado |
-| `catalogos` | — | — | — | — | Sin empezar |
+| `catalogos` | [Aprobada](SPEC-catalogos.md) | [Aprobado](../tasks/catalogos/plan.md) | [Aprobadas](../tasks/catalogos/todo.md) | 0/10 | Planificación |
 | `grupos` | — | — | — | — | Sin empezar |
 | `matriculas` | — | — | — | — | Sin empezar |
 
@@ -57,9 +57,10 @@ Verificaciones que un módulo no pudo hacer por falta de datos o endpoints. Se c
 2. **Estado activo único en `Usuario` (RN-38).** `Estudiante`, `Profesor` y `Administrador` no guardan su propio `Activo`: su estado se lee del `Usuario` asociado. Desactivar a la persona o a su cuenta es la misma operación, sin sincronización. La API sigue exponiendo el estado del estudiante o profesor (§5.2 y §5.3 de los requerimientos) como un dato derivado. Así `acceso` no depende de `estudiantes` ni de `profesores`.
 3. **Consultas en el módulo dueño de los datos.** No hay un módulo de "consultas" al final. Las consultas de la sección 6 se reparten así: 1 → estudiantes; 4, 5, 7, 8, 9 → grupos; 2, 3, 6, 10 → matriculas.
 4. **Guardas que dependen de módulos posteriores las añade el módulo dependiente:**
-   - `grupos` añade RN-37 y "eliminar solo si nunca tuvo grupos" a profesores, cursos y aulas, y RF-37 a periodos.
+   - `grupos` añade RN-37 y "eliminar solo si nunca tuvo grupos" a profesores, cursos y aulas, y RF-37 a periodos. También impide reducir la capacidad de un aula por debajo del cupo de sus grupos (RN-09).
    - `matriculas` añade RN-36 y la eliminación de RF-19 a estudiantes, la de RF-46 a grupos y RN-12 a la cancelación de grupos.
 5. **Pruebas.** Por ahora solo pruebas unitarias de las reglas puras del dominio; los servicios y endpoints se verifican manualmente. Las pruebas de integración sobre `matricula_tests` quedan diferidas (ver `AGENTS.md` y `docs/arquitectura.md` §1).
 6. **Datos personales de los administradores** (2026-10-19). Los administradores tienen su propia entidad `Administrador` (cédula, nombre, apellidos, teléfono), igual que `Estudiante` y `Profesor`, ligada 1:1 a su `Usuario` (§5.4 y RF-55 de los requerimientos). La cédula es única dentro de cada tabla (`estudiante`, `profesor`, `administrador`), no entre ellas.
 7. **El correo vive solo en `Usuario`** (2026-10-19, RN-31). `Estudiante`, `Profesor` y `Administrador` no tienen columna de correo: lo leen de su cuenta, y editar el correo de la persona actualiza su `Usuario`. Así no hay que sincronizar dos copias.
 8. **El rol de una cuenta no cambia** (2026-10-19, RN-31). No hay cambio de rol en ningún módulo. Si una persona pasa a cumplir otro rol, se le crea una cuenta nueva (con otro correo) y el registro de persona de ese rol; la cuenta anterior se desactiva si deja de cumplirlo. RN-20 y RN-30 ya no mencionan el cambio de rol.
+9. **"Hoy" es la fecha local del instituto** (2026-11-02). Las comparaciones con fechas sin hora (periodo vigente, RN-04, RN-10, fecha de registro, fecha de nacimiento) usan `IFechaLocal.Hoy()`, que aplica la zona de `Instituto:ZonaHoraria` (`America/Costa_Rica`). Ningún módulo calcula la fecha de hoy desde UTC. Las marcas de tiempo siguen en UTC. Se implementa en `catalogos`.

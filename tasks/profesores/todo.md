@@ -11,7 +11,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | Tarea | Estado | Código | Pruebas unitarias | Verificación manual | Commit |
 |---|---|:---:|:---:|:---:|:---:|
 | T1. Dominio `Profesor` | Completada | ✅ | ✅ | ➖ | ✅ |
-| T2. Persistencia y migración | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T2. Persistencia y migración | Completada | ✅ | ➖ | ✅ | ✅ |
 | T3. Registro y detalle | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T4. Listar y editar profesores | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T5. Desactivar y reactivar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |

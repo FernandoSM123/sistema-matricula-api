@@ -21,7 +21,7 @@
 | `fundacion` | [Aprobada](SPEC-fundacion.md) | [Aprobado](../tasks/fundacion/plan.md) | [Aprobadas](../tasks/fundacion/todo.md) | 6/6 | Completado |
 | `acceso` | [Aprobada](SPEC-acceso.md) | [Aprobado](../tasks/acceso/plan.md) | [Aprobadas](../tasks/acceso/todo.md) | 13/13 | Completado |
 | `estudiantes` | [Aprobada](SPEC-estudiantes.md) | [Aprobado](../tasks/estudiantes/plan.md) | [Aprobadas](../tasks/estudiantes/todo.md) | 9/9 | Completado |
-| `profesores` | [Aprobada](SPEC-profesores.md) | [Aprobado](../tasks/profesores/plan.md) | [Aprobadas](../tasks/profesores/todo.md) | 0/7 | Planificación |
+| `profesores` | [Aprobada](SPEC-profesores.md) | [Aprobado](../tasks/profesores/plan.md) | [Aprobadas](../tasks/profesores/todo.md) | 1/7 | En implementación |
 | `catalogos` | — | — | — | — | Sin empezar |
 | `grupos` | — | — | — | — | Sin empezar |
 | `matriculas` | — | — | — | — | Sin empezar |

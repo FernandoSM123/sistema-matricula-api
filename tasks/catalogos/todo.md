@@ -11,7 +11,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | Tarea | Estado | Código | Pruebas unitarias | Verificación manual | Commit |
 |---|---|:---:|:---:|:---:|:---:|
 | T1. Fecha local del instituto | Completada | ✅ | ✅ | ✅ | ✅ |
-| T2. Dominio y persistencia de `Curso` | Pendiente | ⬜ | ⬜ | ⬜ | ⬜ |
+| T2. Dominio y persistencia de `Curso` | Completada | ✅ | ✅ | ✅ | ✅ |
 | T3. Cursos: registro y detalle | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T4. Cursos: listar, editar, desactivar y reactivar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T5. Dominio y persistencia de `Aula` | Pendiente | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -61,6 +61,7 @@ Ninguna se copia a este módulo. La de `fundacion` T3 (ruta en kebab-case de un 
 - Verify:
   - `CursoTests`: normaliza el código, recorta textos, descripción en blanco → `null`, se crea activo, `ActualizarDatos` cambia todos los datos, `Desactivar` y `Reactivar` cambian el estado.
   - `dotnet ef database update`; `\d curso` muestra el índice único y `costo numeric(10,2)`.
+  - Resultado (2026-11-02): `AgregaCurso` aplicada a la BD de desarrollo y sin cambios de modelo pendientes. `\d curso` no se pudo ejecutar porque `psql` pide una contraseña que no estaba disponible; el índice `ix_curso_codigo` (único) y `costo numeric(10,2)` se comprobaron en la migración aplicada, no en el catálogo de la BD.
 - Files: `src/Matricula.Domain/Enums/NivelCurso.cs`, `src/Matricula.Domain/Entities/Curso.cs`, `src/Matricula.Infrastructure/Persistence/Configurations/CursoConfiguration.cs`, `src/Matricula.Application/Abstractions/IAppDbContext.cs`, `src/Matricula.Infrastructure/Persistence/AppDbContext.cs`, migración, `tests/Matricula.UnitTests/Domain/CursoTests.cs`
 
 ### T3. Cursos: registro y detalle

@@ -29,7 +29,6 @@ public partial class EnvioCorreos(IEmailSender emailSender, IAppDbContext db, IL
         return await EnviarAsync(usuario.Correo, PlantillasCorreo.AvisoCambioContrasena(nombre), "aviso de cambio", cancellationToken);
     }
 
-    // El módulo profesores añade aquí el nombre de sus personas.
     private async Task<string?> ObtenerNombreAsync(int usuarioId, CancellationToken cancellationToken) =>
         await db.Administradores.AsNoTracking()
             .Where(a => a.UsuarioId == usuarioId)
@@ -38,6 +37,10 @@ public partial class EnvioCorreos(IEmailSender emailSender, IAppDbContext db, IL
         ?? await db.Estudiantes.AsNoTracking()
             .Where(e => e.UsuarioId == usuarioId)
             .Select(e => e.Nombre)
+            .FirstOrDefaultAsync(cancellationToken)
+        ?? await db.Profesores.AsNoTracking()
+            .Where(p => p.UsuarioId == usuarioId)
+            .Select(p => p.Nombre)
             .FirstOrDefaultAsync(cancellationToken);
 
     private async Task<bool> EnviarAsync(string destinatario, CorreoPlantilla correo, string tipo, CancellationToken cancellationToken)

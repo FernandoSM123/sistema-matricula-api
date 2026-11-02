@@ -4,7 +4,7 @@ Módulo `profesores` del [mapa de módulos](mapa-modulos.md). Depende de `acceso
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/profesores/plan.md) | [Aprobadas](../tasks/profesores/todo.md) | 2/7 |
+| **Aprobada** | [Aprobado](../tasks/profesores/plan.md) | [Aprobadas](../tasks/profesores/todo.md) | 3/7 |
 
 **Historial:**
 - 2026-10-28: v1 en revisión.

@@ -41,8 +41,18 @@ public static class DatosPersonalesRules
         rule
             .Must(fecha => fecha is null || fecha <= DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime))
                 .WithMessage("La fecha de nacimiento no puede ser futura.")
-            .Must(fecha => fecha is null || fecha >= FechaNacimientoMinima)
+            .Must(fecha => fecha is null || fecha >= FechaMinima)
                 .WithMessage("La fecha de nacimiento no puede ser anterior a 1900.");
 
-    private static readonly DateOnly FechaNacimientoMinima = new(1900, 1, 1);
+    public static IRuleBuilderOptions<T, string?> Especialidad<T>(this IRuleBuilder<T, string?> rule) =>
+        rule
+            .MaximumLength(100).WithMessage("La especialidad no puede superar los 100 caracteres.");
+
+    /// <summary>Opcional; admite fechas futuras, pero no anteriores a 1900 (supuesto 3 de specs/SPEC-profesores.md).</summary>
+    public static IRuleBuilderOptions<T, DateOnly?> FechaContratacion<T>(this IRuleBuilder<T, DateOnly?> rule) =>
+        rule
+            .Must(fecha => fecha is null || fecha >= FechaMinima)
+                .WithMessage("La fecha de contratación no puede ser anterior a 1900.");
+
+    private static readonly DateOnly FechaMinima = new(1900, 1, 1);
 }

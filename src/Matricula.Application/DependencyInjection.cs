@@ -3,6 +3,7 @@ using Matricula.Application.Administradores;
 using Matricula.Application.Auth;
 using Matricula.Application.Correos;
 using Matricula.Application.Cuentas;
+using Matricula.Application.Cursos;
 using Matricula.Application.Estudiantes;
 using Matricula.Application.Profesores;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<AdministradorService>();
         services.AddScoped<EstudianteService>();
         services.AddScoped<ProfesorService>();
+        services.AddScoped<CursoService>();
 
         return services;
     }

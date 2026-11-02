@@ -12,7 +12,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 |---|---|:---:|:---:|:---:|:---:|
 | T1. Fecha local del instituto | Completada | ✅ | ✅ | ✅ | ✅ |
 | T2. Dominio y persistencia de `Curso` | Completada | ✅ | ✅ | ✅ | ✅ |
-| T3. Cursos: registro y detalle | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T3. Cursos: registro y detalle | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Cursos: listar, editar, desactivar y reactivar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T5. Dominio y persistencia de `Aula` | Pendiente | ⬜ | ⬜ | ⬜ | ⬜ |
 | T6. Aulas: API completa | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -78,7 +78,8 @@ Ninguna se copia a este módulo. La de `fundacion` T3 (ruta en kebab-case de un 
   - Detalle de un id inexistente → `404`.
   - `POST` con token de profesor o estudiante → `403`; `GET /{id}` con esos tokens → `200`; sin token → `401`; con cambio pendiente → `403`.
   - Se verifica en T4 (necesita un curso inactivo): código de un inactivo → `409 RN-39` con `cursoId`.
-- Files: `src/Matricula.Application/Cursos/{CursoService,RegistrarCursoRequest,RegistrarCursoRequestValidator,CursoResponse,CursoProyecciones}.cs`, `src/Matricula.Application/DependencyInjection.cs`, `src/Matricula.Api/Controllers/CursosController.cs`
+  - Resultado (2026-11-02): todos los casos dieron lo esperado con tokens reales de administrador, profesor y estudiante, y con un token de cambio pendiente (`403 RN-24`). También se comprobaron el costo máximo (`99999999.99` → `201`), más de 2 decimales y por encima del máximo (`400`), y que omitir `costo` o `nivel` responde `400`. Por eso son anulables en el DTO: 0 y `Basico` son valores válidos. `nivel` acepta el número del enum (`1` → `Intermedio`) por la configuración global de `JsonStringEnumConverter`; un número fuera de rango → `400`.
+- Files: `src/Matricula.Application/Cursos/{CursoService,RegistrarCursoRequest,RegistrarCursoRequestValidator,CursoRules,CursoResponse,CursoProyecciones}.cs`, `src/Matricula.Application/DependencyInjection.cs`, `src/Matricula.Api/Controllers/CursosController.cs`
 
 ### T4. Cursos: listar, editar, desactivar y reactivar
 - Acceptance:

@@ -319,3 +319,29 @@ POST {{host}}/api/v1/profesores/1/reactivar
 Authorization: Bearer {{token}}
 
 ###
+
+
+# --- Módulo catalogos ---
+
+# Registrar un curso (RF-29). 201 + Location. El código se guarda en mayúsculas.
+# Código de un curso activo → 409 RN-13; de uno inactivo → 409 RN-39 con cursoId. Otro rol → 403.
+POST {{host}}/api/v1/cursos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "codigo": "prog-101",
+  "nombre": "Programación I",
+  "descripcion": "Fundamentos de programación",
+  "duracionHoras": 40,
+  "costo": 150000.00,
+  "nivel": "Basico"
+}
+
+###
+
+# Detalle de un curso (RF-31), con cualquier sesión. Inexistente → 404.
+GET {{host}}/api/v1/cursos/1
+Authorization: Bearer {{token}}
+
+###

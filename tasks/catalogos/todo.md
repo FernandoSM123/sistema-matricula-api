@@ -17,7 +17,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T5. Dominio y persistencia de `Aula` | Completada | ✅ | ✅ | ✅ | ✅ |
 | T6. Aulas: API completa | Completada | ✅ | ➖ | ⏳ | ✅ |
 | T7. Dominio y persistencia de `Periodo` | Completada | ✅ | ✅ | ✅ | ✅ |
-| T8. Periodos: registrar, listar, consultar y editar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T8. Periodos: registrar, listar, consultar y editar | Completada | ✅ | ➖ | ✅ | ✅ |
 | T9. Periodo vigente | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T10. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 
@@ -148,7 +148,8 @@ Ninguna se copia a este módulo. La de `fundacion` T3 (ruta en kebab-case de un 
   - `FechaLimiteRetiro` anterior a `InicioClases` y no anterior a `InicioMatricula` → `201`.
   - Listado con búsqueda y paginación, los más recientes primero; editar conservando el nombre propio → `200`; id inexistente → `404`.
   - Lecturas con token de profesor y estudiante → `200`; escrituras → `403`.
-- Files: `src/Matricula.Application/Periodos/{PeriodoService,RegistrarPeriodoRequest,RegistrarPeriodoRequestValidator,ActualizarPeriodoRequest,ActualizarPeriodoRequestValidator,ListarPeriodosRequest,PeriodoResponse,PeriodoProyecciones}.cs`, `src/Matricula.Application/DependencyInjection.cs`, `src/Matricula.Api/Controllers/PeriodosController.cs`
+  - Resultado (2026-11-02): todos los casos dieron lo esperado, con cada condición de RN-16 incumplida al crear y al editar, y los límites válidos → `201`. Las fechas son anulables en los DTO: si no, una fecha omitida llegaría como `0001-01-01` y podría pasar RN-16. `IDatosPeriodo` y `DatosPeriodoValidator` evitan repetir las reglas. El caso de cambio pendiente se recorre en T10.
+- Files: `src/Matricula.Application/Periodos/{PeriodoService,IDatosPeriodo,DatosPeriodoValidator,RegistrarPeriodoRequest,RegistrarPeriodoRequestValidator,ActualizarPeriodoRequest,ActualizarPeriodoRequestValidator,ListarPeriodosRequest,PeriodoResponse,PeriodoProyecciones}.cs`, `src/Matricula.Application/DependencyInjection.cs`, `src/Matricula.Api/Controllers/PeriodosController.cs`
 
 ### T9. Periodo vigente
 - Acceptance:

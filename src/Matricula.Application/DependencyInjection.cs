@@ -6,6 +6,7 @@ using Matricula.Application.Correos;
 using Matricula.Application.Cuentas;
 using Matricula.Application.Cursos;
 using Matricula.Application.Estudiantes;
+using Matricula.Application.Periodos;
 using Matricula.Application.Profesores;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -26,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<ProfesorService>();
         services.AddScoped<CursoService>();
         services.AddScoped<AulaService>();
+        services.AddScoped<PeriodoService>();
 
         return services;
     }

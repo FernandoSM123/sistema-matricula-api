@@ -432,3 +432,49 @@ POST {{host}}/api/v1/aulas/1/reactivar
 Authorization: Bearer {{token}}
 
 ###
+
+# Registrar un periodo (RF-35). 201 + Location. El nombre se guarda en mayúsculas; repetido → 409 RN-13.
+# RN-16 → 400 en el campo: inicioMatricula < finMatricula, inicioClases < finClases, finMatricula ≤ finClases e
+# inicioMatricula ≤ fechaLimiteRetiro ≤ finClases. Los periodos pueden traslaparse.
+POST {{host}}/api/v1/periodos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "2027-i",
+  "inicioClases": "2027-02-01",
+  "finClases": "2027-06-30",
+  "inicioMatricula": "2027-01-10",
+  "finMatricula": "2027-02-10",
+  "fechaLimiteRetiro": "2027-03-15"
+}
+
+###
+
+# Listar periodos (RF-36), con cualquier sesión: paginado, los más recientes primero; search busca en el nombre.
+GET {{host}}/api/v1/periodos?page=1&pageSize=20&search=2027
+Authorization: Bearer {{token}}
+
+###
+
+# Detalle de un periodo (RF-36), con cualquier sesión. Inexistente → 404.
+GET {{host}}/api/v1/periodos/1
+Authorization: Bearer {{token}}
+
+###
+
+# Editar un periodo (RF-36), también si ya pasó. Nombre de otro periodo → 409 RN-13; RN-16 → 400.
+PUT {{host}}/api/v1/periodos/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "2027-I",
+  "inicioClases": "2027-02-08",
+  "finClases": "2027-06-30",
+  "inicioMatricula": "2027-01-10",
+  "finMatricula": "2027-02-15",
+  "fechaLimiteRetiro": "2027-01-31"
+}
+
+###

@@ -41,6 +41,19 @@ public class PeriodosController(PeriodoService periodoService) : ApiControllerBa
         Ok(await periodoService.ListarAsync(request, cancellationToken));
 
     /// <summary>
+    /// Periodo vigente según la fecha del instituto (RF-38): desde que abre su matrícula hasta el fin de clases. Si no
+    /// hay ninguno responde 404.
+    /// </summary>
+    [HttpGet("vigente")]
+    [Authorize]
+    [ProducesResponseType<PeriodoResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PeriodoResponse>> ObtenerVigente(CancellationToken cancellationToken) =>
+        Ok(await periodoService.ObtenerVigenteAsync(cancellationToken));
+
+    /// <summary>
     /// Detalle de un periodo (RF-36).
     /// </summary>
     [HttpGet("{id:int}")]

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Matricula.Application.Periodos;
 
-public class PeriodoService(IAppDbContext db)
+public class PeriodoService(IAppDbContext db, IFechaLocal fechaLocal)
 {
     /// <summary>
     /// RF-35: registra un periodo. Las fechas ya las exige el validador, y los periodos pueden traslaparse.
@@ -65,6 +65,23 @@ public class PeriodoService(IAppDbContext db)
             .Select(PeriodoProyecciones.AResponse)
             .SingleOrDefaultAsync(cancellationToken)
         ?? throw new NotFoundException($"No existe el periodo {id}.");
+
+    /// <summary>
+    /// RF-38: vigente es el periodo con InicioMatricula ≤ hoy ≤ FinClases. Los periodos pueden traslaparse: gana el de
+    /// matrícula más reciente y, si coinciden, el de mayor id.
+    /// </summary>
+    public async Task<PeriodoResponse> ObtenerVigenteAsync(CancellationToken cancellationToken)
+    {
+        var hoy = fechaLocal.Hoy();
+
+        return await db.Periodos.AsNoTracking()
+            .Where(p => p.InicioMatricula <= hoy && hoy <= p.FinClases)
+            .OrderByDescending(p => p.InicioMatricula)
+            .ThenByDescending(p => p.Id)
+            .Select(PeriodoProyecciones.AResponse)
+            .FirstOrDefaultAsync(cancellationToken)
+            ?? throw new NotFoundException("No hay un periodo vigente.");
+    }
 
     /// <summary>
     /// RF-36: también se editan periodos pasados. Las fechas ya las exige el validador.

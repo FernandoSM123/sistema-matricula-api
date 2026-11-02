@@ -18,7 +18,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T6. Aulas: API completa | Completada | ✅ | ➖ | ⏳ | ✅ |
 | T7. Dominio y persistencia de `Periodo` | Completada | ✅ | ✅ | ✅ | ✅ |
 | T8. Periodos: registrar, listar, consultar y editar | Completada | ✅ | ➖ | ✅ | ✅ |
-| T9. Periodo vigente | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T9. Periodo vigente | Completada | ✅ | ➖ | ✅ | ✅ |
 | T10. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 
 **Estados de tarea:**
@@ -160,6 +160,7 @@ Ninguna se copia a este módulo. La de `fundacion` T3 (ruta en kebab-case de un 
   - Dos periodos traslapados → devuelve el de `InicioMatricula` más reciente.
   - `/periodos/vigente` no choca con `/periodos/{id:int}`.
   - Con `Instituto__ZonaHoraria=Pacific/Kiritimati` y un periodo cuyo límite cae entre las dos fechas, el resultado cambia según la zona.
+  - Resultado (2026-11-02): todos los casos dieron lo esperado, incluido el desempate por id mayor con la misma `InicioMatricula`. Con un periodo que abre el 2026-11-03, a las 22:10 UTC: Costa Rica → `404`, `Pacific/Kiritimati` → `200`. Profesor y estudiante → `200`; sin token → `401`. Los periodos de prueba se movieron a fechas futuras, así que la BD de desarrollo queda sin periodo vigente.
 - Files: `src/Matricula.Application/Periodos/PeriodoService.cs`, `src/Matricula.Api/Controllers/PeriodosController.cs`
 
 ### T10. Cierre del módulo

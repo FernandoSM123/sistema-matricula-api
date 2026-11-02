@@ -457,6 +457,13 @@ Authorization: Bearer {{token}}
 
 ###
 
+# Periodo vigente (RF-38), con cualquier sesión: inicioMatricula ≤ hoy ≤ finClases, con la fecha de Instituto:ZonaHoraria.
+# Si hay varios, el de inicioMatricula más reciente y luego el id mayor. Sin vigente → 404.
+GET {{host}}/api/v1/periodos/vigente
+Authorization: Bearer {{token}}
+
+###
+
 # Detalle de un periodo (RF-36), con cualquier sesión. Inexistente → 404.
 GET {{host}}/api/v1/periodos/1
 Authorization: Bearer {{token}}

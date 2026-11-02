@@ -1,6 +1,6 @@
 @host = http://localhost:5022
 
-# Recorrido de los módulos acceso y estudiantes. Ejecuta primero el login con tus credenciales: las demás peticiones usan
+# Recorrido de los módulos acceso, estudiantes y profesores. Ejecuta primero el login con tus credenciales: las demás peticiones usan
 # {{token}}. Primer ingreso: login con la temporal de AdminSeed → cambio-obligatorio → login con la nueva.
 
 GET {{host}}/health
@@ -251,5 +251,71 @@ Content-Type: application/json
   "telefono": "7777-0001",
   "direccion": "San Pedro, Montes de Oca"
 }
+
+###
+
+
+# --- Módulo profesores ---
+
+# Registrar un profesor (RF-03, RF-22). 201 + Location; la temporal llega a smtp4dev y nunca a la respuesta.
+# Correo o cédula de un activo repetidos → 409 RN-13; cédula de un inactivo → 409 RN-39 con profesorId y usuarioId.
+# La cédula es única por tabla (RN-13): puede coincidir con la de un estudiante o un administrador.
+POST {{host}}/api/v1/profesores
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cedula": "5-5555-5555",
+  "nombre": "Elena",
+  "apellidos": "Vargas Solano",
+  "telefono": "8888-5555",
+  "correo": "elena.vargas@correo.local",
+  "especialidad": "Redes",
+  "fechaContratacion": "2026-02-01"
+}
+
+###
+
+# Detalle de un profesor (RF-24). Inexistente → 404; con token de profesor o estudiante → 403.
+GET {{host}}/api/v1/profesores/1
+Authorization: Bearer {{token}}
+
+###
+
+# Listar profesores (RF-23): paginado, solo activos salvo incluirInactivos=true; search en nombre, apellidos, cédula,
+# especialidad y correo.
+GET {{host}}/api/v1/profesores?page=1&pageSize=20&search=redes&incluirInactivos=false
+Authorization: Bearer {{token}}
+
+###
+
+# Editar un profesor (RF-25). Cambiar el correo cambia el de su cuenta (RN-31). Especialidad vacía → se quita.
+# Cédula de otro profesor o correo de otra cuenta → 409 RN-13.
+PUT {{host}}/api/v1/profesores/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cedula": "5-5555-5555",
+  "nombre": "Elena",
+  "apellidos": "Vargas Solano",
+  "telefono": "8888-5556",
+  "correo": "elena.vargas@correo.local",
+  "especialidad": "Programación",
+  "fechaContratacion": "2026-02-01"
+}
+
+###
+
+# Desactivar un profesor (RF-26, RN-38): desactiva su cuenta y cierra sus sesiones. Es lo mismo que
+# /usuarios/{usuarioId}/desactivar. La guarda RN-37 la añade el módulo grupos.
+POST {{host}}/api/v1/profesores/1/desactivar
+Authorization: Bearer {{token}}
+
+###
+
+# Reactivar un profesor (RF-26, RN-39): un profesor que regresa se reactiva, no se registra de nuevo.
+POST {{host}}/api/v1/profesores/1/reactivar
+Authorization: Bearer {{token}}
 
 ###

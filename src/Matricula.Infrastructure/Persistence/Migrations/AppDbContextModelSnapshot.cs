@@ -153,6 +153,74 @@ namespace Matricula.Infrastructure.Persistence.Migrations
                     b.ToTable("estudiante", (string)null);
                 });
 
+            modelBuilder.Entity("Matricula.Domain.Entities.Profesor", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Apellidos")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("apellidos");
+
+                    b.Property<string>("Cedula")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("cedula");
+
+                    b.Property<string>("Especialidad")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("especialidad");
+
+                    b.Property<DateOnly?>("FechaContratacion")
+                        .HasColumnType("date")
+                        .HasColumnName("fecha_contratacion");
+
+                    b.Property<DateTimeOffset>("FechaCreacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_creacion");
+
+                    b.Property<DateTimeOffset?>("FechaModificacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_modificacion");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("nombre");
+
+                    b.Property<string>("Telefono")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("telefono");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer")
+                        .HasColumnName("usuario_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_profesor");
+
+                    b.HasIndex("Cedula")
+                        .IsUnique()
+                        .HasDatabaseName("ix_profesor_cedula");
+
+                    b.HasIndex("UsuarioId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_profesor_usuario_id");
+
+                    b.ToTable("profesor", (string)null);
+                });
+
             modelBuilder.Entity("Matricula.Domain.Entities.Usuario", b =>
                 {
                     b.Property<int>("Id")
@@ -262,6 +330,18 @@ namespace Matricula.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_estudiante_usuarios_usuario_id");
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("Matricula.Domain.Entities.Profesor", b =>
+                {
+                    b.HasOne("Matricula.Domain.Entities.Usuario", "Usuario")
+                        .WithOne()
+                        .HasForeignKey("Matricula.Domain.Entities.Profesor", "UsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_profesor_usuarios_usuario_id");
 
                     b.Navigation("Usuario");
                 });

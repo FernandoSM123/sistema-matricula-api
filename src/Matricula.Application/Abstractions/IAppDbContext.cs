@@ -11,6 +11,7 @@ public interface IAppDbContext
     DbSet<Usuario> Usuarios { get; }
     DbSet<Administrador> Administradores { get; }
     DbSet<Estudiante> Estudiantes { get; }
+    DbSet<Profesor> Profesores { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -41,6 +41,10 @@ public class GeneradorToken(IOptions<JwtOptions> options, TimeProvider timeProvi
         {
             claims[ClaimsToken.EstudianteId] = estudianteId.ToString(CultureInfo.InvariantCulture);
         }
+        if (datos.ProfesorId is { } profesorId)
+        {
+            claims[ClaimsToken.ProfesorId] = profesorId.ToString(CultureInfo.InvariantCulture);
+        }
 
         var descriptor = new SecurityTokenDescriptor
         {

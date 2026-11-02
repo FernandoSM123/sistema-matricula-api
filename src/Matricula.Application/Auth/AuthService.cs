@@ -114,8 +114,8 @@ public class AuthService(
     }
 
     /// <summary>
-    /// RF-13: datos de la cuenta del usuario actual y, si los tiene, sus datos personales (de administrador o de
-    /// estudiante).
+    /// RF-13: datos de la cuenta del usuario actual y, si los tiene, sus datos personales (de administrador, de
+    /// estudiante o de profesor).
     /// </summary>
     public async Task<PerfilResponse> ObtenerPerfilAsync(CancellationToken cancellationToken)
     {
@@ -136,18 +136,23 @@ public class AuthService(
                     null),
                 Administrador = db.Administradores
                     .Where(a => a.UsuarioId == u.Id)
-                    .Select(a => new DatosPersonalesResponse(a.Cedula, a.Nombre, a.Apellidos, a.Telefono, null, null, null))
+                    .Select(a => new DatosPersonalesResponse(a.Cedula, a.Nombre, a.Apellidos, a.Telefono, null, null, null, null, null))
                     .FirstOrDefault(),
                 Estudiante = db.Estudiantes
                     .Where(e => e.UsuarioId == u.Id)
                     .Select(e => new DatosPersonalesResponse(
-                        e.Cedula, e.Nombre, e.Apellidos, e.Telefono, e.FechaNacimiento, e.Direccion, e.FechaRegistro))
+                        e.Cedula, e.Nombre, e.Apellidos, e.Telefono, e.FechaNacimiento, e.Direccion, e.FechaRegistro, null, null))
+                    .FirstOrDefault(),
+                Profesor = db.Profesores
+                    .Where(p => p.UsuarioId == u.Id)
+                    .Select(p => new DatosPersonalesResponse(
+                        p.Cedula, p.Nombre, p.Apellidos, p.Telefono, null, null, null, p.Especialidad, p.FechaContratacion))
                     .FirstOrDefault()
             })
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException("La cuenta ya no existe.");
 
-        return resultado.Perfil with { DatosPersonales = resultado.Administrador ?? resultado.Estudiante };
+        return resultado.Perfil with { DatosPersonales = resultado.Administrador ?? resultado.Estudiante ?? resultado.Profesor };
     }
 
     /// <summary>
@@ -228,16 +233,22 @@ public class AuthService(
 
     private async Task<TokenResponse> EmitirTokenAsync(Usuario usuario, bool debeCambiarContrasena, CancellationToken cancellationToken)
     {
-        // RN-18: matriculas identifica al estudiante por este claim, sin que el cliente envíe su id.
+        // RN-18: matriculas y grupos identifican a la persona por estos claims, sin que el cliente envíe su id.
         var estudianteId = usuario.Rol == Rol.Estudiante
             ? await db.Estudiantes.AsNoTracking()
                 .Where(e => e.UsuarioId == usuario.Id)
                 .Select(e => (int?)e.Id)
                 .SingleOrDefaultAsync(cancellationToken)
             : null;
+        var profesorId = usuario.Rol == Rol.Profesor
+            ? await db.Profesores.AsNoTracking()
+                .Where(p => p.UsuarioId == usuario.Id)
+                .Select(p => (int?)p.Id)
+                .SingleOrDefaultAsync(cancellationToken)
+            : null;
 
-        var token = generadorToken.Generar(
-            new DatosToken(usuario.Id, usuario.Correo, usuario.Rol, usuario.SecurityStamp, debeCambiarContrasena, estudianteId));
+        var token = generadorToken.Generar(new DatosToken(
+            usuario.Id, usuario.Correo, usuario.Rol, usuario.SecurityStamp, debeCambiarContrasena, estudianteId, profesorId));
 
         return new TokenResponse(token.AccessToken, token.ExpiraEn, usuario.Rol, debeCambiarContrasena);
     }

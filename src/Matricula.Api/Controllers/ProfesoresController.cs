@@ -50,6 +50,31 @@ public class ProfesoresController(ProfesorService profesorService) : ApiControll
         Ok(await profesorService.ActualizarAsync(id, request, cancellationToken));
 
     /// <summary>
+    /// Desactiva al profesor y su cuenta (RF-26, RN-38): no puede ingresar y sus sesiones se cierran.
+    /// </summary>
+    [HttpPost("{id:int}/desactivar")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Desactivar(int id, CancellationToken cancellationToken)
+    {
+        await profesorService.DesactivarAsync(id, cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Reactiva al profesor y su cuenta (RF-26, RN-38, RN-39).
+    /// </summary>
+    [HttpPost("{id:int}/reactivar")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Reactivar(int id, CancellationToken cancellationToken)
+    {
+        await profesorService.ReactivarAsync(id, cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
     /// Detalle de un profesor (RF-24).
     /// </summary>
     [HttpGet("{id:int}")]

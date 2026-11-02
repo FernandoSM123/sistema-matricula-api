@@ -306,3 +306,16 @@ Content-Type: application/json
 }
 
 ###
+
+# Desactivar un profesor (RF-26, RN-38): desactiva su cuenta y cierra sus sesiones. Es lo mismo que
+# /usuarios/{usuarioId}/desactivar. La guarda RN-37 la añade el módulo grupos.
+POST {{host}}/api/v1/profesores/1/desactivar
+Authorization: Bearer {{token}}
+
+###
+
+# Reactivar un profesor (RF-26, RN-39): un profesor que regresa se reactiva, no se registra de nuevo.
+POST {{host}}/api/v1/profesores/1/reactivar
+Authorization: Bearer {{token}}
+
+###

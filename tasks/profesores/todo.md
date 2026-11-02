@@ -14,7 +14,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T2. Persistencia y migración | Completada | ✅ | ➖ | ✅ | ✅ |
 | T3. Registro y detalle | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Listar y editar profesores | Completada | ✅ | ➖ | ✅ | ✅ |
-| T5. Desactivar y reactivar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T5. Desactivar y reactivar | Completada | ✅ | ➖ | ✅ | ✅ |
 | T6. Claim `profesor_id` y perfil | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T7. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 
@@ -88,8 +88,8 @@ Ninguna se copia a este módulo. La de `fundacion` T3 (ruta en kebab-case de un 
   - Desactivar un profesor con sesión abierta → su token `401`; su login `403 RN-29`; el detalle muestra `activo: false`.
   - Reactivar → vuelve a iniciar sesión; el detalle muestra `activo: true`.
   - Desactivarlo por `/api/v1/usuarios/{usuarioId}/desactivar` tiene el mismo efecto en el detalle del profesor (RN-38).
-  - Pendiente de T3: registrar con la cédula de un inactivo → `409 RN-39` con `profesorId` y `usuarioId`.
-  - Pendiente de T4: el listado oculta al inactivo sin `incluirInactivos` y lo muestra con `incluirInactivos=true`.
+  - ✅ Pendiente de T3: registrar con la cédula de un inactivo → `409 RN-39` con `profesorId` y `usuarioId`.
+  - ✅ Pendiente de T4: el listado oculta al inactivo sin `incluirInactivos` y lo muestra con `incluirInactivos=true`.
   - ⏳ La guarda RN-37 (grupos activos) la añade `grupos`.
 - Files: `src/Matricula.Application/Profesores/ProfesorService.cs`, `ProfesoresController.cs`
 

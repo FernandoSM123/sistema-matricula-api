@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Matricula.Application.Profesores;
 
-public class ProfesorService(IAppDbContext db, CuentaService cuentaService)
+public class ProfesorService(IAppDbContext db, CuentaService cuentaService, UsuarioService usuarioService)
 {
     /// <summary>
     /// RF-03 y RF-22: crea la cuenta (rol Profesor, temporal de 72 horas) y el registro del profesor en un solo
@@ -105,6 +105,29 @@ public class ProfesorService(IAppDbContext db, CuentaService cuentaService)
             .Select(ProfesorProyecciones.AResponse)
             .SingleOrDefaultAsync(cancellationToken)
         ?? throw new NotFoundException($"No existe el profesor {id}.");
+
+    /// <summary>
+    /// RF-26 y RN-38: el estado del profesor es el de su cuenta, así que se desactiva la cuenta. El módulo grupos
+    /// añade RN-37 en UsuarioService, que aplica también a /usuarios/{id}/desactivar.
+    /// </summary>
+    public async Task DesactivarAsync(int id, CancellationToken cancellationToken) =>
+        await usuarioService.DesactivarAsync(await ObtenerUsuarioIdAsync(id, cancellationToken), cancellationToken);
+
+    /// <summary>
+    /// RF-26, RN-38 y RN-39: un profesor que regresa se reactiva, no se registra de nuevo.
+    /// </summary>
+    public async Task ReactivarAsync(int id, CancellationToken cancellationToken) =>
+        await usuarioService.ReactivarAsync(await ObtenerUsuarioIdAsync(id, cancellationToken), cancellationToken);
+
+    private async Task<int> ObtenerUsuarioIdAsync(int id, CancellationToken cancellationToken)
+    {
+        var usuarioId = await db.Profesores.AsNoTracking()
+            .Where(p => p.Id == id)
+            .Select(p => (int?)p.UsuarioId)
+            .SingleOrDefaultAsync(cancellationToken);
+
+        return usuarioId ?? throw new NotFoundException($"No existe el profesor {id}.");
+    }
 
     // RN-13 (cédula única entre profesores) y RN-39 (un inactivo se reactiva, no se registra de nuevo).
     private async Task ValidarCedulaDisponibleAsync(string cedula, CancellationToken cancellationToken)

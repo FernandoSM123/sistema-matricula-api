@@ -108,6 +108,28 @@ $env:Cors__OrigenesPermitidos__1 = "https://admin.ejemplo.com"
 
 La lista se lee al arrancar, así que hay que reiniciar la API después de cambiarla. CORS solo afecta a los navegadores; herramientas como `curl` o Scalar no lo necesitan.
 
+### Instituto (zona horaria)
+
+La opción `Instituto:ZonaHoraria` define qué día es "hoy" para el sistema. Está en `appsettings.json` con el valor `America/Costa_Rica`. Es un identificador [IANA](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) y no es un secreto.
+
+```json
+"Instituto": {
+  "ZonaHoraria": "America/Costa_Rica"
+}
+```
+
+**Por qué existe:** el periodo vigente, las fechas de matrícula y retiro (RN-04, RN-10), la fecha de registro del estudiante y la validación de la fecha de nacimiento comparan fechas sin hora. Con la fecha UTC, desde las 18:00 en Costa Rica el sistema ya estaría en el día siguiente y, por ejemplo, cerraría la matrícula seis horas antes de tiempo.
+
+**Cómo se usa en el código:** `IFechaLocal.Hoy()` es el único punto que calcula la fecha de hoy. Las marcas de tiempo (`FechaCreacion`, vencimientos de temporales, tokens) siguen en UTC con `TimeProvider`.
+
+Para cambiarla, edita `appsettings.json` o, en otros entornos, usa una variable de entorno y reinicia la API:
+
+```powershell
+$env:Instituto__ZonaHoraria = "America/Costa_Rica"
+```
+
+Si la opción falta o no es una zona válida, **la API no arranca** y lo indica en el error. Esto también ocurre si el entorno no tiene datos de zonas horarias, como algunas imágenes mínimas de Docker: hay que instalarlos (`tzdata`) y no activar la globalización invariante.
+
 ### Jwt
 
 La API emite tokens JWT firmados con una clave simétrica (HS256). `Issuer`, `Audience` y `MinutosVigencia` (60) están en `appsettings.json`; la **clave** va solo en user-secrets o en la variable de entorno `Jwt__Clave`. Sin una clave de al menos 32 caracteres, **la API no arranca** y lo indica en el error.

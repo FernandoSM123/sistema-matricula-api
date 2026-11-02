@@ -4,6 +4,7 @@ using Matricula.Infrastructure.Persistence;
 using Matricula.Infrastructure.Persistence.Interceptors;
 using Matricula.Infrastructure.Seed;
 using Matricula.Infrastructure.Seguridad;
+using Matricula.Infrastructure.Tiempo;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +19,13 @@ public static class DependencyInjection
             ?? throw new InvalidOperationException("Falta la cadena de conexión 'Matricula'.");
 
         services.AddSingleton(TimeProvider.System);
+        services.AddOptions<InstitutoOptions>()
+            .Bind(configuration.GetSection(InstitutoOptions.SectionName))
+            .Validate(
+                options => options.TieneZonaValida(),
+                "La opción 'Instituto:ZonaHoraria' debe ser una zona horaria válida, por ejemplo America/Costa_Rica.")
+            .ValidateOnStart();
+        services.AddSingleton<IFechaLocal, FechaLocal>();
         services.AddSingleton<IHasherContrasenas, HasherContrasenas>();
         services.AddSingleton<IGeneradorContrasenas, GeneradorContrasenas>();
         services.AddScoped<AuditoriaInterceptor>();

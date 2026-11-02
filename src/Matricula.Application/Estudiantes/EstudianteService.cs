@@ -15,7 +15,7 @@ public class EstudianteService(
     CuentaService cuentaService,
     UsuarioService usuarioService,
     ICurrentUser currentUser,
-    TimeProvider timeProvider)
+    IFechaLocal fechaLocal)
 {
     /// <summary>
     /// RF-02: crea la cuenta (rol Estudiante, temporal de 72 horas) y el registro del estudiante en un solo
@@ -36,7 +36,7 @@ public class EstudianteService(
             request.Telefono,
             request.FechaNacimiento,
             request.Direccion,
-            Hoy());
+            fechaLocal.Hoy());
         db.Estudiantes.Add(estudiante);
         await db.SaveChangesAsync(cancellationToken);
 
@@ -74,7 +74,7 @@ public class EstudianteService(
             request.Telefono,
             request.FechaNacimiento,
             request.Direccion,
-            Hoy()));
+            fechaLocal.Hoy()));
         await db.SaveChangesAsync(cancellationToken);
 
         return new MensajeResponse("Registro completado. Ya puede iniciar sesión con su correo y contraseña.");
@@ -190,8 +190,6 @@ public class EstudianteService(
 
         return usuarioId ?? throw new NotFoundException($"No existe el estudiante {id}.");
     }
-
-    private DateOnly Hoy() => DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
 
     // RN-13 (cédula única entre estudiantes) y RN-39 (un inactivo se reactiva, no se registra de nuevo).
     private async Task ValidarCedulaDisponibleAsync(string cedula, CancellationToken cancellationToken)

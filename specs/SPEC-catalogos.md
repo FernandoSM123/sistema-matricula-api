@@ -4,7 +4,7 @@ Módulo `catalogos` del [mapa de módulos](mapa-modulos.md). Depende de `acceso`
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/catalogos/plan.md) | [Aprobadas](../tasks/catalogos/todo.md) | 0/10 tareas completadas |
+| **Aprobada** | [Aprobado](../tasks/catalogos/plan.md) | [Aprobadas](../tasks/catalogos/todo.md) | 1/10 tareas completadas |
 
 **Historial:**
 - 2026-11-02: v1 en revisión, con tres preguntas abiertas.

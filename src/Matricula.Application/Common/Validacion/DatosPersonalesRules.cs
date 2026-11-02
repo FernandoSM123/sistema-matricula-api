@@ -1,4 +1,5 @@
 using FluentValidation;
+using Matricula.Application.Abstractions;
 
 namespace Matricula.Application.Common.Validacion;
 
@@ -37,9 +38,9 @@ public static class DatosPersonalesRules
             .MaximumLength(250).WithMessage("La dirección no puede superar los 250 caracteres.");
 
     /// <summary>Opcional; no futura ni anterior a 1900 (supuesto 7 de specs/SPEC-estudiantes.md).</summary>
-    public static IRuleBuilderOptions<T, DateOnly?> FechaNacimiento<T>(this IRuleBuilder<T, DateOnly?> rule, TimeProvider timeProvider) =>
+    public static IRuleBuilderOptions<T, DateOnly?> FechaNacimiento<T>(this IRuleBuilder<T, DateOnly?> rule, IFechaLocal fechaLocal) =>
         rule
-            .Must(fecha => fecha is null || fecha <= DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime))
+            .Must(fecha => fecha is null || fecha <= fechaLocal.Hoy())
                 .WithMessage("La fecha de nacimiento no puede ser futura.")
             .Must(fecha => fecha is null || fecha >= FechaMinima)
                 .WithMessage("La fecha de nacimiento no puede ser anterior a 1900.");

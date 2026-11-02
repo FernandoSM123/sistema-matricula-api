@@ -10,7 +10,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 
 | Tarea | Estado | Código | Pruebas unitarias | Verificación manual | Commit |
 |---|---|:---:|:---:|:---:|:---:|
-| T1. Fecha local del instituto | Pendiente | ⬜ | ⬜ | ⬜ | ⬜ |
+| T1. Fecha local del instituto | Completada | ✅ | ✅ | ✅ | ✅ |
 | T2. Dominio y persistencia de `Curso` | Pendiente | ⬜ | ⬜ | ⬜ | ⬜ |
 | T3. Cursos: registro y detalle | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T4. Cursos: listar, editar, desactivar y reactivar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -49,6 +49,7 @@ Ninguna se copia a este módulo. La de `fundacion` T3 (ruta en kebab-case de un 
   - Registrar un estudiante después de las 18:00 de Costa Rica, o con `Pacific/Kiritimati` si no es esa hora → `fechaRegistro` es la fecha de la zona configurada.
   - Regresión de `estudiantes`: registro público, registro por administrador y edición siguen funcionando; una fecha de nacimiento futura → `400`.
   - Buscar `GetUtcNow` en `src/`: ningún resultado convierte a `DateOnly`.
+  - Resultado (2026-11-02): la verificación se hizo a las 17:58 UTC, así que el caso de la zona usó `Pacific/Kiritimati`, ya en 2026-11-03: `fechaRegistro` y el límite de la fecha de nacimiento siguieron esa zona. Zona vacía o inválida: la API no arranca. Regresión de registro público, registro por administrador y edición, correcta.
 - Files: `src/Matricula.Domain/Reglas/FechaInstituto.cs`, `src/Matricula.Application/Abstractions/IFechaLocal.cs`, `src/Matricula.Infrastructure/Tiempo/{InstitutoOptions,FechaLocal}.cs`, `src/Matricula.Infrastructure/DependencyInjection.cs`, `src/Matricula.Application/Common/Validacion/DatosPersonalesRules.cs`, `src/Matricula.Application/Estudiantes/{EstudianteService,RegistrarEstudianteRequestValidator,ActualizarEstudianteRequestValidator,RegistroPublicoRequestValidator}.cs`, `src/Matricula.Api/appsettings.json`, `README.md`, `tests/Matricula.UnitTests/Domain/FechaInstitutoTests.cs`
 
 ### T2. Dominio y persistencia de `Curso`

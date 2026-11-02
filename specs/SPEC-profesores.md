@@ -4,13 +4,14 @@ Módulo `profesores` del [mapa de módulos](mapa-modulos.md). Depende de `acceso
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/profesores/plan.md) | [Aprobadas](../tasks/profesores/todo.md) | 6/7 |
+| **Aprobada** | [Aprobado](../tasks/profesores/plan.md) | [Aprobadas](../tasks/profesores/todo.md) | 7/7 tareas completadas: **módulo completado** (2026-11-02) |
 
 **Historial:**
 - 2026-10-28: v1 en revisión.
 - 2026-10-28: resueltas las preguntas abiertas: la eliminación queda para `grupos` y la verificación de kebab-case sigue pendiente (decisiones 1 y 2).
 - 2026-10-28: v1 aprobada. Plan y lista de 7 tareas en revisión.
 - 2026-10-28: plan y lista de tareas aprobados; la implementación empieza por T1.
+- 2026-11-02: módulo completado (7/7 tareas), sin desviaciones de la spec. En una carrera entre dos registros con la misma cédula, el segundo recibe `409 RN-13` desde la BD (riesgo aceptado en el plan).
 
 ## Objetivo
 

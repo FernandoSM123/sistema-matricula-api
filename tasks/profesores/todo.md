@@ -2,7 +2,7 @@
 
 Módulo `profesores` del [mapa](../../specs/mapa-modulos.md). Spec: [`specs/SPEC-profesores.md`](../../specs/SPEC-profesores.md) · Plan: [`plan.md`](plan.md)
 
-**Estado de la lista:** Aprobada (2026-10-28)
+**Estado de la lista:** Aprobada (2026-10-28) · **Módulo completado** (2026-11-02)
 
 Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula.UnitTests` en verde, la verificación indicada y un commit pequeño que cite los RF/RN. Las peticiones de cada flujo se agregan a `src/Matricula.Api/Matricula.Api.http` en la misma tarea.
 
@@ -16,7 +16,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T4. Listar y editar profesores | Completada | ✅ | ➖ | ✅ | ✅ |
 | T5. Desactivar y reactivar | Completada | ✅ | ➖ | ✅ | ✅ |
 | T6. Claim `profesor_id` y perfil | Completada | ✅ | ➖ | ✅ | ✅ |
-| T7. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T7. Cierre del módulo | Completada | ✅ | ➖ | ✅ | ✅ |
 
 **Estados de tarea:**
 - **Pendiente:** no se ha empezado.
@@ -110,5 +110,20 @@ Ninguna se copia a este módulo. La de `fundacion` T3 (ruta en kebab-case de un 
   - README: paso de la migración `AgregaProfesor` si hace falta mencionarlo.
   - Recorrido de la tabla de verificación manual de la spec; consola revisada sin contraseñas ni temporales.
   - Estados de la spec, el mapa y esta lista al día.
-- Verify: revisión manual del README y de los estados; prueba de humo final con datos nuevos sobre toda la tabla de verificación de la spec.
-- Files: `README.md`, `src/Matricula.Api/Matricula.Api.http`, `specs/mapa-modulos.md`, `specs/SPEC-profesores.md`, `tasks/profesores/todo.md`
+- Verify: revisión manual del README y de los estados; prueba de humo final con datos nuevos sobre toda la tabla de verificación de la spec. El README no cambia: la sección genérica ya cubre las migraciones nuevas ("cada vez que haya migraciones nuevas") y el módulo no agrega endpoints sin sesión. Prueba de humo final: 46/46 verificaciones correctas; 18 temporales reales de smtp4dev revisadas y ninguna aparece en la consola.
+- Files: `src/Matricula.Api/Matricula.Api.http` (T3 a T5), `specs/mapa-modulos.md`, `specs/SPEC-profesores.md`, `tasks/profesores/todo.md`
+
+## Cierre del módulo
+- ✅ Criterios de éxito de la spec cumplidos (2026-11-02):
+  1. Migración `AgregaProfesor` con índices únicos en `cedula` y `usuario_id` y FK sin cascada: `\d profesor` en `psql` (T2).
+  2. Registro por administrador con temporal por correo, cambio obligatorio e ingreso con rol `Profesor` (T3).
+  3. Listado con búsqueda, filtro de inactivos y paginación, detalle, edición, desactivar y reactivar (T3, T4, T5).
+  4. Desactivar al profesor o a su cuenta es la misma operación (T5, RN-38).
+  5. `GET /me` con los datos del profesor y `profesor_id` en el token (T6).
+  6. Tabla de verificación manual de la spec recorrida tarea por tarea y en la prueba de humo final (T7).
+  7. `dotnet build` sin warnings; 68/68 pruebas unitarias en verde.
+- ✅ Regresión de `acceso` y `estudiantes` en T6: registro, temporal, cambio obligatorio, cambio de contraseña, `GET /me` y claims con cuentas nuevas de los tres roles, y `PUT /me/datos-contacto` del estudiante.
+- ⏳ Quedan para `grupos`: RN-37 al desactivar, la eliminación de profesores (decisión 1 de la spec), `Politicas.Profesor`, RF-27 y RF-28.
+- ⏳ La verificación heredada de `fundacion` T3 (kebab-case) sigue pendiente en el mapa (decisión 2 de la spec).
+- ✅ Estados actualizados en la spec, el mapa y esta lista.
+- Datos de prueba en la BD de desarrollo (contraseñas): Elena Vargas `elena.790780@correo.local` / `Profesor2026`, Humoa Prueba `humo.nuevo.742345@correo.local` / `HumoProfe2026`, y una cuenta nueva de cada rol, `regr.<rol>.<n>@correo.local` / `Regresion2027` (búsquelas por `regr.` en los listados). Los demás profesores de prueba tienen la temporal pendiente.

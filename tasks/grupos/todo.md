@@ -15,7 +15,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T3. Crear grupo y detalle | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Horarios: agregar y quitar | Completada | ✅ | ➖ | ✅ | ✅ |
 | T5. Cambiar estado | Completada | ✅ | ➖ | ⏳ | ✅ |
-| T6. Editar grupo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T6. Editar grupo | Completada | ✅ | ➖ | ✅ | ✅ |
 | T7. Listado y visibilidad por rol | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T8. Oferta académica y grupos de un curso | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T9. Consultas de profesor y aula | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -134,7 +134,10 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - En `Finalizado` o `Cancelado`: cualquier cambio → `409 RF-45`.
   - Nuevo profesor o aula con choque → `409 RN-07` / `409 RN-08`; nuevo profesor inactivo → `409 RN-17`; cupo sobre la capacidad del aula nueva → `409 RN-09`.
   - Pasar a `Virtual` quitando el aula → `200`; virtual con aula → `400`.
-- Files: `src/Matricula.Application/Grupos/{GrupoService,ActualizarGrupoRequest,ActualizarGrupoRequestValidator}.cs`, `src/Matricula.Api/Controllers/GruposController.cs`
+  - Resultado (2026-11-05): 45/45 verificaciones correctas contra la API local. Además de la lista: el cambio se guarda y el detalle lo refleja; NRC de otro grupo con otra capitalización → `409 RN-13`; en `Abierto`, el mismo NRC en minúsculas no cuenta como cambio → `200`; `Cerrado` y `EnCurso` se editan como `Abierto`; `Finalizado` responde `409 RF-45` aunque no cambie nada; el mensaje de RN-07/RN-08 trae el NRC y el grupo rechazado no cambia; pasar a otro periodo evita el choque; curso o aula nuevos inactivos → `409 RN-17`, pero un aula que el grupo ya tenía y se desactivó después no bloquea la edición; cupo igual a la capacidad → `200`; ids inexistentes → `404`; cupo 0, NRC de 11, presencial sin aula y cuerpo vacío → `400`; profesor y estudiante → `403`, sin token → `401`.
+  - Orden en `ActualizarAsync`: referencias (404, RN-17, RN-09) antes de modificar el grupo, porque RN-17 compara con las referencias que tenía; luego `ActualizarDatos` (RF-45), RN-13 y los traslapes con todos los bloques, el periodo, el profesor y el aula que quedan.
+  - El caso "aula que se desactivó después" se pudo armar porque RN-37 aún no existe; desde T10 ya no se podrá desactivar un aula con grupos activos.
+- Files: `src/Matricula.Application/Grupos/{GrupoService,ActualizarGrupoRequest,ActualizarGrupoRequestValidator}.cs`, `src/Matricula.Api/Controllers/GruposController.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T7. Listado y visibilidad por rol
 - Acceptance:

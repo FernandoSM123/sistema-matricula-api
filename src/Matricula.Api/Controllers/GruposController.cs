@@ -30,6 +30,23 @@ public class GruposController(GrupoService grupoService) : ApiControllerBase
     }
 
     /// <summary>
+    /// Edita un grupo (RF-45) y devuelve el detalle. En Planificado se cambia todo; en Abierto, Cerrado o EnCurso solo
+    /// profesor, aula, modalidad y cupo; en Finalizado o Cancelado nada (RF-45). Responde RN-17 si un curso, profesor o
+    /// aula nuevos están inactivos, RN-09, RN-13 y RN-07/RN-08 si el profesor o aula nuevos chocan con otro grupo.
+    /// </summary>
+    [HttpPut("{id:int}")]
+    [Authorize(Policy = Politicas.Administrador)]
+    [ProducesResponseType<GrupoDetalleResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<GrupoDetalleResponse>> Actualizar(
+        int id, ActualizarGrupoRequest request, CancellationToken cancellationToken) =>
+        Ok(await grupoService.ActualizarAsync(id, request, cancellationToken));
+
+    /// <summary>
     /// Cambia el estado de un grupo (RF-47): Planificado → Abierto → Cerrado → EnCurso → Finalizado, o Cancelado
     /// mientras no haya finalizado. Para abrir hace falta al menos un bloque de horario. Otra transición responde
     /// RF-47; repetir el estado actual responde igual.

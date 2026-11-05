@@ -528,6 +528,26 @@ Authorization: Bearer {{token}}
 
 ###
 
+# Editar un grupo (RF-45): 200 con el detalle. En Planificado se cambia todo; en Abierto, Cerrado o EnCurso solo
+# profesor, aula, modalidad y cupo (otro cambio → 409 RF-45); en Finalizado o Cancelado nada (409 RF-45).
+# Curso, profesor o aula nuevos e inactivos → 409 RN-17; cupo sobre la capacidad → 409 RN-09; NRC de otro grupo
+# → 409 RN-13; profesor o aula nuevos que chocan con otro grupo del periodo → 409 RN-07 / RN-08.
+PUT {{host}}/api/v1/grupos/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nrc": "10001",
+  "cursoId": 1,
+  "profesorId": 1,
+  "periodoId": 1,
+  "aulaId": 1,
+  "cupo": 30,
+  "modalidad": "Presencial"
+}
+
+###
+
 # Agregar un bloque de horario (RF-48). 201 con el grupo. Horas "HH:mm" o "HH:mm:ss"; horaFin ≤ horaInicio → 400 (RN-15).
 # Traslape con otro bloque del grupo → 409 RN-14. Choque con otro grupo del mismo profesor / aula en el mismo periodo
 # → 409 RN-07 / RN-08, con el NRC del otro grupo (los cancelados no cuentan). Bloques contiguos sí se permiten.

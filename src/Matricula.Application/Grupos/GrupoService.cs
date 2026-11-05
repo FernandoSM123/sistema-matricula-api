@@ -36,6 +36,35 @@ public class GrupoService(IAppDbContext db)
     }
 
     /// <summary>
+    /// RF-45: lo que se puede cambiar depende del estado (lo decide el dominio). RN-17 solo con las referencias nuevas,
+    /// RN-09 siempre, RN-13 contra los otros grupos, y RN-07/RN-08 con todos los bloques del grupo y el profesor y aula
+    /// que quedan.
+    /// </summary>
+    public async Task<GrupoDetalleResponse> ActualizarAsync(
+        int id, ActualizarGrupoRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var grupo = await BuscarConHorariosAsync(id, cancellationToken);
+
+        // El validador ya exige estos datos.
+        var cursoId = request.CursoId!.Value;
+        var profesorId = request.ProfesorId!.Value;
+        var periodoId = request.PeriodoId!.Value;
+        var cupo = request.Cupo!.Value;
+
+        // Antes de modificar el grupo: RN-17 compara con las referencias que tenía.
+        await ValidarReferenciasAsync(cursoId, profesorId, periodoId, request.AulaId, cupo, grupo, cancellationToken);
+
+        grupo.ActualizarDatos(request.Nrc, cursoId, profesorId, periodoId, request.AulaId, cupo, request.Modalidad!.Value);
+        await ValidarNrcDisponibleAsync(grupo.Nrc, grupo.Id, cancellationToken);
+        await ValidarTraslapesAsync(grupo, grupo.Horarios, grupo.ProfesorId, grupo.AulaId, cancellationToken);
+
+        await db.SaveChangesAsync(cancellationToken);
+        return await ObtenerAsync(id, cancellationToken);
+    }
+
+    /// <summary>
     /// RF-44: incluye los horarios, el cupo, los ocupados y los disponibles.
     /// </summary>
     public async Task<GrupoDetalleResponse> ObtenerAsync(int id, CancellationToken cancellationToken)

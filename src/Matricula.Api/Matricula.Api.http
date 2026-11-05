@@ -1,6 +1,6 @@
 @host = http://localhost:5022
 
-# Recorrido de los módulos acceso, estudiantes, profesores y catalogos. Ejecuta primero el login con tus credenciales: las demás peticiones usan
+# Recorrido de los módulos acceso, estudiantes, profesores, catalogos y grupos. Ejecuta primero el login con tus credenciales: las demás peticiones usan
 # {{token}}. Primer ingreso: login con la temporal de AdminSeed → cambio-obligatorio → login con la nueva.
 
 GET {{host}}/health
@@ -483,5 +483,47 @@ Content-Type: application/json
   "finMatricula": "2027-02-15",
   "fechaLimiteRetiro": "2027-01-31"
 }
+
+###
+
+# Crear un grupo (RF-42): nace Planificado y sin horarios. 201 + Location. El NRC se guarda en mayúsculas.
+# Presencial e Hibrida llevan aulaId; Virtual no (400). Curso, profesor o aula inactivos → 409 RN-17;
+# cupo mayor que la capacidad del aula → 409 RN-09; NRC repetido → 409 RN-13; ids inexistentes → 404.
+POST {{host}}/api/v1/grupos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nrc": "10001",
+  "cursoId": 1,
+  "profesorId": 1,
+  "periodoId": 1,
+  "aulaId": 1,
+  "cupo": 25,
+  "modalidad": "Presencial"
+}
+
+###
+
+# Crear un grupo virtual: sin aulaId.
+POST {{host}}/api/v1/grupos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nrc": "10002",
+  "cursoId": 1,
+  "profesorId": 1,
+  "periodoId": 1,
+  "aulaId": null,
+  "cupo": 40,
+  "modalidad": "Virtual"
+}
+
+###
+
+# Detalle de un grupo (RF-44): horarios, cupo, ocupados y disponibles. Inexistente → 404.
+GET {{host}}/api/v1/grupos/1
+Authorization: Bearer {{token}}
 
 ###

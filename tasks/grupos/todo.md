@@ -12,7 +12,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 |---|---|:---:|:---:|:---:|:---:|
 | T1. Dominio de grupos y horarios | Completada | ✅ | ✅ | ➖ | ✅ |
 | T2. Persistencia y migración `AgregaGrupo` | Completada | ✅ | ➖ | ✅ | ✅ |
-| T3. Crear grupo y detalle | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T3. Crear grupo y detalle | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Horarios: agregar y quitar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T5. Cambiar estado | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T6. Editar grupo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -83,7 +83,12 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - Cupo mayor que la capacidad → `409 RN-09`; igual a la capacidad → `201`.
   - Virtual con aula, presencial o híbrido sin aula, cupo 0, NRC vacío o de 11 caracteres, modalidad inexistente → `400`.
   - Con token de profesor o estudiante → `403`; sin token → `401`.
-- Files: `src/Matricula.Application/Grupos/{GrupoService,CrearGrupoRequest,CrearGrupoRequestValidator,GrupoResponse,GrupoDetalleResponse,GrupoProyecciones}.cs`, `src/Matricula.Application/DependencyInjection.cs`, `src/Matricula.Api/Controllers/GruposController.cs`
+  - Resultado (2026-11-05): 34/34 verificaciones correctas con un script contra la API local y tokens reales de administrador, profesor, estudiante y de una cuenta con cambio pendiente (`403`); los datos de prueba se crearon con correos `@prueba.local`. También se comprobó: híbrido con aula y cupo igual a la capacidad → `201`; un virtual con cupo 100 no se limita por aula; el detalle trae los datos del curso, profesor, periodo y aula; el cuerpo vacío → `400` con un mensaje por campo.
+  - Detalles que la spec no fijaba:
+    - Las reglas de formato viven en `DatosGrupoValidator` con `IDatosGrupo`, como `DatosPeriodoValidator`, para que T6 las reutilice. Ids, cupo y modalidad son anulables en el DTO para que un dato omitido responda `400`.
+    - `HorarioResponse` es un archivo aparte. Los horarios del detalle se ordenan en memoria (`OrdenarHorarios`), porque el día se guarda como texto y en SQL quedaría en orden alfabético.
+    - `ValidarReferenciasAsync` ya recibe el grupo actual para que T6 revise RN-17 solo con lo que cambia.
+- Files: `src/Matricula.Application/Grupos/{GrupoService,IDatosGrupo,DatosGrupoValidator,CrearGrupoRequest,CrearGrupoRequestValidator,GrupoResponse,GrupoDetalleResponse,HorarioResponse,GrupoProyecciones}.cs`, `src/Matricula.Application/DependencyInjection.cs`, `src/Matricula.Api/Controllers/GruposController.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T4. Horarios: agregar y quitar
 - Acceptance:

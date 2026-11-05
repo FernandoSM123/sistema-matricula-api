@@ -605,3 +605,34 @@ GET {{host}}/api/v1/cursos/1/grupos?periodoId=1
 Authorization: Bearer {{token}}
 
 ###
+
+# Grupos de un profesor (RF-27), solo administrador: todos los estados; filtro periodoId; search por NRC. 404 si no existe.
+GET {{host}}/api/v1/profesores/1/grupos?periodoId=1
+Authorization: Bearer {{token}}
+
+###
+
+# Horario semanal de un profesor (RF-28), solo administrador: bloques por día y hora, sin grupos cancelados.
+# Sin periodoId usa el vigente; si no hay vigente → 404 pidiendo el periodoId.
+GET {{host}}/api/v1/profesores/1/horario?periodoId=1
+Authorization: Bearer {{token}}
+
+###
+
+# Mis grupos y mi horario (RF-27, RF-28), solo con token de profesor (otro rol → 403). Mismos filtros que arriba.
+GET {{host}}/api/v1/me/grupos?periodoId=1
+Authorization: Bearer {{token}}
+
+###
+
+GET {{host}}/api/v1/me/horario
+Authorization: Bearer {{token}}
+
+###
+
+# Ocupación de un aula (RF-41), solo administrador: bloques de sus grupos no cancelados en el periodo, de todos los
+# profesores. Sin periodoId usa el vigente; si no hay vigente → 404 pidiendo el periodoId.
+GET {{host}}/api/v1/aulas/1/ocupacion?periodoId=1
+Authorization: Bearer {{token}}
+
+###

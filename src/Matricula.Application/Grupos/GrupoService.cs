@@ -55,6 +55,35 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser)
             request, cursoId, profesorId: null, request.PeriodoId, estado, modalidad: null, cancellationToken);
     }
 
+    /// <summary>
+    /// RF-27 (consulta 5) para el administrador: los grupos de un profesor, en todos los estados.
+    /// </summary>
+    public async Task<PagedResult<GrupoResponse>> ListarDeProfesorAsync(
+        int profesorId, ListarGruposProfesorRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!await db.Profesores.AnyAsync(p => p.Id == profesorId, cancellationToken))
+        {
+            throw new NotFoundException($"No existe el profesor {profesorId}.");
+        }
+
+        return await ConsultarAsync(
+            request, cursoId: null, profesorId, request.PeriodoId, estado: null, modalidad: null, cancellationToken);
+    }
+
+    /// <summary>
+    /// RF-27 (consulta 5) para el profesor de la sesión.
+    /// </summary>
+    public Task<PagedResult<GrupoResponse>> ListarMisGruposAsync(
+        ListarGruposProfesorRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        return ConsultarAsync(
+            request, cursoId: null, ProfesorActual(), request.PeriodoId, estado: null, modalidad: null, cancellationToken);
+    }
+
     // Filtros comunes de los listados; la visibilidad por rol ya viene aplicada en los parámetros.
     private Task<PagedResult<GrupoResponse>> ConsultarAsync(
         PaginacionRequest request,

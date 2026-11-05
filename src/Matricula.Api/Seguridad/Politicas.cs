@@ -4,7 +4,8 @@ using Microsoft.AspNetCore.Authorization;
 namespace Matricula.Api.Seguridad;
 
 /// <summary>
-/// Políticas de autorización. Para restringir por rol se usan <see cref="Administrador"/> y <see cref="Estudiante"/>, no
+/// Políticas de autorización. Para restringir por rol se usan <see cref="Administrador"/>, <see cref="Profesor"/> y
+/// <see cref="Estudiante"/>, no
 /// [Authorize(Roles = ...)]: el atributo con Roles reemplaza la política por defecto y dejaría pasar
 /// a un usuario con cambio de contraseña pendiente (RN-24).
 /// </summary>
@@ -16,6 +17,8 @@ public static class Politicas
     public const string Administrador = nameof(Administrador);
 
     public const string Estudiante = nameof(Estudiante);
+
+    public const string Profesor = nameof(Profesor);
 
     public const string AdministradorOProfesor = nameof(AdministradorOProfesor);
 
@@ -37,6 +40,9 @@ public static class Politicas
             .AddPolicy(Estudiante, policy => policy
                 .Combine(conSesionSinCambioPendiente)
                 .RequireRole(nameof(Rol.Estudiante)))
+            .AddPolicy(Profesor, policy => policy
+                .Combine(conSesionSinCambioPendiente)
+                .RequireRole(nameof(Rol.Profesor)))
             .AddPolicy(AdministradorOProfesor, policy => policy
                 .Combine(conSesionSinCambioPendiente)
                 .RequireRole(nameof(Rol.Administrador), nameof(Rol.Profesor)));

@@ -32,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<PeriodoService>();
         services.AddScoped<GrupoService>();
         services.AddScoped<OfertaAcademicaService>();
+        services.AddScoped<HorarioSemanalService>();
 
         return services;
     }

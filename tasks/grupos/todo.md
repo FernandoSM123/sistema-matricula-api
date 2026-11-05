@@ -18,7 +18,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T6. Editar grupo | Completada | ✅ | ➖ | ✅ | ✅ |
 | T7. Listado y visibilidad por rol | Completada | ✅ | ➖ | ✅ | ✅ |
 | T8. Oferta académica y grupos de un curso | Completada | ✅ | ➖ | ⏳ | ✅ |
-| T9. Consultas de profesor y aula | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T9. Consultas de profesor y aula | Completada | ✅ | ➖ | ⏳ | ✅ |
 | T10. RN-37 y RN-09 en otros módulos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T11. Eliminar cursos, aulas y periodos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T12. Eliminar profesores con su cuenta | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -185,7 +185,12 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - `/aulas/{id}/ocupacion` con `periodoId`; sin `periodoId` y sin vigente → `404` con el mensaje.
   - `/me/grupos` con token de estudiante o administrador → `403`.
   - ⏳ `matriculas` amplía `/me/horario` a estudiantes (RF-21).
-- Files: `src/Matricula.Api/Seguridad/Politicas.cs`, `src/Matricula.Application/Grupos/Consultas/{HorarioSemanalService,BloqueHorarioResponse}.cs`, `src/Matricula.Api/Controllers/{ProfesoresController,MeController,AulasController}.cs`
+  - Resultado (2026-11-05): 37/37 verificaciones correctas contra la API local. Además de la lista: los grupos de un profesor incluyen todos los estados (también `Cancelado`) y aceptan `search` por NRC; `/me/grupos` da lo mismo que `/profesores/{id}/grupos` y otro profesor solo ve los suyos; el horario y la ocupación excluyen los cancelados y los de otros periodos, y la ocupación junta los bloques de todos los profesores del aula; cada bloque trae grupo, NRC, curso, profesor, aula, modalidad y estado; `periodoId` inexistente, profesor o aula inexistentes → `404`. Sin `periodoId` y con un periodo vigente, `/me/horario` y `/aulas/{id}/ocupacion` usan el vigente: el script lo creó y al final lo movió a 2043, así que la BD sigue sin periodo vigente. Acceso: `/me/grupos` y `/me/horario` con estudiante, administrador o cambio pendiente → `403`, sin token → `401`; los de `/profesores` y `/aulas/{id}/ocupacion` con profesor → `403`; `GET /me` sigue abierto a cualquier rol.
+  - Detalles que la spec no fijaba:
+    - Los grupos de un profesor se listan en `GrupoService` (`ListarDeProfesorAsync`, `ListarMisGruposAsync`) con el mismo `ConsultarAsync` de T7 y T8, y el filtro `ListarGruposProfesorRequest` (`periodoId`, `search` por NRC). Sin `periodoId` se listan todos los periodos; solo el horario y la ocupación usan el vigente por defecto, como dice la spec.
+    - `BloqueHorarioResponse` trae a la vez profesor y aula, así sirve igual para el horario del profesor y la ocupación del aula. El orden se desempata por NRC solo para que sea estable: RN-07 y RN-08 impiden dos bloques a la misma hora del mismo profesor o aula en un periodo.
+    - Un `periodoId` que no existe responde `404` en vez de una lista vacía.
+- Files: `src/Matricula.Api/Seguridad/Politicas.cs`, `src/Matricula.Application/Grupos/Consultas/{HorarioSemanalService,BloqueHorarioResponse}.cs`, `src/Matricula.Application/Grupos/{GrupoService,ListarGruposProfesorRequest}.cs`, `src/Matricula.Application/DependencyInjection.cs`, `src/Matricula.Api/Controllers/{ProfesoresController,MeController,AulasController}.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T10. RN-37 y RN-09 en otros módulos
 - Acceptance:

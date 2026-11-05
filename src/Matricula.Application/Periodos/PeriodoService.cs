@@ -72,15 +72,29 @@ public class PeriodoService(IAppDbContext db, IFechaLocal fechaLocal)
     /// </summary>
     public async Task<PeriodoResponse> ObtenerVigenteAsync(CancellationToken cancellationToken)
     {
+        var id = await ObtenerIdVigenteAsync(cancellationToken)
+            ?? throw new NotFoundException("No hay un periodo vigente.");
+
+        return await db.Periodos.AsNoTracking()
+            .Where(p => p.Id == id)
+            .Select(PeriodoProyecciones.AResponse)
+            .SingleAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Id del periodo vigente, o null si no hay. Para las consultas de otros módulos que lo usan por defecto (la oferta
+    /// académica, el horario semanal y la ocupación de un aula).
+    /// </summary>
+    public async Task<int?> ObtenerIdVigenteAsync(CancellationToken cancellationToken)
+    {
         var hoy = fechaLocal.Hoy();
 
         return await db.Periodos.AsNoTracking()
             .Where(p => p.InicioMatricula <= hoy && hoy <= p.FinClases)
             .OrderByDescending(p => p.InicioMatricula)
             .ThenByDescending(p => p.Id)
-            .Select(PeriodoProyecciones.AResponse)
-            .FirstOrDefaultAsync(cancellationToken)
-            ?? throw new NotFoundException("No hay un periodo vigente.");
+            .Select(p => (int?)p.Id)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     /// <summary>

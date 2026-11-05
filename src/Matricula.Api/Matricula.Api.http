@@ -591,3 +591,17 @@ Content-Type: application/json
 }
 
 ###
+
+# Oferta académica (RF-50): pública, sin token. Grupos Abierto del periodo vigente con horarios y cupos disponibles
+# (incluidos los llenos); del profesor solo el nombre. Filtros: cursoId, modalidad; search busca en el curso y el NRC.
+# Sin periodo vigente → 200 con la lista vacía.
+GET {{host}}/api/v1/oferta-academica?search=prog&page=1&pageSize=20
+
+###
+
+# Grupos de un curso (RF-34), con cualquier sesión. Filtros: periodoId, estado; search busca en el NRC. El administrador
+# ve cualquier estado; profesores y estudiantes solo los Abierto. Curso inexistente → 404.
+GET {{host}}/api/v1/cursos/1/grupos?periodoId=1
+Authorization: Bearer {{token}}
+
+###

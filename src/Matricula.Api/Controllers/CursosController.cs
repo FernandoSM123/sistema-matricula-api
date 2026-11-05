@@ -2,6 +2,7 @@ using Matricula.Api.Common;
 using Matricula.Api.Seguridad;
 using Matricula.Application.Common.Paginacion;
 using Matricula.Application.Cursos;
+using Matricula.Application.Grupos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,7 +10,7 @@ namespace Matricula.Api.Controllers;
 
 // Las políticas van por acción: un atributo de clase se sumaría al de cada una y dejaría las lecturas solo para
 // administradores.
-public class CursosController(CursoService cursoService) : ApiControllerBase
+public class CursosController(CursoService cursoService, GrupoService grupoService) : ApiControllerBase
 {
     /// <summary>
     /// Registra un curso (RF-29). El código de un curso activo responde RN-13 y el de uno inactivo RN-39 con cursoId.
@@ -97,4 +98,19 @@ public class CursosController(CursoService cursoService) : ApiControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CursoResponse>> Obtener(int id, CancellationToken cancellationToken) =>
         Ok(await cursoService.ObtenerAsync(id, cancellationToken));
+
+    /// <summary>
+    /// Grupos de un curso (RF-34), con filtros por periodo y estado; search busca en el NRC. El administrador ve
+    /// cualquier estado; profesores y estudiantes solo los Abierto. Curso inexistente → 404.
+    /// </summary>
+    [HttpGet("{id:int}/grupos")]
+    [Authorize]
+    [ProducesResponseType<PagedResult<GrupoResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PagedResult<GrupoResponse>>> ListarGrupos(
+        int id, [FromQuery] ListarGruposCursoRequest request, CancellationToken cancellationToken) =>
+        Ok(await grupoService.ListarPorCursoAsync(id, request, cancellationToken));
 }

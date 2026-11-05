@@ -31,11 +31,45 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser)
                 break;
         }
 
+        return ConsultarAsync(
+            request, request.CursoId, profesorId, request.PeriodoId, estado, request.Modalidad, cancellationToken);
+    }
+
+    /// <summary>
+    /// RF-34 (consulta 4): los grupos de un curso. El administrador filtra por cualquier estado; el resto solo ve los
+    /// Abierto, también el profesor, que aquí no se limita a los suyos (supuesto 7).
+    /// </summary>
+    public async Task<PagedResult<GrupoResponse>> ListarPorCursoAsync(
+        int cursoId, ListarGruposCursoRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!await db.Cursos.AnyAsync(c => c.Id == cursoId, cancellationToken))
+        {
+            throw new NotFoundException($"No existe el curso {cursoId}.");
+        }
+
+        var estado = currentUser.Rol == nameof(Rol.Administrador) ? request.Estado : EstadoGrupo.Abierto;
+
+        return await ConsultarAsync(
+            request, cursoId, profesorId: null, request.PeriodoId, estado, modalidad: null, cancellationToken);
+    }
+
+    // Filtros comunes de los listados; la visibilidad por rol ya viene aplicada en los parámetros.
+    private Task<PagedResult<GrupoResponse>> ConsultarAsync(
+        PaginacionRequest request,
+        int? cursoId,
+        int? profesorId,
+        int? periodoId,
+        EstadoGrupo? estado,
+        Modalidad? modalidad,
+        CancellationToken cancellationToken)
+    {
         var query = db.Grupos.AsNoTracking();
 
-        if (request.CursoId is { } cursoId)
+        if (cursoId is { } c)
         {
-            query = query.Where(g => g.CursoId == cursoId);
+            query = query.Where(g => g.CursoId == c);
         }
 
         if (profesorId is { } p)
@@ -43,9 +77,9 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser)
             query = query.Where(g => g.ProfesorId == p);
         }
 
-        if (request.PeriodoId is { } periodoId)
+        if (periodoId is { } pe)
         {
-            query = query.Where(g => g.PeriodoId == periodoId);
+            query = query.Where(g => g.PeriodoId == pe);
         }
 
         if (estado is { } e)
@@ -53,9 +87,9 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser)
             query = query.Where(g => g.Estado == e);
         }
 
-        if (request.Modalidad is { } modalidad)
+        if (modalidad is { } m)
         {
-            query = query.Where(g => g.Modalidad == modalidad);
+            query = query.Where(g => g.Modalidad == m);
         }
 
         if (!string.IsNullOrWhiteSpace(request.Search))

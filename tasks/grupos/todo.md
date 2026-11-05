@@ -17,7 +17,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T5. Cambiar estado | Completada | ✅ | ➖ | ⏳ | ✅ |
 | T6. Editar grupo | Completada | ✅ | ➖ | ✅ | ✅ |
 | T7. Listado y visibilidad por rol | Completada | ✅ | ➖ | ✅ | ✅ |
-| T8. Oferta académica y grupos de un curso | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T8. Oferta académica y grupos de un curso | Completada | ✅ | ➖ | ⏳ | ✅ |
 | T9. Consultas de profesor y aula | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T10. RN-37 y RN-09 en otros módulos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T11. Eliminar cursos, aulas y periodos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -37,7 +37,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 
 | Origen | Verificación | Tarea |
 |---|---|---|
-| `fundacion` T3 | La ruta de un controller de nombre compuesto sale en kebab-case: `OfertaAcademicaController` → `/api/v1/oferta-academica` | T8 |
+| `fundacion` T3 | La ruta de un controller de nombre compuesto sale en kebab-case: `OfertaAcademicaController` → `/api/v1/oferta-academica` | T8 — ✅ cumplida (2026-11-05) |
 
 ## Detalle
 
@@ -166,7 +166,13 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - Grupos de otro periodo o en otro estado no aparecen.
   - ✅ Verificación heredada de `fundacion` T3: la ruta es `/api/v1/oferta-academica`.
   - `/cursos/{id}/grupos`: administrador filtra por cualquier estado y periodo; profesor y estudiante solo reciben `Abierto`; curso inexistente → `404`.
-- Files: `src/Matricula.Application/Periodos/PeriodoService.cs`, `src/Matricula.Application/Grupos/Consultas/{OfertaAcademicaService,OfertaAcademicaResponse,ListarOfertaRequest}.cs`, `src/Matricula.Api/Controllers/{OfertaAcademicaController,CursosController}.cs`
+  - Resultado (2026-11-05): 32/32 verificaciones correctas contra la API local. Como la BD de desarrollo no tenía periodo vigente, el script creó uno que abarca hoy, verificó con él y al final lo movió a 2041 con `PUT /periodos/{id}`; la BD queda sin periodo vigente, como estaba. Además de la lista: la oferta trae curso, NRC, nombre del profesor, modalidad, aula, cupo, disponibles y los horarios de lunes a domingo; no aparecen los `Planificado`, `Cerrado`, `Cancelado` ni los de otro periodo; `search` encuentra por nombre o código del curso y por NRC sin distinguir mayúsculas; el orden es curso y NRC; con token también responde; modalidad inexistente → `400`. En `/cursos/{id}/grupos`, un profesor que no da el curso ve los `Abierto` del curso, no solo los suyos (supuesto 7); estado inexistente o curso sin grupos → `200`; sin token → `401`. `GET /periodos/vigente` sigue respondiendo `200` con el periodo vigente y `404` sin él tras el cambio en `PeriodoService`.
+  - ✅ Verificación heredada de `fundacion` T3: `GET /api/v1/oferta-academica` → `200`; `/api/v1/ofertaacademica` → `404` con token. Sin token cualquier ruta desconocida responde `401`, porque la API exige sesión por defecto.
+  - ⏳ "Incluidos los llenos": la consulta no filtra por disponibles, pero no se puede llenar un grupo hasta que `matriculas` incremente `CuposOcupados`. Anotado en las verificaciones heredadas del mapa.
+  - Detalles que la spec no fijaba:
+    - `GrupoService` separa los filtros comunes en `ConsultarAsync`; `ListarAsync` y `ListarPorCursoAsync` solo deciden la visibilidad. En `/cursos/{id}/grupos` el filtro es `ListarGruposCursoRequest` (`periodoId`, `estado`, `search` por NRC), como en la tabla de endpoints de la spec.
+    - `OfertaAcademicaResponse` lleva `grupoId` y `cupo` además de los disponibles.
+- Files: `src/Matricula.Application/Periodos/PeriodoService.cs`, `src/Matricula.Application/Grupos/Consultas/{OfertaAcademicaService,OfertaAcademicaResponse,ListarOfertaRequest}.cs`, `src/Matricula.Application/Grupos/{GrupoService,ListarGruposCursoRequest}.cs`, `src/Matricula.Application/DependencyInjection.cs`, `src/Matricula.Api/Controllers/{OfertaAcademicaController,CursosController}.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T9. Consultas de profesor y aula
 - Acceptance:

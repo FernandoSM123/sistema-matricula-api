@@ -23,7 +23,7 @@
 | `estudiantes` | [Aprobada](SPEC-estudiantes.md) | [Aprobado](../tasks/estudiantes/plan.md) | [Aprobadas](../tasks/estudiantes/todo.md) | 9/9 | Completado |
 | `profesores` | [Aprobada](SPEC-profesores.md) | [Aprobado](../tasks/profesores/plan.md) | [Aprobadas](../tasks/profesores/todo.md) | 7/7 | Completado |
 | `catalogos` | [Aprobada](SPEC-catalogos.md) | [Aprobado](../tasks/catalogos/plan.md) | [Aprobadas](../tasks/catalogos/todo.md) | 10/10 | Completado |
-| `grupos` | [Aprobada](SPEC-grupos.md) | [Aprobado](../tasks/grupos/plan.md) | [Aprobadas](../tasks/grupos/todo.md) | 7/13 | En implementación |
+| `grupos` | [Aprobada](SPEC-grupos.md) | [Aprobado](../tasks/grupos/plan.md) | [Aprobadas](../tasks/grupos/todo.md) | 8/13 | En implementación |
 | `matriculas` | — | — | — | — | Sin empezar |
 
 **Estados de un documento** (spec, plan o lista de tareas):
@@ -48,8 +48,10 @@ Verificaciones que un módulo no pudo hacer por falta de datos o endpoints. Se c
 |---|---|---|
 | `fundacion` T1 | `acceso` | Un dato duplicado que llegue a la BD (por ejemplo, el correo de `usuario`) responde `409` con `code: "RN-13"`, sin el nombre de la restricción — ✅ cumplida en `acceso` T10 (2026-10-19) |
 | `fundacion` T1 | `acceso` | El `400` de validación (primer DTO con validador, por ejemplo el login) incluye `traceId` — ✅ cumplida en `acceso` T5 (2026-10-19) |
-| `fundacion` T3 | primer módulo con un controller de nombre compuesto | Su ruta sale en kebab-case (por ejemplo, `/api/v1/cambio-grupo`) — copiada a `grupos` T8 (`OfertaAcademicaController`) |
+| `fundacion` T3 | primer módulo con un controller de nombre compuesto | Su ruta sale en kebab-case (por ejemplo, `/api/v1/cambio-grupo`) — ✅ cumplida en `grupos` T8 (2026-11-05): `/api/v1/oferta-academica` |
 | `acceso` T10 | `estudiantes` | Un endpoint de administrador (por ejemplo, `POST /api/v1/administradores`) con el token de un estudiante responde `403`, no `401` ni `200` — ✅ cumplida en `estudiantes` T3 (2026-10-27) |
+| `grupos` T1 | `matriculas` | Una prueba unitaria de que `Grupo.ActualizarDatos` rechaza un cupo menor que `CuposOcupados` (`409 RF-45`), cuando exista el método que incrementa `CuposOcupados` |
+| `grupos` T8 | `matriculas` | La oferta académica incluye los grupos `Abierto` sin cupos disponibles (`cuposDisponibles = 0`) |
 
 ## Decisiones aprobadas
 

@@ -4,12 +4,13 @@ Módulo `grupos` del [mapa de módulos](mapa-modulos.md). Depende de `catalogos`
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/grupos/plan.md) | [Aprobadas](../tasks/grupos/todo.md) | 12/13 tareas completadas |
+| **Aprobada** | [Aprobado](../tasks/grupos/plan.md) | [Aprobadas](../tasks/grupos/todo.md) | 13/13 tareas completadas: **módulo completado** (2026-11-05) |
 
 **Historial:**
 - 2026-11-05: v1 en revisión, con nueve supuestos y una pregunta abierta (eliminación de profesores y su cuenta).
 - 2026-11-05: resuelta la pregunta abierta: al eliminar un profesor se elimina también su cuenta (decisión 4). Se actualizaron RF-14, RF-19, RF-26, RN-35 y la tabla de §4.2 de los requerimientos, y se agregó la decisión 10 al mapa. v1 aprobada, con sus nueve supuestos. Plan y lista de 13 tareas en revisión.
 - 2026-11-05: plan y lista de tareas aprobados; la implementación empezará por T1.
+- 2026-11-05: módulo completado (13/13 tareas), sin cambios de alcance. Detalles de implementación que la spec no fijaba: los filtros de los listados viven en `GrupoService.ConsultarAsync` y las guardas de RN-37 y RN-09 en `GuardasGrupos`; `PeriodoService.ObtenerIdVigenteAsync` da el periodo vigente a la oferta y al horario; `GlobalExceptionHandler` responde `409 RN-34` ante una violación de llave foránea, como red de seguridad del borrado. Quedan para `matriculas` RN-12 al cancelar, RF-46, `/me/horario` para estudiantes y dos verificaciones heredadas (oferta con grupos llenos y la prueba del cupo contra `CuposOcupados`).
 
 ## Objetivo
 

@@ -22,7 +22,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T10. RN-37 y RN-09 en otros módulos | Completada | ✅ | ➖ | ✅ | ✅ |
 | T11. Eliminar cursos, aulas y periodos | Completada | ✅ | ➖ | ✅ | ✅ |
 | T12. Eliminar profesores con su cuenta | Completada | ✅ | ➖ | ✅ | ✅ |
-| T13. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ➖ |
+| T13. Cierre del módulo | Completada | ✅ | ➖ | ✅ | ✅ |
 
 **Estados de tarea:**
 - **Pendiente:** no se ha empezado.
@@ -243,4 +243,6 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - Recorrido de la tabla de verificación manual de la spec, con los tres roles, sin token y con cambio pendiente.
   - Estados de la spec, el mapa y esta lista al día; la verificación heredada de `fundacion` T3 marcada como cumplida en el mapa.
 - Verify: prueba de humo final con datos nuevos sobre toda la tabla de verificación de la spec; `dotnet build` sin warnings; pruebas unitarias en verde.
+  - Resultado (2026-11-05): prueba de humo final con datos nuevos: 114/114 verificaciones correctas contra la API local, una o más por cada fila de la tabla de la spec, con tokens de administrador, profesor, estudiante, sin token y con cambio pendiente. Incluye la oferta con y sin periodo vigente (el vigente temporal se movió a 2052; la BD queda sin vigente) y la ruta en kebab-case (verificación heredada de `fundacion` T3, cumplida en T8 y marcada en el mapa). `dotnet build --no-incremental` con 0 advertencias y 0 errores; 219/219 pruebas unitarias en verde; `has-pending-model-changes` sin cambios. `Matricula.Api.http` tiene las peticiones de todos los endpoints del módulo.
+  - Datos de prueba: los scripts de verificación dejaron en la BD de desarrollo cursos, aulas, periodos (años 2030 a 2053), profesores, estudiantes y grupos con correos `@prueba.local`. No se borraron: muchos tienen grupos y RN-34 impide eliminarlos.
 - Files: `src/Matricula.Api/Matricula.Api.http`, `specs/mapa-modulos.md`, `specs/SPEC-grupos.md`, `tasks/grupos/todo.md`

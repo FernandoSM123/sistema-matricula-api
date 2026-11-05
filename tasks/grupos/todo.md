@@ -13,7 +13,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T1. Dominio de grupos y horarios | Completada | ✅ | ✅ | ➖ | ✅ |
 | T2. Persistencia y migración `AgregaGrupo` | Completada | ✅ | ➖ | ✅ | ✅ |
 | T3. Crear grupo y detalle | Completada | ✅ | ➖ | ✅ | ✅ |
-| T4. Horarios: agregar y quitar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T4. Horarios: agregar y quitar | Completada | ✅ | ➖ | ✅ | ✅ |
 | T5. Cambiar estado | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T6. Editar grupo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T7. Listado y visibilidad por rol | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -103,7 +103,10 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - Choque con otro grupo del mismo profesor / aula en el mismo periodo → `409 RN-07` / `409 RN-08`, con el NRC.
   - Mismo choque con un grupo `Cancelado` (cancelarlo directamente en la BD hasta T5) o de otro periodo → `201`. Bloques contiguos → `201`. Grupo virtual: no se revisa el aula.
   - Quitar en `Planificado` → `204`; bloque de otro grupo → `404`. Fuera de `Planificado` se verifica en T5.
-- Files: `src/Matricula.Application/Grupos/{GrupoService,AgregarHorarioRequest,AgregarHorarioRequestValidator}.cs`, `src/Matricula.Api/Controllers/GruposController.cs`
+  - Resultado (2026-11-05): 34/34 verificaciones correctas contra la API local. Además de la lista: el bloque rechazado no se guarda; los horarios del detalle salen de lunes a domingo y por hora; se aceptan `HH:mm` y `HH:mm:ss`; `25:00` → `400`; el mismo profesor y aula en un periodo traslapado con otro no chocan (supuesto 3); quitar un bloque ya quitado → `404`; profesor y estudiante → `403`, sin token → `401`.
+  - Pendiente para T5: el choque con un grupo `Cancelado` → `201`. No se pudo cancelar en la BD (`psql` pide una contraseña que no está disponible), así que se verifica con el endpoint de estado.
+  - Detalle de implementación: `ValidarTraslapesAsync` trae en una consulta los bloques de los mismos días de los otros grupos no cancelados del periodo que comparten profesor o aula, y decide el traslape en memoria con `ReglasHorario.SeTraslapan`, la misma función que usa `Horario.SeTraslapaCon`.
+- Files: `src/Matricula.Application/Grupos/{GrupoService,AgregarHorarioRequest,AgregarHorarioRequestValidator}.cs`, `src/Matricula.Api/Controllers/GruposController.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T5. Cambiar estado
 - Acceptance:
@@ -115,7 +118,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - Saltar un estado, retroceder o cancelar un grupo finalizado → `409 RF-47`. Abrir sin bloques → `409 RF-47` con su mensaje.
   - Cancelar desde `Planificado`, `Abierto`, `Cerrado` y `EnCurso` → `204`.
   - Repetir el estado actual → `204`.
-  - Pendiente de T4: quitar un bloque de un grupo `Abierto` → `409 RF-48`; agregar a un grupo `Finalizado` o `Cancelado` → `409`.
+  - Pendiente de T4: quitar un bloque de un grupo `Abierto` → `409 RF-48`; agregar a un grupo `Finalizado` o `Cancelado` → `409`; un bloque que choca con un grupo `Cancelado` del mismo profesor o aula → `201`.
   - ⏳ RN-12 al cancelar la añade `matriculas`.
 - Files: `src/Matricula.Application/Grupos/{GrupoService,CambiarEstadoRequest,CambiarEstadoRequestValidator}.cs`, `src/Matricula.Api/Controllers/GruposController.cs`
 

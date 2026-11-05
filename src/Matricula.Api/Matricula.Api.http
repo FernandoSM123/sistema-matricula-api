@@ -527,3 +527,25 @@ GET {{host}}/api/v1/grupos/1
 Authorization: Bearer {{token}}
 
 ###
+
+# Agregar un bloque de horario (RF-48). 201 con el grupo. Horas "HH:mm" o "HH:mm:ss"; horaFin ≤ horaInicio → 400 (RN-15).
+# Traslape con otro bloque del grupo → 409 RN-14. Choque con otro grupo del mismo profesor / aula en el mismo periodo
+# → 409 RN-07 / RN-08, con el NRC del otro grupo (los cancelados no cuentan). Bloques contiguos sí se permiten.
+# Grupo finalizado o cancelado → 409 RF-48.
+POST {{host}}/api/v1/grupos/1/horarios
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "dia": "Lunes",
+  "horaInicio": "08:00",
+  "horaFin": "10:00"
+}
+
+###
+
+# Quitar un bloque (RF-48): 204. Solo con el grupo Planificado; si no → 409 RF-48. Bloque de otro grupo → 404.
+DELETE {{host}}/api/v1/grupos/1/horarios/1
+Authorization: Bearer {{token}}
+
+###

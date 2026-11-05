@@ -1,7 +1,9 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
 using Matricula.Domain.Entities;
+using Matricula.Domain.Enums;
 using Matricula.Domain.Exceptions;
+using Matricula.Domain.Reglas;
 using Microsoft.EntityFrameworkCore;
 
 namespace Matricula.Application.Grupos;
@@ -45,6 +47,87 @@ public class GrupoService(IAppDbContext db)
             ?? throw new NotFoundException($"No existe el grupo {id}.");
 
         return detalle.OrdenarHorarios();
+    }
+
+    /// <summary>
+    /// RF-48: agrega un bloque. Rechaza el traslape con otro bloque del grupo (RN-14) y con los grupos del mismo
+    /// profesor (RN-07) o la misma aula (RN-08) en el periodo.
+    /// </summary>
+    public async Task<GrupoDetalleResponse> AgregarHorarioAsync(
+        int grupoId, AgregarHorarioRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var grupo = await BuscarConHorariosAsync(grupoId, cancellationToken);
+        var horario = grupo.AgregarHorario(request.Dia!.Value, request.HoraInicio!.Value, request.HoraFin!.Value);
+        await ValidarTraslapesAsync(grupo, [horario], grupo.ProfesorId, grupo.AulaId, cancellationToken);
+
+        await db.SaveChangesAsync(cancellationToken);
+        return await ObtenerAsync(grupoId, cancellationToken);
+    }
+
+    /// <summary>
+    /// RF-48: solo mientras el grupo está Planificado. Un bloque de otro grupo responde 404.
+    /// </summary>
+    public async Task QuitarHorarioAsync(int grupoId, int horarioId, CancellationToken cancellationToken)
+    {
+        var grupo = await BuscarConHorariosAsync(grupoId, cancellationToken);
+        var horario = grupo.QuitarHorario(horarioId)
+            ?? throw new NotFoundException($"El grupo {grupoId} no tiene el bloque de horario {horarioId}.");
+
+        // Con FK Restrict, EF no elimina el bloque solo por sacarlo de la colección.
+        db.Horarios.Remove(horario);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task<Grupo> BuscarConHorariosAsync(int id, CancellationToken cancellationToken) =>
+        await db.Grupos
+            .Include(g => g.Horarios)
+            .SingleOrDefaultAsync(g => g.Id == id, cancellationToken)
+        ?? throw new NotFoundException($"No existe el grupo {id}.");
+
+    // RN-07 y RN-08: compara los bloques con los de los otros grupos del mismo periodo que comparten el profesor o el
+    // aula. Los cancelados no cuentan (supuesto 3). El traslape se decide con ReglasHorario, la misma regla de RN-14.
+    private async Task ValidarTraslapesAsync(
+        Grupo grupo,
+        IReadOnlyCollection<Horario> bloques,
+        int profesorId,
+        int? aulaId,
+        CancellationToken cancellationToken)
+    {
+        if (bloques.Count == 0)
+        {
+            return;
+        }
+
+        var dias = bloques.Select(b => b.Dia).Distinct().ToList();
+        var otros = await db.Grupos.AsNoTracking()
+            .Where(g => g.PeriodoId == grupo.PeriodoId
+                && g.Id != grupo.Id
+                && g.Estado != EstadoGrupo.Cancelado
+                && (g.ProfesorId == profesorId || (aulaId != null && g.AulaId == aulaId)))
+            .SelectMany(g => g.Horarios
+                .Where(h => dias.Contains(h.Dia))
+                .Select(h => new { g.Nrc, g.ProfesorId, g.AulaId, h.Dia, h.HoraInicio, h.HoraFin }))
+            .ToListAsync(cancellationToken);
+
+        var choque = otros.FirstOrDefault(o => bloques.Any(b =>
+            ReglasHorario.SeTraslapan(b.Dia, b.HoraInicio, b.HoraFin, o.Dia, o.HoraInicio, o.HoraFin)));
+
+        if (choque is null)
+        {
+            return;
+        }
+
+        var cuando = $"el {choque.Dia} de {choque.HoraInicio:HH\\:mm} a {choque.HoraFin:HH\\:mm}";
+        if (choque.ProfesorId == profesorId)
+        {
+            throw new BusinessRuleException(
+                "RN-07", $"El profesor ya imparte el grupo {choque.Nrc} {cuando} en el mismo periodo.");
+        }
+
+        throw new BusinessRuleException(
+            "RN-08", $"El aula ya está ocupada por el grupo {choque.Nrc} {cuando} en el mismo periodo.");
     }
 
     // RN-17 solo aplica a lo que el grupo empieza a usar: un curso, profesor o aula que ya tenía no se revisa (RN-37

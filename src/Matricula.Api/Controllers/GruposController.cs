@@ -30,6 +30,42 @@ public class GruposController(GrupoService grupoService) : ApiControllerBase
     }
 
     /// <summary>
+    /// Agrega un bloque de horario (RF-48) y devuelve el grupo. Responde RN-14 si se traslapa con otro bloque del
+    /// grupo, RN-07 o RN-08 si choca con otro grupo del mismo profesor o aula en el periodo, y RF-48 si el grupo está
+    /// finalizado o cancelado.
+    /// </summary>
+    [HttpPost("{id:int}/horarios")]
+    [Authorize(Policy = Politicas.Administrador)]
+    [ProducesResponseType<GrupoDetalleResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<GrupoDetalleResponse>> AgregarHorario(
+        int id, AgregarHorarioRequest request, CancellationToken cancellationToken)
+    {
+        var grupo = await grupoService.AgregarHorarioAsync(id, request, cancellationToken);
+        return CreatedAtAction(nameof(Obtener), new { id }, grupo);
+    }
+
+    /// <summary>
+    /// Quita un bloque de horario (RF-48). Solo mientras el grupo está Planificado; si no, RF-48.
+    /// </summary>
+    [HttpDelete("{id:int}/horarios/{horarioId:int}")]
+    [Authorize(Policy = Politicas.Administrador)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> QuitarHorario(int id, int horarioId, CancellationToken cancellationToken)
+    {
+        await grupoService.QuitarHorarioAsync(id, horarioId, cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
     /// Detalle de un grupo con sus horarios y cupos (RF-44).
     /// </summary>
     [HttpGet("{id:int}")]

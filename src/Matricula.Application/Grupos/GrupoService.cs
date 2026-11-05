@@ -1,5 +1,6 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
+using Matricula.Application.Common.Paginacion;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
 using Matricula.Domain.Exceptions;
@@ -8,8 +9,71 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Matricula.Application.Grupos;
 
-public class GrupoService(IAppDbContext db)
+public class GrupoService(IAppDbContext db, ICurrentUser currentUser)
 {
+    /// <summary>
+    /// RF-43 con la visibilidad de RN-18: el profesor solo ve sus grupos y el estudiante solo los Abierto (supuesto 7),
+    /// aunque envíen otro filtro. Ordena por inicio de clases (más reciente primero), curso y NRC.
+    /// </summary>
+    public Task<PagedResult<GrupoResponse>> ListarAsync(ListarGruposRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var profesorId = request.ProfesorId;
+        var estado = request.Estado;
+        switch (currentUser.Rol)
+        {
+            case nameof(Rol.Profesor):
+                profesorId = ProfesorActual();
+                break;
+            case nameof(Rol.Estudiante):
+                estado = EstadoGrupo.Abierto;
+                break;
+        }
+
+        var query = db.Grupos.AsNoTracking();
+
+        if (request.CursoId is { } cursoId)
+        {
+            query = query.Where(g => g.CursoId == cursoId);
+        }
+
+        if (profesorId is { } p)
+        {
+            query = query.Where(g => g.ProfesorId == p);
+        }
+
+        if (request.PeriodoId is { } periodoId)
+        {
+            query = query.Where(g => g.PeriodoId == periodoId);
+        }
+
+        if (estado is { } e)
+        {
+            query = query.Where(g => g.Estado == e);
+        }
+
+        if (request.Modalidad is { } modalidad)
+        {
+            query = query.Where(g => g.Modalidad == modalidad);
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            // El NRC se guarda en mayúsculas (Grupo.NormalizarNrc).
+            var termino = request.Search.Trim().ToUpperInvariant();
+            query = query.Where(g => g.Nrc.Contains(termino));
+        }
+
+        return query
+            .OrderByDescending(g => g.Periodo.InicioClases)
+            .ThenBy(g => g.Curso.Nombre)
+            .ThenBy(g => g.Nrc)
+            .ThenBy(g => g.Id)
+            .Select(GrupoProyecciones.AResponse)
+            .ToPagedResultAsync(request, cancellationToken);
+    }
+
     /// <summary>
     /// RF-42: crea el grupo Planificado y sin horarios. Curso, profesor y aula deben estar activos (RN-17), el cupo no
     /// supera la capacidad del aula (RN-09) y el NRC es único (RN-13).
@@ -65,7 +129,8 @@ public class GrupoService(IAppDbContext db)
     }
 
     /// <summary>
-    /// RF-44: incluye los horarios, el cupo, los ocupados y los disponibles.
+    /// RF-44: incluye los horarios, el cupo, los ocupados y los disponibles. RN-18: un profesor solo ve el detalle de
+    /// sus grupos y un estudiante el de los Abierto; otro grupo existente responde 403.
     /// </summary>
     public async Task<GrupoDetalleResponse> ObtenerAsync(int id, CancellationToken cancellationToken)
     {
@@ -75,8 +140,25 @@ public class GrupoService(IAppDbContext db)
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException($"No existe el grupo {id}.");
 
+        var visible = currentUser.Rol switch
+        {
+            nameof(Rol.Profesor) => detalle.ProfesorId == ProfesorActual(),
+            nameof(Rol.Estudiante) => detalle.Estado == EstadoGrupo.Abierto,
+            _ => true,
+        };
+
+        if (!visible)
+        {
+            throw new ForbiddenException("No tiene acceso a este grupo.", "RN-18");
+        }
+
         return detalle.OrdenarHorarios();
     }
+
+    // Un token emitido antes de que existiera el claim no lo trae: basta con iniciar sesión de nuevo.
+    private int ProfesorActual() =>
+        currentUser.ProfesorId
+        ?? throw new ForbiddenException("Su sesión no identifica a un profesor. Inicie sesión de nuevo.");
 
     /// <summary>
     /// RF-48: agrega un bloque. Rechaza el traslape con otro bloque del grupo (RN-14) y con los grupos del mismo

@@ -16,7 +16,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T4. Horarios: agregar y quitar | Completada | ✅ | ➖ | ✅ | ✅ |
 | T5. Cambiar estado | Completada | ✅ | ➖ | ⏳ | ✅ |
 | T6. Editar grupo | Completada | ✅ | ➖ | ✅ | ✅ |
-| T7. Listado y visibilidad por rol | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T7. Listado y visibilidad por rol | Completada | ✅ | ➖ | ✅ | ✅ |
 | T8. Oferta académica y grupos de un curso | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T9. Consultas de profesor y aula | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T10. RN-37 y RN-09 en otros módulos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -150,7 +150,9 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - Profesor: solo sus grupos aunque envíe otro `profesorId`; detalle ajeno → `403 RN-18`.
   - Estudiante: solo `Abierto` aunque envíe otro `estado`; detalle de un grupo `Planificado` → `403 RN-18`.
   - Sin token → `401`; con cambio pendiente → `403`.
-- Files: `src/Matricula.Application/Grupos/{GrupoService,ListarGruposRequest}.cs`, `src/Matricula.Api/Controllers/GruposController.cs`
+  - Resultado (2026-11-05): 30/30 verificaciones correctas contra la API local con tokens reales de administrador, profesor, estudiante y de una cuenta con cambio pendiente. Además de la lista: el orden es periodo más reciente, nombre del curso y NRC; la página trae `totalCount` y `totalPages`; la búsqueda por NRC no distingue mayúsculas y acepta parte del NRC; el administrador ve los cancelados si los filtra y el estudiante no; el profesor ve el detalle de sus grupos en cualquier estado; un grupo inexistente responde `404` también al profesor; estado inexistente en el filtro → `400`; las escrituras siguen solo para el administrador.
+  - La visibilidad se resuelve en el servicio con `ICurrentUser`: el listado sustituye `profesorId` o `estado` según el rol, y `ObtenerAsync` revisa el detalle ya proyectado. Un token de profesor sin el claim `profesor_id` responde `403` pidiendo iniciar sesión de nuevo, como en `estudiantes`.
+- Files: `src/Matricula.Application/Grupos/{GrupoService,ListarGruposRequest}.cs`, `src/Matricula.Api/Controllers/GruposController.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T8. Oferta académica y grupos de un curso
 - Acceptance:

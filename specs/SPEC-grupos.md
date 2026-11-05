@@ -4,7 +4,7 @@ Módulo `grupos` del [mapa de módulos](mapa-modulos.md). Depende de `catalogos`
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/grupos/plan.md) | [Aprobadas](../tasks/grupos/todo.md) | 6/13 tareas completadas |
+| **Aprobada** | [Aprobado](../tasks/grupos/plan.md) | [Aprobadas](../tasks/grupos/todo.md) | 7/13 tareas completadas |
 
 **Historial:**
 - 2026-11-05: v1 en revisión, con nueve supuestos y una pregunta abierta (eliminación de profesores y su cuenta).

@@ -522,7 +522,16 @@ Content-Type: application/json
 
 ###
 
+# Listar grupos (RF-43), con cualquier sesión. Filtros: cursoId, profesorId, periodoId, estado, modalidad; search busca
+# en el NRC. Orden: periodo más reciente, curso, NRC. Un profesor solo ve los suyos y un estudiante solo los Abierto,
+# aunque envíen otro filtro (RN-18).
+GET {{host}}/api/v1/grupos?periodoId=1&estado=Abierto&page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+###
+
 # Detalle de un grupo (RF-44): horarios, cupo, ocupados y disponibles. Inexistente → 404.
+# Profesor con un grupo ajeno o estudiante con un grupo que no está Abierto → 403 RN-18.
 GET {{host}}/api/v1/grupos/1
 Authorization: Bearer {{token}}
 

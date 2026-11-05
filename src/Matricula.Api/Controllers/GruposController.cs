@@ -1,5 +1,6 @@
 using Matricula.Api.Common;
 using Matricula.Api.Seguridad;
+using Matricula.Application.Common.Paginacion;
 using Matricula.Application.Grupos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -103,10 +104,25 @@ public class GruposController(GrupoService grupoService) : ApiControllerBase
     }
 
     /// <summary>
-    /// Detalle de un grupo con sus horarios y cupos (RF-44).
+    /// Lista los grupos (RF-43) con filtros por curso, profesor, periodo, estado y modalidad; search busca en el NRC.
+    /// Un profesor solo ve los suyos y un estudiante solo los Abierto, aunque envíen otro filtro (RN-18).
+    /// </summary>
+    [HttpGet]
+    [Authorize]
+    [ProducesResponseType<PagedResult<GrupoResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<PagedResult<GrupoResponse>>> Listar(
+        [FromQuery] ListarGruposRequest request, CancellationToken cancellationToken) =>
+        Ok(await grupoService.ListarAsync(request, cancellationToken));
+
+    /// <summary>
+    /// Detalle de un grupo con sus horarios y cupos (RF-44). Un profesor solo ve los suyos y un estudiante solo los
+    /// Abierto; otro grupo responde 403 RN-18.
     /// </summary>
     [HttpGet("{id:int}")]
-    [Authorize(Policy = Politicas.Administrador)]
+    [Authorize]
     [ProducesResponseType<GrupoDetalleResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]

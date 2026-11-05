@@ -1,6 +1,6 @@
 @host = http://localhost:5022
 
-# Recorrido de los módulos acceso, estudiantes y profesores. Ejecuta primero el login con tus credenciales: las demás peticiones usan
+# Recorrido de los módulos acceso, estudiantes, profesores y catalogos. Ejecuta primero el login con tus credenciales: las demás peticiones usan
 # {{token}}. Primer ingreso: login con la temporal de AdminSeed → cambio-obligatorio → login con la nueva.
 
 GET {{host}}/health
@@ -317,5 +317,171 @@ Authorization: Bearer {{token}}
 # Reactivar un profesor (RF-26, RN-39): un profesor que regresa se reactiva, no se registra de nuevo.
 POST {{host}}/api/v1/profesores/1/reactivar
 Authorization: Bearer {{token}}
+
+###
+
+
+# --- Módulo catalogos ---
+
+# Registrar un curso (RF-29). 201 + Location. El código se guarda en mayúsculas.
+# Código de un curso activo → 409 RN-13; de uno inactivo → 409 RN-39 con cursoId. Otro rol → 403.
+POST {{host}}/api/v1/cursos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "codigo": "prog-101",
+  "nombre": "Programación I",
+  "descripcion": "Fundamentos de programación",
+  "duracionHoras": 40,
+  "costo": 150000.00,
+  "nivel": "Basico"
+}
+
+###
+
+# Detalle de un curso (RF-31), con cualquier sesión. Inexistente → 404.
+GET {{host}}/api/v1/cursos/1
+Authorization: Bearer {{token}}
+
+###
+
+# Listar cursos (RF-30), con cualquier sesión: paginado por nombre, solo activos salvo incluirInactivos=true (RN-41).
+# search busca en nombre y código; nivel es Basico, Intermedio o Avanzado (otro valor → 400).
+GET {{host}}/api/v1/cursos?page=1&pageSize=20&search=prog&nivel=Basico&incluirInactivos=false
+Authorization: Bearer {{token}}
+
+###
+
+# Editar un curso (RF-32), también si está inactivo. Código de otro curso, activo o inactivo → 409 RN-13.
+PUT {{host}}/api/v1/cursos/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "codigo": "PROG-101",
+  "nombre": "Programación I",
+  "descripcion": null,
+  "duracionHoras": 48,
+  "costo": 175000.00,
+  "nivel": "Intermedio"
+}
+
+###
+
+# Desactivar un curso (RF-33): 204, también al repetir. La guarda RN-37 la añade el módulo grupos.
+POST {{host}}/api/v1/cursos/1/desactivar
+Authorization: Bearer {{token}}
+
+###
+
+# Reactivar un curso (RF-33, RN-39): 204, también al repetir.
+POST {{host}}/api/v1/cursos/1/reactivar
+Authorization: Bearer {{token}}
+
+###
+
+# Registrar un aula (RF-39). 201 + Location. El código se guarda en mayúsculas.
+# Código de un aula activa → 409 RN-13; de una inactiva → 409 RN-39 con aulaId. Otro rol → 403.
+POST {{host}}/api/v1/aulas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "codigo": "lab-1",
+  "ubicacion": "Edificio A, segundo piso",
+  "capacidad": 25
+}
+
+###
+
+# Detalle de un aula (RF-40), para administrador o profesor. Con token de estudiante → 403.
+GET {{host}}/api/v1/aulas/1
+Authorization: Bearer {{token}}
+
+###
+
+# Listar aulas (RF-40), para administrador o profesor: paginado por código, solo activas salvo incluirInactivos=true.
+# search busca en código y ubicación.
+GET {{host}}/api/v1/aulas?page=1&pageSize=20&search=edificio&incluirInactivos=false
+Authorization: Bearer {{token}}
+
+###
+
+# Editar un aula (RF-40), también si está inactiva. Código de otra aula, activa o inactiva → 409 RN-13.
+PUT {{host}}/api/v1/aulas/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "codigo": "LAB-1",
+  "ubicacion": null,
+  "capacidad": 30
+}
+
+###
+
+# Desactivar un aula (RF-40): 204, también al repetir. La guarda RN-37 la añade el módulo grupos.
+POST {{host}}/api/v1/aulas/1/desactivar
+Authorization: Bearer {{token}}
+
+###
+
+# Reactivar un aula (RF-40, RN-39): 204, también al repetir.
+POST {{host}}/api/v1/aulas/1/reactivar
+Authorization: Bearer {{token}}
+
+###
+
+# Registrar un periodo (RF-35). 201 + Location. El nombre se guarda en mayúsculas; repetido → 409 RN-13.
+# RN-16 → 400 en el campo: inicioMatricula < finMatricula, inicioClases < finClases, finMatricula ≤ finClases e
+# inicioMatricula ≤ fechaLimiteRetiro ≤ finClases. Los periodos pueden traslaparse.
+POST {{host}}/api/v1/periodos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "2027-i",
+  "inicioClases": "2027-02-01",
+  "finClases": "2027-06-30",
+  "inicioMatricula": "2027-01-10",
+  "finMatricula": "2027-02-10",
+  "fechaLimiteRetiro": "2027-03-15"
+}
+
+###
+
+# Listar periodos (RF-36), con cualquier sesión: paginado, los más recientes primero; search busca en el nombre.
+GET {{host}}/api/v1/periodos?page=1&pageSize=20&search=2027
+Authorization: Bearer {{token}}
+
+###
+
+# Periodo vigente (RF-38), con cualquier sesión: inicioMatricula ≤ hoy ≤ finClases, con la fecha de Instituto:ZonaHoraria.
+# Si hay varios, el de inicioMatricula más reciente y luego el id mayor. Sin vigente → 404.
+GET {{host}}/api/v1/periodos/vigente
+Authorization: Bearer {{token}}
+
+###
+
+# Detalle de un periodo (RF-36), con cualquier sesión. Inexistente → 404.
+GET {{host}}/api/v1/periodos/1
+Authorization: Bearer {{token}}
+
+###
+
+# Editar un periodo (RF-36), también si ya pasó. Nombre de otro periodo → 409 RN-13; RN-16 → 400.
+PUT {{host}}/api/v1/periodos/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "2027-I",
+  "inicioClases": "2027-02-08",
+  "finClases": "2027-06-30",
+  "inicioMatricula": "2027-01-10",
+  "finMatricula": "2027-02-15",
+  "fechaLimiteRetiro": "2027-01-31"
+}
 
 ###

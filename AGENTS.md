@@ -29,7 +29,7 @@ Entorno: PostgreSQL y smtp4dev instalados localmente; **no se usa Docker** (el `
 - Seguir `docs/arquitectura.md`; nombres de dominio en español sin tildes ni ñ, sufijos técnicos en inglés.
 - DTOs de entrada/salida; las entidades nunca salen de Application.
 - Errores como `ProblemDetails` con `code` de la regla (`"RN-05"`); `BusinessRuleException` → 409.
-- `async` + `CancellationToken` de punta a punta; `TimeProvider` en lugar de `DateTime.Now`.
+- `async` + `CancellationToken` de punta a punta; `TimeProvider` en lugar de `DateTime.Now`; `IFechaLocal.Hoy()` para la fecha de hoy (zona de `Instituto:ZonaHoraria`), nunca la fecha UTC.
 - Tests: **por el momento solo pruebas unitarias** de las reglas puras del dominio (sin BD). Servicios y endpoints se verifican manualmente con Scalar, `Matricula.Api.http` y smtp4dev.
 - `dotnet build` sin warnings y las pruebas unitarias en verde antes de dar una tarea por terminada.
 

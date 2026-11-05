@@ -81,6 +81,115 @@ namespace Matricula.Infrastructure.Persistence.Migrations
                     b.ToTable("administrador", (string)null);
                 });
 
+            modelBuilder.Entity("Matricula.Domain.Entities.Aula", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("activo");
+
+                    b.Property<int>("Capacidad")
+                        .HasColumnType("integer")
+                        .HasColumnName("capacidad");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("codigo");
+
+                    b.Property<DateTimeOffset>("FechaCreacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_creacion");
+
+                    b.Property<DateTimeOffset?>("FechaModificacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_modificacion");
+
+                    b.Property<string>("Ubicacion")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("ubicacion");
+
+                    b.HasKey("Id")
+                        .HasName("pk_aula");
+
+                    b.HasIndex("Codigo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_aula_codigo");
+
+                    b.ToTable("aula", (string)null);
+                });
+
+            modelBuilder.Entity("Matricula.Domain.Entities.Curso", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("activo");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("codigo");
+
+                    b.Property<decimal>("Costo")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("costo");
+
+                    b.Property<string>("Descripcion")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("descripcion");
+
+                    b.Property<int>("DuracionHoras")
+                        .HasColumnType("integer")
+                        .HasColumnName("duracion_horas");
+
+                    b.Property<DateTimeOffset>("FechaCreacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_creacion");
+
+                    b.Property<DateTimeOffset?>("FechaModificacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_modificacion");
+
+                    b.Property<string>("Nivel")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("nivel");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("nombre");
+
+                    b.HasKey("Id")
+                        .HasName("pk_curso");
+
+                    b.HasIndex("Codigo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_curso_codigo");
+
+                    b.ToTable("curso", (string)null);
+                });
+
             modelBuilder.Entity("Matricula.Domain.Entities.Estudiante", b =>
                 {
                     b.Property<int>("Id")
@@ -151,6 +260,59 @@ namespace Matricula.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_estudiante_usuario_id");
 
                     b.ToTable("estudiante", (string)null);
+                });
+
+            modelBuilder.Entity("Matricula.Domain.Entities.Periodo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("FechaCreacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_creacion");
+
+                    b.Property<DateOnly>("FechaLimiteRetiro")
+                        .HasColumnType("date")
+                        .HasColumnName("fecha_limite_retiro");
+
+                    b.Property<DateTimeOffset?>("FechaModificacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_modificacion");
+
+                    b.Property<DateOnly>("FinClases")
+                        .HasColumnType("date")
+                        .HasColumnName("fin_clases");
+
+                    b.Property<DateOnly>("FinMatricula")
+                        .HasColumnType("date")
+                        .HasColumnName("fin_matricula");
+
+                    b.Property<DateOnly>("InicioClases")
+                        .HasColumnType("date")
+                        .HasColumnName("inicio_clases");
+
+                    b.Property<DateOnly>("InicioMatricula")
+                        .HasColumnType("date")
+                        .HasColumnName("inicio_matricula");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("nombre");
+
+                    b.HasKey("Id")
+                        .HasName("pk_periodo");
+
+                    b.HasIndex("Nombre")
+                        .IsUnique()
+                        .HasDatabaseName("ix_periodo_nombre");
+
+                    b.ToTable("periodo", (string)null);
                 });
 
             modelBuilder.Entity("Matricula.Domain.Entities.Profesor", b =>

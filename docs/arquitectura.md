@@ -137,7 +137,8 @@ Son dos piezas distintas que trabajan juntas.
 - **Validación en dos niveles:**
   - FluentValidation revisa el formato del DTO: obligatorios, longitudes, política de contraseña RN-26, `HoraFin > HoraInicio` RN-15 y fechas RN-16.
   - El **servicio** revisa las reglas que necesitan la BD: cupo, traslapes y duplicados.
-- **Tiempo testeable:** inyecta `TimeProvider` en lugar de usar `DateTime.Now`. Lo necesitan RN-04, RN-10 y los vencimientos de las temporales.
+- **Tiempo testeable:** inyecta `TimeProvider` en lugar de usar `DateTime.Now`. Lo necesitan los vencimientos de las temporales y las marcas de tiempo, que van en UTC.
+- **Fecha de hoy:** las comparaciones con fechas sin hora (RN-04, RN-10, periodo vigente) usan `IFechaLocal.Hoy()`, que convierte la hora de `TimeProvider` a la zona de `Instituto:ZonaHoraria` (`America/Costa_Rica`). Nunca calcules la fecha de hoy desde UTC: desde las 18:00 en Costa Rica ya sería el día siguiente.
 - Logging con `ILogger<T>` y mensajes estructurados. Serilog es opcional. **Nunca registres contraseñas ni temporales.**
 - Ciclos de vida en la inyección de dependencias: el `DbContext` y los servicios son `Scoped`; `TimeProvider` y el generador de contraseñas, `Singleton`.
 - Health check (`/health`), CORS configurado para el front y **rate limiting** integrado en `login` y `olvido-contrasena`.

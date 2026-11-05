@@ -80,7 +80,7 @@ Registrar a los estudiantes del instituto, por su cuenta o por un administrador,
 
 ### Fuera de alcance
 
-- **Eliminar un estudiante** (RF-19, "solo si no tiene matrículas") y la guarda **RN-36** al desactivar: los añade `matriculas` (decisión 4 del mapa). Al hacerlo habrá que resolver qué pasa con su `Usuario`, porque RN-35 prohíbe eliminar cuentas.
+- **Eliminar un estudiante** (RF-19, "solo si no tiene matrículas") y la guarda **RN-36** al desactivar: los añade `matriculas` (decisión 4 del mapa). Al hacerlo habrá que resolver qué pasa con su `Usuario`, porque RN-35 prohíbe eliminar cuentas. → Resuelto el 2026-11-05: se elimina junto con el estudiante (decisión 10 del mapa).
 - RF-20, RF-21 y RF-54 (cursos, horario e historial del estudiante) y `/api/v1/me/matriculas`, `/me/horario`: `matriculas`.
 - Cambio de rol: no existe (decisión 8).
 - Iniciar sesión automáticamente tras el registro público, verificación del correo y correo de bienvenida.

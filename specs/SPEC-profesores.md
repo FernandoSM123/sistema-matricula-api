@@ -69,7 +69,7 @@ Que el administrador registre a los profesores del instituto y los gestione: lis
 
 ### Fuera de alcance
 
-- **Eliminar un profesor** (RF-26, "solo si nunca tuvo grupos") y la guarda **RN-37** al desactivar: los añade `grupos` (decisión 4 del mapa). Al hacerlo habrá que resolver qué pasa con su `Usuario`, porque RN-35 prohíbe eliminar cuentas (decisión 1).
+- **Eliminar un profesor** (RF-26, "solo si nunca tuvo grupos") y la guarda **RN-37** al desactivar: los añade `grupos` (decisión 4 del mapa). Al hacerlo habrá que resolver qué pasa con su `Usuario`, porque RN-35 prohíbe eliminar cuentas (decisión 1). → Resuelto el 2026-11-05: se elimina junto con el profesor (decisión 10 del mapa).
 - RF-27 y RF-28 (cursos, grupos y horario del profesor), consultas 5 y 7, y `/api/v1/me/grupos`, `/me/horario`: `grupos`.
 - La política `Politicas.Profesor`: ningún endpoint de este módulo la usa; la añade `grupos`, el primero que la necesita.
 - Edición de datos propios por el profesor: la matriz §2.2 no la incluye.

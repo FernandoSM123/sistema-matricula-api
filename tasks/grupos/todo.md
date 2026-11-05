@@ -11,7 +11,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | Tarea | Estado | Código | Pruebas unitarias | Verificación manual | Commit |
 |---|---|:---:|:---:|:---:|:---:|
 | T1. Dominio de grupos y horarios | Completada | ✅ | ✅ | ➖ | ✅ |
-| T2. Persistencia y migración `AgregaGrupo` | En progreso | ⬜ | ➖ | ⬜ | ⬜ |
+| T2. Persistencia y migración `AgregaGrupo` | Completada | ✅ | ➖ | ✅ | ✅ |
 | T3. Crear grupo y detalle | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T4. Horarios: agregar y quitar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T5. Cambiar estado | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -65,7 +65,9 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 - Verify:
   - `dotnet ef database update` aplica la migración; la salida muestra `ix_grupo_nrc` único, las FK con `ON DELETE RESTRICT` y los índices compuestos.
   - `dotnet ef migrations has-pending-model-changes` → sin cambios pendientes.
-- Files: `src/Matricula.Infrastructure/Persistence/Configurations/{GrupoConfiguration,HorarioConfiguration}.cs`, `src/Matricula.Application/Abstractions/IAppDbContext.cs`, `src/Matricula.Infrastructure/Persistence/AppDbContext.cs`, migración
+  - Resultado (2026-11-05): `AgregaGrupo` aplicada a la BD de desarrollo y sin cambios de modelo pendientes. La salida de `dotnet ef database update` muestra `CREATE UNIQUE INDEX ix_grupo_nrc`, las cinco FK con `ON DELETE RESTRICT` (grupo → curso, profesor, periodo y aula; horario → grupo), `ix_grupo_periodo_id_profesor_id`, `ix_grupo_periodo_id_aula_id` e `ix_horario_grupo_id`. 219/219 pruebas unitarias en verde.
+  - Cambio fuera de la lista de archivos: la migración generada no compilaba por CA1861 (arrays de los índices compuestos, la primera migración que los tiene). En `.editorconfig` se marcó `**/Persistence/Migrations/*.cs` como `generated_code = true`, así los analizadores no revisan código generado por EF y no hay que editarlo a mano.
+- Files: `src/Matricula.Infrastructure/Persistence/Configurations/{GrupoConfiguration,HorarioConfiguration}.cs`, `src/Matricula.Application/Abstractions/IAppDbContext.cs`, `src/Matricula.Infrastructure/Persistence/AppDbContext.cs`, migración, `.editorconfig`
 
 ### T3. Crear grupo y detalle
 - Acceptance:

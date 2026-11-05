@@ -125,4 +125,24 @@ public class PeriodoService(IAppDbContext db, IFechaLocal fechaLocal)
 
         return periodo.ToResponse();
     }
+
+    /// <summary>
+    /// RF-37 y RN-34: solo un periodo sin grupos, ni siquiera cancelados. Los periodos no se desactivan: uno con grupos
+    /// se corrige o se conserva como historial.
+    /// </summary>
+    public async Task EliminarAsync(int id, CancellationToken cancellationToken)
+    {
+        var periodo = await db.Periodos.SingleOrDefaultAsync(p => p.Id == id, cancellationToken)
+            ?? throw new NotFoundException($"No existe el periodo {id}.");
+
+        if (await db.Grupos.AnyAsync(g => g.PeriodoId == id, cancellationToken))
+        {
+            throw new BusinessRuleException(
+                "RN-34",
+                $"El periodo {periodo.Nombre} tiene grupos y no se puede eliminar. Corrija sus datos o consérvelo como historial.");
+        }
+
+        db.Periodos.Remove(periodo);
+        await db.SaveChangesAsync(cancellationToken);
+    }
 }

@@ -637,3 +637,20 @@ GET {{host}}/api/v1/aulas/1/ocupacion?periodoId=1
 Authorization: Bearer {{token}}
 
 ###
+
+# Eliminar un curso, aula o periodo (RF-33, RF-40, RF-37), solo administrador: 204 si nunca tuvo grupos. Con algún
+# grupo, incluso cancelado → 409 RN-34 (el curso o aula se desactiva; el periodo se corrige o se conserva).
+DELETE {{host}}/api/v1/cursos/1
+Authorization: Bearer {{token}}
+
+###
+
+DELETE {{host}}/api/v1/aulas/1
+Authorization: Bearer {{token}}
+
+###
+
+DELETE {{host}}/api/v1/periodos/1
+Authorization: Bearer {{token}}
+
+###

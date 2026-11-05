@@ -88,6 +88,23 @@ public class CursosController(CursoService cursoService, GrupoService grupoServi
     }
 
     /// <summary>
+    /// Elimina un curso que nunca tuvo grupos (RF-33). Si tuvo alguno, incluso cancelado, responde 409 RN-34: se
+    /// desactiva en su lugar.
+    /// </summary>
+    [HttpDelete("{id:int}")]
+    [Authorize(Policy = Politicas.Administrador)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Eliminar(int id, CancellationToken cancellationToken)
+    {
+        await cursoService.EliminarAsync(id, cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
     /// Detalle de un curso (RF-31).
     /// </summary>
     [HttpGet("{id:int}")]

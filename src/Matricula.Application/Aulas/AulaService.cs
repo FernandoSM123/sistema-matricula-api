@@ -133,6 +133,23 @@ public class AulaService(IAppDbContext db)
         await db.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// RF-40 y RN-34: solo un aula que nunca tuvo grupos, ni siquiera cancelados. Si no, se desactiva.
+    /// </summary>
+    public async Task EliminarAsync(int id, CancellationToken cancellationToken)
+    {
+        var aula = await BuscarAsync(id, cancellationToken);
+
+        if (await db.Grupos.AnyAsync(g => g.AulaId == id, cancellationToken))
+        {
+            throw new BusinessRuleException(
+                "RN-34", $"El aula {aula.Codigo} tiene grupos y no se puede eliminar. Desactívela en su lugar.");
+        }
+
+        db.Aulas.Remove(aula);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
     private async Task<Aula> BuscarAsync(int id, CancellationToken cancellationToken) =>
         await db.Aulas.SingleOrDefaultAsync(a => a.Id == id, cancellationToken)
         ?? throw new NotFoundException($"No existe el aula {id}.");

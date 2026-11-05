@@ -129,6 +129,23 @@ public class CursoService(IAppDbContext db)
             .SingleOrDefaultAsync(cancellationToken)
         ?? throw new NotFoundException($"No existe el curso {id}.");
 
+    /// <summary>
+    /// RF-33 y RN-34: solo un curso que nunca tuvo grupos, ni siquiera cancelados. Si no, se desactiva.
+    /// </summary>
+    public async Task EliminarAsync(int id, CancellationToken cancellationToken)
+    {
+        var curso = await BuscarAsync(id, cancellationToken);
+
+        if (await db.Grupos.AnyAsync(g => g.CursoId == id, cancellationToken))
+        {
+            throw new BusinessRuleException(
+                "RN-34", $"El curso {curso.Codigo} tiene grupos y no se puede eliminar. Desactívelo en su lugar.");
+        }
+
+        db.Cursos.Remove(curso);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
     private async Task<Curso> BuscarAsync(int id, CancellationToken cancellationToken) =>
         await db.Cursos.SingleOrDefaultAsync(c => c.Id == id, cancellationToken)
         ?? throw new NotFoundException($"No existe el curso {id}.");

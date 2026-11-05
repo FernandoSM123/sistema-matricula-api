@@ -79,4 +79,20 @@ public class PeriodosController(PeriodoService periodoService) : ApiControllerBa
     public async Task<ActionResult<PeriodoResponse>> Actualizar(
         int id, ActualizarPeriodoRequest request, CancellationToken cancellationToken) =>
         Ok(await periodoService.ActualizarAsync(id, request, cancellationToken));
+
+    /// <summary>
+    /// Elimina un periodo sin grupos (RF-37). Si tiene alguno, incluso cancelado, responde 409 RN-34.
+    /// </summary>
+    [HttpDelete("{id:int}")]
+    [Authorize(Policy = Politicas.Administrador)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Eliminar(int id, CancellationToken cancellationToken)
+    {
+        await periodoService.EliminarAsync(id, cancellationToken);
+        return NoContent();
+    }
 }

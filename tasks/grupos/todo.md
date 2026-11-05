@@ -20,7 +20,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T8. Oferta académica y grupos de un curso | Completada | ✅ | ➖ | ⏳ | ✅ |
 | T9. Consultas de profesor y aula | Completada | ✅ | ➖ | ⏳ | ✅ |
 | T10. RN-37 y RN-09 en otros módulos | Completada | ✅ | ➖ | ✅ | ✅ |
-| T11. Eliminar cursos, aulas y periodos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T11. Eliminar cursos, aulas y periodos | Completada | ✅ | ➖ | ✅ | ✅ |
 | T12. Eliminar profesores con su cuenta | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T13. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ➖ |
 
@@ -220,7 +220,9 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - Con grupos, incluidos cancelados → `409 RN-34`; nunca `500`.
   - Id inexistente → `404`. Profesor o estudiante → `403`.
   - Eliminado un curso o aula, su código se puede registrar de nuevo → `201`.
-- Files: `src/Matricula.Application/{Cursos/CursoService,Aulas/AulaService,Periodos/PeriodoService}.cs`, `src/Matricula.Api/Controllers/{CursosController,AulasController,PeriodosController}.cs`
+  - Resultado (2026-11-05): 35/35 verificaciones correctas contra la API local. Además de la lista: eliminar dos veces → `404` la segunda; un curso inactivo sin grupos también se elimina; con un grupo `Cancelado`, `Planificado` o `Finalizado` → `409 RN-34` y el registro sigue; el mensaje sugiere desactivar (curso, aula) o corregir o conservar (periodo); sin token → `401`.
+  - Cambio fuera de la lista de archivos: `GlobalExceptionHandler` convierte una violación de llave foránea en `409 RN-34`, como ya hacía con la de unicidad (`RN-13`). Cubre el caso en que se crea un grupo entre la validación y el `DELETE`: las FK son `Restrict` y la BD rechaza el borrado, que antes habría salido como `500`. No se pudo provocar a mano (es una carrera); el camino normal lo cubren las validaciones de los servicios.
+- Files: `src/Matricula.Application/{Cursos/CursoService,Aulas/AulaService,Periodos/PeriodoService}.cs`, `src/Matricula.Api/Controllers/{CursosController,AulasController,PeriodosController}.cs`, `src/Matricula.Api/Common/GlobalExceptionHandler.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T12. Eliminar profesores con su cuenta
 - Acceptance:

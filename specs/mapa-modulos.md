@@ -23,7 +23,7 @@
 | `estudiantes` | [Aprobada](SPEC-estudiantes.md) | [Aprobado](../tasks/estudiantes/plan.md) | [Aprobadas](../tasks/estudiantes/todo.md) | 9/9 | Completado |
 | `profesores` | [Aprobada](SPEC-profesores.md) | [Aprobado](../tasks/profesores/plan.md) | [Aprobadas](../tasks/profesores/todo.md) | 7/7 | Completado |
 | `catalogos` | [Aprobada](SPEC-catalogos.md) | [Aprobado](../tasks/catalogos/plan.md) | [Aprobadas](../tasks/catalogos/todo.md) | 10/10 | Completado |
-| `grupos` | [Aprobada](SPEC-grupos.md) | [Aprobado](../tasks/grupos/plan.md) | [Aprobadas](../tasks/grupos/todo.md) | 0/13 | Planificación |
+| `grupos` | [Aprobada](SPEC-grupos.md) | [Aprobado](../tasks/grupos/plan.md) | [Aprobadas](../tasks/grupos/todo.md) | 1/13 | En implementación |
 | `matriculas` | — | — | — | — | Sin empezar |
 
 **Estados de un documento** (spec, plan o lista de tareas):

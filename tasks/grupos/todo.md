@@ -10,8 +10,8 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 
 | Tarea | Estado | Código | Pruebas unitarias | Verificación manual | Commit |
 |---|---|:---:|:---:|:---:|:---:|
-| T1. Dominio de grupos y horarios | Pendiente | ⬜ | ⬜ | ➖ | ⬜ |
-| T2. Persistencia y migración `AgregaGrupo` | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T1. Dominio de grupos y horarios | Completada | ✅ | ✅ | ➖ | ✅ |
+| T2. Persistencia y migración `AgregaGrupo` | En progreso | ⬜ | ➖ | ⬜ | ⬜ |
 | T3. Crear grupo y detalle | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T4. Horarios: agregar y quitar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T5. Cambiar estado | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -50,6 +50,11 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 - Verify:
   - `ReglasHorarioTests` y `HorarioTests`: traslape parcial, contenido e idéntico; contiguos sin traslape; días distintos; fin igual o anterior al inicio.
   - `GrupoTests`: normaliza el NRC; estado y cupos iniciales; cada transición permitida y no permitida; cancelar desde cada estado salvo `Finalizado`; repetir el estado no cambia nada; abrir sin bloques falla; agregar un bloque traslapado o en un grupo finalizado o cancelado falla; quitar fuera de `Planificado` falla; edición permitida y rechazada en cada estado; el cupo no baja de `CuposOcupados`; modalidad `Virtual` con aula y `Presencial` sin aula fallan.
+  - Resultado (2026-11-05): `dotnet build` sin warnings; 219/219 pruebas unitarias en verde (83 nuevas). Detalles que la spec no fijaba:
+    - `Grupo` lleva navegaciones a `Curso`, `Profesor`, `Periodo` y `Aula` para las proyecciones de T3 en adelante.
+    - El invariante modalidad/aula usa el código `RN-09`, que es la regla que dice que en virtual no aplica el aula.
+    - `QuitarHorario` devuelve el bloque quitado, o `null` si no es del grupo. El servicio de T4 debe hacer además `db.Horarios.Remove`, porque con FK `Restrict` EF no borra el huérfano.
+    - ⏳ "El cupo no baja de `CuposOcupados`" está en `ActualizarDatos`, pero no tiene prueba: `CuposOcupados` siempre es 0 hasta que `matriculas` agregue el método que lo incrementa. La prueba se agrega entonces.
 - Files: `src/Matricula.Domain/Enums/{EstadoGrupo,Modalidad,DiaSemana}.cs`, `src/Matricula.Domain/Reglas/ReglasHorario.cs`, `src/Matricula.Domain/Entities/{Grupo,Horario}.cs`, `tests/Matricula.UnitTests/Domain/{GrupoTests,HorarioTests,ReglasHorarioTests}.cs`
 
 ### T2. Persistencia y migración `AgregaGrupo`

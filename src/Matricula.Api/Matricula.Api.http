@@ -308,7 +308,7 @@ Content-Type: application/json
 ###
 
 # Desactivar un profesor (RF-26, RN-38): desactiva su cuenta y cierra sus sesiones. Es lo mismo que
-# /usuarios/{usuarioId}/desactivar. La guarda RN-37 la añade el módulo grupos.
+# /usuarios/{usuarioId}/desactivar. Con grupos Planificado, Abierto, Cerrado o EnCurso → 409 RN-37 (por las dos rutas).
 POST {{host}}/api/v1/profesores/1/desactivar
 Authorization: Bearer {{token}}
 
@@ -369,7 +369,7 @@ Content-Type: application/json
 
 ###
 
-# Desactivar un curso (RF-33): 204, también al repetir. La guarda RN-37 la añade el módulo grupos.
+# Desactivar un curso (RF-33): 204, también al repetir. Con grupos activos → 409 RN-37.
 POST {{host}}/api/v1/cursos/1/desactivar
 Authorization: Bearer {{token}}
 
@@ -409,6 +409,7 @@ Authorization: Bearer {{token}}
 ###
 
 # Editar un aula (RF-40), también si está inactiva. Código de otra aula, activa o inactiva → 409 RN-13.
+# Capacidad menor que el cupo de un grupo no Finalizado ni Cancelado → 409 RN-09.
 PUT {{host}}/api/v1/aulas/1
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -421,7 +422,7 @@ Content-Type: application/json
 
 ###
 
-# Desactivar un aula (RF-40): 204, también al repetir. La guarda RN-37 la añade el módulo grupos.
+# Desactivar un aula (RF-40): 204, también al repetir. Con grupos activos → 409 RN-37.
 POST {{host}}/api/v1/aulas/1/desactivar
 Authorization: Bearer {{token}}
 

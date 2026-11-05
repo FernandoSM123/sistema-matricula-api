@@ -1,6 +1,7 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
 using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Grupos;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
@@ -99,6 +100,11 @@ public class CursoService(IAppDbContext db)
     public async Task DesactivarAsync(int id, CancellationToken cancellationToken)
     {
         var curso = await BuscarAsync(id, cancellationToken);
+        if (curso.Activo)
+        {
+            await db.ValidarSinGruposActivosAsync(g => g.CursoId == id, $"el curso {curso.Codigo}", cancellationToken);
+        }
+
         curso.Desactivar();
         await db.SaveChangesAsync(cancellationToken);
     }

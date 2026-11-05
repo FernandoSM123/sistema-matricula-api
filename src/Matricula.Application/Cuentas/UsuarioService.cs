@@ -1,6 +1,7 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
 using Matricula.Application.Correos;
+using Matricula.Application.Grupos;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
 using Matricula.Domain.Exceptions;
@@ -53,6 +54,13 @@ public class UsuarioService(
             && !await db.Usuarios.AnyAsync(u => u.Rol == Rol.Administrador && u.Activo && u.Id != usuarioId, cancellationToken))
         {
             throw new BusinessRuleException("RN-30", "No se puede desactivar al último administrador activo.");
+        }
+
+        // Aquí y no en ProfesorService, para que aplique también a /usuarios/{id}/desactivar.
+        if (usuario.Rol == Rol.Profesor)
+        {
+            await db.ValidarSinGruposActivosAsync(
+                g => g.Profesor.UsuarioId == usuarioId, "al profesor", cancellationToken);
         }
 
         usuario.Desactivar();

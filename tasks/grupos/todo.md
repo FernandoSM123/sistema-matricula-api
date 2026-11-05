@@ -19,7 +19,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T7. Listado y visibilidad por rol | Completada | ✅ | ➖ | ✅ | ✅ |
 | T8. Oferta académica y grupos de un curso | Completada | ✅ | ➖ | ⏳ | ✅ |
 | T9. Consultas de profesor y aula | Completada | ✅ | ➖ | ⏳ | ✅ |
-| T10. RN-37 y RN-09 en otros módulos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T10. RN-37 y RN-09 en otros módulos | Completada | ✅ | ➖ | ✅ | ✅ |
 | T11. Eliminar cursos, aulas y periodos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T12. Eliminar profesores con su cuenta | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T13. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ➖ |
@@ -202,7 +202,14 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - Con todos sus grupos `Finalizado` o `Cancelado` → `204`.
   - Regresión: desactivar un estudiante y un administrador sigue funcionando (RN-30 incluida).
   - Reducir la capacidad por debajo del cupo de un grupo → `409 RN-09`; hasta el cupo exacto → `200`.
-- Files: `src/Matricula.Application/Cuentas/UsuarioService.cs`, `src/Matricula.Application/Cursos/CursoService.cs`, `src/Matricula.Application/Aulas/AulaService.cs`
+  - Resultado (2026-11-05): 33/33 verificaciones correctas contra la API local. RN-37 responde `409` con la cantidad de grupos (profesor) o el código (curso, aula), con grupos en cada estado activo: `Planificado`, `Abierto`, `Cerrado` y `EnCurso`, y por las dos rutas del profesor; el registro sigue activo. Con sus grupos `Finalizado` o `Cancelado`, o sin grupos → `204`; repetir → `204`; reactivar un profesor sigue funcionando. RN-09: el mensaje nombra el grupo de mayor cupo; un grupo `Finalizado` con más cupo no cuenta; subir la capacidad o editar otros datos → `200`. Regresión: desactivar y reactivar un estudiante y desactivar otro administrador → `204`.
+  - No se ejecutó la regresión de RN-30: la BD de desarrollo tiene 9 administradores activos y la prueba habría desactivado la cuenta real. La guarda de RN-30 no se tocó (la de RN-37 va después, solo para la cuenta `Profesor`) y ya se verificó en `acceso`.
+  - Detalles que la spec no fijaba:
+    - `GuardasGrupos` (en `Application/Grupos`) define qué es un grupo activo para RN-37 y RN-09 (ni `Finalizado` ni `Cancelado`) y la comprobación de RN-37 que usan los tres servicios.
+    - Curso y aula solo revisan RN-37 si están activos, para que repetir la desactivación siga respondiendo `204`; la cuenta ya lo hacía.
+    - RN-09 solo se consulta cuando la capacidad baja.
+  - Mientras el script corría se superó el límite de 10 logins por minuto; se agregó `crearProfesorSinSesion` a los helpers para los profesores que no necesitan token.
+- Files: `src/Matricula.Application/Cuentas/UsuarioService.cs`, `src/Matricula.Application/Cursos/CursoService.cs`, `src/Matricula.Application/Aulas/AulaService.cs`, `src/Matricula.Application/Grupos/GuardasGrupos.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T11. Eliminar cursos, aulas y periodos
 - Acceptance:

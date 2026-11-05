@@ -320,6 +320,13 @@ Authorization: Bearer {{token}}
 
 ###
 
+# Eliminar un profesor (RF-26): 204 si nunca tuvo grupos; se elimina también su cuenta (RN-35) y sus tokens dejan de
+# valer. Su correo y su cédula se pueden registrar de nuevo. Con algún grupo, incluso cancelado → 409 RN-34 (desactivarlo).
+DELETE {{host}}/api/v1/profesores/1
+Authorization: Bearer {{token}}
+
+###
+
 
 # --- Módulo catalogos ---
 

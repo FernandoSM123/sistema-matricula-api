@@ -87,6 +87,20 @@ public class ProfesoresController(
         Ok(await profesorService.ObtenerAsync(id, cancellationToken));
 
     /// <summary>
+    /// Elimina un profesor que nunca tuvo grupos, junto con su cuenta (RF-26, RN-35). Si tuvo alguno, incluso
+    /// cancelado, responde 409 RN-34: se desactiva en su lugar.
+    /// </summary>
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Eliminar(int id, CancellationToken cancellationToken)
+    {
+        await profesorService.EliminarAsync(id, cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
     /// Grupos de un profesor en todos los estados (RF-27), con filtro por periodo; search busca en el NRC.
     /// </summary>
     [HttpGet("{id:int}/grupos")]

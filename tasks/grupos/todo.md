@@ -21,7 +21,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T9. Consultas de profesor y aula | Completada | ✅ | ➖ | ⏳ | ✅ |
 | T10. RN-37 y RN-09 en otros módulos | Completada | ✅ | ➖ | ✅ | ✅ |
 | T11. Eliminar cursos, aulas y periodos | Completada | ✅ | ➖ | ✅ | ✅ |
-| T12. Eliminar profesores con su cuenta | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T12. Eliminar profesores con su cuenta | Completada | ✅ | ➖ | ✅ | ✅ |
 | T13. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ➖ |
 
 **Estados de tarea:**
@@ -233,7 +233,9 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - Su token vigente → `401`.
   - Su correo y su cédula se registran de nuevo → `201`.
   - Con grupos, incluidos cancelados → `409 RN-34`. Id inexistente → `404`.
-- Files: `src/Matricula.Application/Profesores/ProfesorService.cs`, `src/Matricula.Api/Controllers/ProfesoresController.cs`
+  - Resultado (2026-11-05): 21/21 verificaciones correctas contra la API local. Además de la lista: la cuenta ya no existe (`/usuarios/{id}/reactivar` → `404`) y el login con su correo responde `401`; el profesor recreado con el mismo correo y cédula recibe otro id de profesor y de cuenta; también se eliminan un profesor que nunca inició sesión y uno inactivo; con un grupo cancelado o planificado el profesor y su cuenta siguen; eliminar dos veces → `404` la segunda; profesor y estudiante → `403`, sin token → `401`.
+  - El token deja de valer sin código nuevo: la validación del `SecurityStamp` en cada petición ya falla si la cuenta no existe.
+- Files: `src/Matricula.Application/Profesores/ProfesorService.cs`, `src/Matricula.Api/Controllers/ProfesoresController.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T13. Cierre del módulo
 - Acceptance:

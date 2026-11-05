@@ -119,6 +119,31 @@ public class ProfesorService(IAppDbContext db, CuentaService cuentaService, Usua
     public async Task ReactivarAsync(int id, CancellationToken cancellationToken) =>
         await usuarioService.ReactivarAsync(await ObtenerUsuarioIdAsync(id, cancellationToken), cancellationToken);
 
+    /// <summary>
+    /// RF-26 y RN-34: solo un profesor que nunca tuvo grupos, ni siquiera cancelados; si no, se desactiva. Su cuenta se
+    /// elimina con él en el mismo guardado (RN-35, decisión 10 del mapa), así no queda una cuenta sin persona (RN-31) y
+    /// el correo se puede volver a registrar. Sus tokens dejan de valer porque la cuenta ya no existe.
+    /// </summary>
+    public async Task EliminarAsync(int id, CancellationToken cancellationToken)
+    {
+        var profesor = await db.Profesores
+            .Include(p => p.Usuario)
+            .SingleOrDefaultAsync(p => p.Id == id, cancellationToken)
+            ?? throw new NotFoundException($"No existe el profesor {id}.");
+
+        if (await db.Grupos.AnyAsync(g => g.ProfesorId == id, cancellationToken))
+        {
+            throw new BusinessRuleException(
+                "RN-34",
+                $"{profesor.Nombre} {profesor.Apellidos} tiene grupos y no se puede eliminar. Desactívelo en su lugar.");
+        }
+
+        // Sin cascada: se eliminan los dos de forma explícita.
+        db.Profesores.Remove(profesor);
+        db.Usuarios.Remove(profesor.Usuario);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
     private async Task<int> ObtenerUsuarioIdAsync(int id, CancellationToken cancellationToken)
     {
         var usuarioId = await db.Profesores.AsNoTracking()

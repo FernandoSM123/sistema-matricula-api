@@ -549,3 +549,16 @@ DELETE {{host}}/api/v1/grupos/1/horarios/1
 Authorization: Bearer {{token}}
 
 ###
+
+# Cambiar el estado de un grupo (RF-47): 204. Planificado → Abierto → Cerrado → EnCurso → Finalizado, un paso a la vez,
+# o Cancelado mientras no haya finalizado. Abrir sin horarios, saltar, retroceder o cancelar un finalizado → 409 RF-47.
+# Repetir el estado actual → 204 sin cambios.
+POST {{host}}/api/v1/grupos/1/estado
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "estado": "Abierto"
+}
+
+###

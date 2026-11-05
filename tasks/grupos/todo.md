@@ -14,7 +14,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T2. Persistencia y migración `AgregaGrupo` | Completada | ✅ | ➖ | ✅ | ✅ |
 | T3. Crear grupo y detalle | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Horarios: agregar y quitar | Completada | ✅ | ➖ | ✅ | ✅ |
-| T5. Cambiar estado | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T5. Cambiar estado | Completada | ✅ | ➖ | ⏳ | ✅ |
 | T6. Editar grupo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T7. Listado y visibilidad por rol | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T8. Oferta académica y grupos de un curso | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -120,7 +120,8 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - Repetir el estado actual → `204`.
   - Pendiente de T4: quitar un bloque de un grupo `Abierto` → `409 RF-48`; agregar a un grupo `Finalizado` o `Cancelado` → `409`; un bloque que choca con un grupo `Cancelado` del mismo profesor o aula → `201`.
   - ⏳ RN-12 al cancelar la añade `matriculas`.
-- Files: `src/Matricula.Application/Grupos/{GrupoService,CambiarEstadoRequest,CambiarEstadoRequestValidator}.cs`, `src/Matricula.Api/Controllers/GruposController.cs`
+  - Resultado (2026-11-05): 40/40 verificaciones correctas contra la API local, incluidas las pendientes de T4. Además de la lista: el detalle refleja cada estado; un cambio rechazado no altera el estado; un cancelado no vuelve a ningún estado; agregar un bloque a un grupo `Abierto` → `201` (supuesto 6); estado inexistente u omitido → `400`; grupo inexistente → `404`; profesor y estudiante → `403`, sin token → `401`. El choque con un grupo `Cancelado` se comprobó con un control: el mismo bloque responde `409 RN-07` mientras el otro grupo está activo y `201` después de cancelarlo.
+- Files: `src/Matricula.Application/Grupos/{GrupoService,CambiarEstadoRequest,CambiarEstadoRequestValidator}.cs`, `src/Matricula.Api/Controllers/GruposController.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T6. Editar grupo
 - Acceptance:

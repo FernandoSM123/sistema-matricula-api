@@ -30,6 +30,26 @@ public class GruposController(GrupoService grupoService) : ApiControllerBase
     }
 
     /// <summary>
+    /// Cambia el estado de un grupo (RF-47): Planificado → Abierto → Cerrado → EnCurso → Finalizado, o Cancelado
+    /// mientras no haya finalizado. Para abrir hace falta al menos un bloque de horario. Otra transición responde
+    /// RF-47; repetir el estado actual responde igual.
+    /// </summary>
+    [HttpPost("{id:int}/estado")]
+    [Authorize(Policy = Politicas.Administrador)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> CambiarEstado(
+        int id, CambiarEstadoRequest request, CancellationToken cancellationToken)
+    {
+        await grupoService.CambiarEstadoAsync(id, request, cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
     /// Agrega un bloque de horario (RF-48) y devuelve el grupo. Responde RN-14 si se traslapa con otro bloque del
     /// grupo, RN-07 o RN-08 si choca con otro grupo del mismo profesor o aula en el periodo, y RF-48 si el grupo está
     /// finalizado o cancelado.

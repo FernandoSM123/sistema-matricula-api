@@ -80,6 +80,20 @@ public class GrupoService(IAppDbContext db)
         await db.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// RF-47: avanza un paso del flujo normal o cancela. Pedir el estado actual no cambia nada. El módulo matriculas
+    /// añade RN-12 a la cancelación.
+    /// </summary>
+    public async Task CambiarEstadoAsync(int grupoId, CambiarEstadoRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        // Los horarios se cargan porque abrir un grupo exige al menos un bloque.
+        var grupo = await BuscarConHorariosAsync(grupoId, cancellationToken);
+        grupo.CambiarEstado(request.Estado!.Value);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
     private async Task<Grupo> BuscarConHorariosAsync(int id, CancellationToken cancellationToken) =>
         await db.Grupos
             .Include(g => g.Horarios)

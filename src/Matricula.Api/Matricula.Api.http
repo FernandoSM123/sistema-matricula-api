@@ -1,6 +1,6 @@
 @host = http://localhost:5022
 
-# Recorrido de los módulos acceso, estudiantes, profesores, catalogos y grupos. Ejecuta primero el login con tus credenciales: las demás peticiones usan
+# Recorrido de los módulos acceso, estudiantes, profesores, catalogos, grupos y matriculas. Ejecuta primero el login con tus credenciales: las demás peticiones usan
 # {{token}}. Primer ingreso: login con la temporal de AdminSeed → cambio-obligatorio → login con la nueva.
 
 GET {{host}}/health
@@ -658,6 +658,41 @@ Authorization: Bearer {{token}}
 ###
 
 DELETE {{host}}/api/v1/periodos/1
+Authorization: Bearer {{token}}
+
+###
+
+# --- Módulo matriculas ---
+
+# Matricular a un estudiante (RF-51), solo administrador: 201 + Location. Al administrador no se le aplican el estado
+# Abierto ni las fechas de matrícula, pero sí RN-01 (inactivo), RN-03 (sin cupo), RN-05 (curso repetido en el periodo),
+# RN-06 (choque de horario) y RN-11 en grupos Finalizado o Cancelado. Dos peticiones por el último cupo: una 201 y la
+# otra 409 RN-03 o CONCURRENCIA.
+POST {{host}}/api/v1/matriculas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "estudianteId": 1,
+  "grupoId": 1
+}
+
+###
+
+# Matricularse (RF-51), con el token de un estudiante: su id sale del token. El grupo debe estar Abierto (RN-02, RN-11)
+# y hoy dentro del rango de matrícula del periodo (RN-04). Location → /matriculas/{id}.
+POST {{host}}/api/v1/me/matriculas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "grupoId": 1
+}
+
+###
+
+# Detalle de una matrícula: administrador o el estudiante dueño; la de otro estudiante → 403 RN-18.
+GET {{host}}/api/v1/matriculas/1
 Authorization: Bearer {{token}}
 
 ###

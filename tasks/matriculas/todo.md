@@ -12,7 +12,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 |---|---|:---:|:---:|:---:|:---:|
 | T1. Dominio de matrículas y cupos | Completada | ✅ | ✅ | ➖ | ✅ |
 | T2. Persistencia, `xmin` y migración `AgregaMatricula` | Completada | ✅ | ➖ | ✅ | ✅ |
-| T3. Matricular, detalle y concurrencia | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T3. Matricular, detalle y concurrencia | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Retirar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T5. Cambiar de grupo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T6. Matrículas e historial de un estudiante | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -38,7 +38,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | Origen | Verificación | Tarea |
 |---|---|---|
 | `grupos` T1 | Una prueba unitaria de que `Grupo.ActualizarDatos` rechaza un cupo menor que `CuposOcupados` (`RF-45`) | T1 — ✅ cumplida (2026-11-10) |
-| `grupos` T8 | La oferta académica incluye los grupos `Abierto` sin cupos disponibles (`cuposDisponibles = 0`) | T3 |
+| `grupos` T8 | La oferta académica incluye los grupos `Abierto` sin cupos disponibles (`cuposDisponibles = 0`) | T3 — ✅ cumplida (2026-11-10) |
 
 ## Detalle
 
@@ -96,6 +96,14 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - Grupo lleno → `409 RN-03` (también como admin). ✅ Heredada de `grupos` T8: la oferta lo muestra con `cuposDisponibles = 0`.
   - Dos peticiones en paralelo por el último cupo (varias rondas): una `201` y la otra `409` (`RN-03` o `CONCURRENCIA`); `cuposOcupados` nunca supera `cupo`.
   - Estudiante con la matrícula de otro → `403 RN-18`; profesor en cualquiera de los endpoints → `403`; sin token → `401`; con cambio pendiente → `403`.
+  - Resultado (2026-11-10): 50/50 verificaciones correctas contra la API local, con datos nuevos y tokens reales de administrador, estudiante, profesor, sin token y con cambio pendiente. Además de la lista: el estudiante que envía otro `estudianteId` en el body se matricula a sí mismo; la respuesta trae estado `Activa`, la fecha local de hoy, NRC y curso; `Location` responde `200` al dueño; los rechazos no cambian `cuposOcupados`; el mensaje de RN-05 y el de RN-06 nombran el NRC del grupo con que chocan; el mismo curso en otro periodo y el mismo bloque en otro día → `201`; admin en `Planificado` → `201`; admin con un choque → `409 RN-06`; un estudiante en `POST /matriculas` y un admin en `POST /me/matriculas` → `403`; `{}` → `400` con los dos campos.
+  - Concurrencia: 7 rondas de dos matrículas simultáneas (`Promise.all`) por el único cupo de un grupo. En todas, una `201` y la otra `409` (6 veces `CONCURRENCIA` por `xmin`, 1 vez `RN-03` porque la segunda leyó el grupo ya lleno) y `cuposOcupados = 1`.
+  - ✅ Heredada de `grupos` T8: la oferta académica muestra el grupo `Abierto` lleno con `cuposDisponibles = 0`.
+  - El script creó periodos vigentes temporales y al final los movió 40 años: la BD queda sin periodo vigente, como estaba.
+  - Detalles que la spec no fijaba:
+    - `GuardasMatriculas.BuscarChoquesAsync` ya recibe varios estudiantes y devuelve todos los choques (`ChoqueHorario`), para que T10 la reutilice; `ValidarSinChoquesAsync` es la versión de un estudiante que usan matricular y T5.
+    - El conflicto de `xmin` se convierte en `BusinessRuleException("CONCURRENCIA", ...)` dentro de `MatriculaService.GuardarAsync`, con el mensaje del supuesto 6.
+    - `MatriculaResponse` incluye la cédula y el nombre del estudiante, la modalidad y el estado del grupo, para que las consultas de T6 la reutilicen.
 - Files: `src/Matricula.Application/Matriculas/{MatriculaService,GuardasMatriculas,MatricularRequest,MatricularRequestValidator,MatricularPropioRequest,MatricularPropioRequestValidator,MatriculaResponse,MatriculaProyecciones}.cs`, `src/Matricula.Application/DependencyInjection.cs`, `src/Matricula.Api/Seguridad/Politicas.cs`, `src/Matricula.Api/Controllers/{MatriculasController,MeController}.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T4. Retirar

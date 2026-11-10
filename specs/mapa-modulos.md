@@ -24,7 +24,7 @@
 | `profesores` | [Aprobada](SPEC-profesores.md) | [Aprobado](../tasks/profesores/plan.md) | [Aprobadas](../tasks/profesores/todo.md) | 7/7 | Completado |
 | `catalogos` | [Aprobada](SPEC-catalogos.md) | [Aprobado](../tasks/catalogos/plan.md) | [Aprobadas](../tasks/catalogos/todo.md) | 10/10 | Completado |
 | `grupos` | [Aprobada](SPEC-grupos.md) | [Aprobado](../tasks/grupos/plan.md) | [Aprobadas](../tasks/grupos/todo.md) | 13/13 | Completado |
-| `matriculas` | [Aprobada](SPEC-matriculas.md) | [Aprobado](../tasks/matriculas/plan.md) | [Aprobadas](../tasks/matriculas/todo.md) | 2/13 | En implementación |
+| `matriculas` | [Aprobada](SPEC-matriculas.md) | [Aprobado](../tasks/matriculas/plan.md) | [Aprobadas](../tasks/matriculas/todo.md) | 3/13 | En implementación |
 
 **Estados de un documento** (spec, plan o lista de tareas):
 - **Borrador:** se está escribiendo.
@@ -51,7 +51,7 @@ Verificaciones que un módulo no pudo hacer por falta de datos o endpoints. Se c
 | `fundacion` T3 | primer módulo con un controller de nombre compuesto | Su ruta sale en kebab-case (por ejemplo, `/api/v1/cambio-grupo`) — ✅ cumplida en `grupos` T8 (2026-11-05): `/api/v1/oferta-academica` |
 | `acceso` T10 | `estudiantes` | Un endpoint de administrador (por ejemplo, `POST /api/v1/administradores`) con el token de un estudiante responde `403`, no `401` ni `200` — ✅ cumplida en `estudiantes` T3 (2026-10-27) |
 | `grupos` T1 | `matriculas` | Una prueba unitaria de que `Grupo.ActualizarDatos` rechaza un cupo menor que `CuposOcupados` (`409 RF-45`), cuando exista el método que incrementa `CuposOcupados` — ✅ cumplida en `matriculas` T1 (2026-11-10) |
-| `grupos` T8 | `matriculas` | La oferta académica incluye los grupos `Abierto` sin cupos disponibles (`cuposDisponibles = 0`) |
+| `grupos` T8 | `matriculas` | La oferta académica incluye los grupos `Abierto` sin cupos disponibles (`cuposDisponibles = 0`) — ✅ cumplida en `matriculas` T3 (2026-11-10) |
 
 ## Decisiones aprobadas
 

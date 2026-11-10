@@ -17,7 +17,8 @@ public class UsuarioService(
     IHasherContrasenas hasher,
     IGeneradorContrasenas generadorContrasenas,
     EnvioCorreos envioCorreos,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    IFechaLocal fechaLocal)
 {
     /// <summary>
     /// RF-12: nueva temporal de 72 horas que reemplaza a la anterior (RN-23, RN-27). No a cuentas inactivas (RN-29).
@@ -40,7 +41,8 @@ public class UsuarioService(
 
     /// <summary>
     /// RF-14: la cuenta deja de poder ingresar y sus tokens dejan de valer (RN-29). Nunca el último administrador
-    /// activo (RN-30). Los módulos grupos y matriculas añaden aquí RN-37 y RN-36.
+    /// activo (RN-30). A un profesor con grupos activos no (RN-37), ni a un estudiante con matrículas activas en un
+    /// periodo en curso (RN-36).
     /// </summary>
     public async Task DesactivarAsync(int usuarioId, CancellationToken cancellationToken)
     {
@@ -63,8 +65,35 @@ public class UsuarioService(
                 g => g.Profesor.UsuarioId == usuarioId, "al profesor", cancellationToken);
         }
 
+        if (usuario.Rol == Rol.Estudiante)
+        {
+            await ValidarSinMatriculasEnCursoAsync(usuarioId, cancellationToken);
+        }
+
         usuario.Desactivar();
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    // RN-36 (supuesto 12): ninguna matrícula activa en un periodo en curso (InicioMatricula ≤ hoy ≤ FinClases), sea o
+    // no el vigente.
+    private async Task ValidarSinMatriculasEnCursoAsync(int usuarioId, CancellationToken cancellationToken)
+    {
+        var hoy = fechaLocal.Hoy();
+        var activas = await db.Matriculas.CountAsync(
+            m => m.Estudiante.UsuarioId == usuarioId
+                && m.Estado == EstadoMatricula.Activa
+                && m.Grupo.Periodo.InicioMatricula <= hoy
+                && hoy <= m.Grupo.Periodo.FinClases,
+            cancellationToken);
+
+        if (activas > 0)
+        {
+            throw new BusinessRuleException(
+                "RN-36",
+                activas == 1
+                    ? "El estudiante tiene 1 matrícula activa en un periodo en curso. Retírelo primero."
+                    : $"El estudiante tiene {activas} matrículas activas en periodos en curso. Retírelo primero.");
+        }
     }
 
     /// <summary>

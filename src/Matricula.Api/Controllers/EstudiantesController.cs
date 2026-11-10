@@ -95,7 +95,8 @@ public class EstudiantesController(
         Ok(await estudianteService.ActualizarAsync(id, request, cancellationToken));
 
     /// <summary>
-    /// Desactiva al estudiante y su cuenta (RF-19, RN-38): no puede ingresar y sus sesiones se cierran.
+    /// Desactiva al estudiante y su cuenta (RF-19, RN-38): no puede ingresar y sus sesiones se cierran. Con matrículas
+    /// activas en un periodo en curso responde 409 RN-36: primero hay que retirarlo.
     /// </summary>
     [HttpPost("{id:int}/desactivar")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -104,6 +105,20 @@ public class EstudiantesController(
     public async Task<IActionResult> Desactivar(int id, CancellationToken cancellationToken)
     {
         await estudianteService.DesactivarAsync(id, cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Elimina un estudiante que nunca tuvo matrículas, junto con su cuenta (RF-19, RN-35); sus sesiones se cortan. Si
+    /// tuvo alguna, aunque esté retirada, responde 409 RN-34: se desactiva en su lugar.
+    /// </summary>
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Eliminar(int id, CancellationToken cancellationToken)
+    {
+        await estudianteService.EliminarAsync(id, cancellationToken);
         return NoContent();
     }
 

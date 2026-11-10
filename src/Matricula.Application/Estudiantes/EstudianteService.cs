@@ -169,11 +169,36 @@ public class EstudianteService(
     }
 
     /// <summary>
-    /// RF-19 y RN-38: el estado del estudiante es el de su cuenta, así que se desactiva la cuenta. El módulo
-    /// matriculas añade RN-36 en UsuarioService, que aplica también a /usuarios/{id}/desactivar.
+    /// RF-19 y RN-38: el estado del estudiante es el de su cuenta, así que se desactiva la cuenta. RN-36 vive en
+    /// UsuarioService, para que aplique también a /usuarios/{id}/desactivar.
     /// </summary>
     public async Task DesactivarAsync(int id, CancellationToken cancellationToken) =>
         await usuarioService.DesactivarAsync(await ObtenerUsuarioIdAsync(id, cancellationToken), cancellationToken);
+
+    /// <summary>
+    /// RF-19 y RN-34: solo un estudiante que nunca tuvo matrículas, ni siquiera retiradas; si no, se desactiva. Su
+    /// cuenta se elimina con él en el mismo guardado (RN-35, decisión 10 del mapa), así el correo y la cédula se pueden
+    /// volver a registrar. Sus tokens dejan de valer porque la cuenta ya no existe.
+    /// </summary>
+    public async Task EliminarAsync(int id, CancellationToken cancellationToken)
+    {
+        var estudiante = await db.Estudiantes
+            .Include(e => e.Usuario)
+            .SingleOrDefaultAsync(e => e.Id == id, cancellationToken)
+            ?? throw new NotFoundException($"No existe el estudiante {id}.");
+
+        if (await db.Matriculas.AnyAsync(m => m.EstudianteId == id, cancellationToken))
+        {
+            throw new BusinessRuleException(
+                "RN-34",
+                $"{estudiante.Nombre} {estudiante.Apellidos} tiene matrículas y no se puede eliminar. Desactívelo en su lugar.");
+        }
+
+        // Sin cascada: se eliminan los dos de forma explícita.
+        db.Estudiantes.Remove(estudiante);
+        db.Usuarios.Remove(estudiante.Usuario);
+        await db.SaveChangesAsync(cancellationToken);
+    }
 
     /// <summary>
     /// RF-19, RN-38 y RN-39: un estudiante que regresa se reactiva, no se registra de nuevo.

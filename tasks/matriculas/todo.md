@@ -21,7 +21,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T9. RN-12 al cancelar un grupo | Completada | ✅ | ➖ | ✅ | ✅ |
 | T10. RN-06 al agregar un bloque | Completada | ✅ | ➖ | ✅ | ✅ |
 | T11. Eliminar grupos | Completada | ✅ | ➖ | ✅ | ✅ |
-| T12. RN-36 y eliminar estudiantes con su cuenta | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T12. RN-36 y eliminar estudiantes con su cuenta | Completada | ✅ | ➖ | ✅ | ✅ |
 | T13. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 
 **Estados de tarea:**
@@ -234,6 +234,10 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - Regresión: desactivar un profesor y un administrador sigue funcionando.
   - Eliminar un estudiante sin matrículas → `204`; su token → `401`; su correo y su cédula se registran de nuevo → `201`.
   - Con matrículas, aunque estén retiradas → `409 RN-34`; id inexistente → `404`.
+  - Resultado (2026-11-10): 24/24 verificaciones correctas contra la API local, con tres periodos: uno vigente, otro en curso que no es el vigente y uno terminado. RN-36: matrícula activa en el vigente o en el otro periodo en curso → `409 RN-36` por `/estudiantes/{id}/desactivar` y por `/usuarios/{id}/desactivar`; con dos activas el mensaje da "2 matrículas"; el estudiante rechazado sigue activo. Solo con una retirada, o activa solo en el periodo terminado → `204`; tras retirarlo se desactiva y se reactiva. Regresión: profesor sin grupos → `204`, con un grupo abierto → `409 RN-37`; un administrador que no es el último → `204`. Eliminar: sin matrículas → `204`, el detalle → `404`, su token → `401`, su correo y cédula se registran de nuevo → `201`; con una matrícula retirada o activa → `409 RN-34` sugiriendo desactivar; inexistente → `404`; estudiante → `403`; sin token → `401`. La BD queda sin periodo vigente.
+  - Detalles que la spec no fijaba:
+    - RN-36 cuenta las matrículas con una sola consulta por `Estudiante.UsuarioId`, así no hace falta buscar primero el estudiante de la cuenta.
+    - Igual que con los profesores, la eliminación usa `Include(e => e.Usuario)` y quita los dos registros de forma explícita, sin cascada.
 - Files: `src/Matricula.Application/Cuentas/UsuarioService.cs`, `src/Matricula.Application/Estudiantes/EstudianteService.cs`, `src/Matricula.Api/Controllers/EstudiantesController.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T13. Cierre del módulo

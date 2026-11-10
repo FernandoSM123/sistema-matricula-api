@@ -45,12 +45,66 @@ public class Grupo : EntidadBase
     public Modalidad Modalidad { get; private set; }
     public EstadoGrupo Estado { get; private set; }
 
-    /// <summary>Matrículas activas. Aquí solo se lee; lo mantiene el módulo matriculas.</summary>
+    /// <summary>Matrículas activas. Cambia solo con <see cref="OcuparCupo"/> y <see cref="LiberarCupo"/>.</summary>
     public int CuposOcupados { get; private set; }
+
+    /// <summary>
+    /// Token de concurrencia (xmin de PostgreSQL): si dos operaciones cambian el grupo a la vez, solo una guarda. Así
+    /// dos estudiantes no pueden tomar el último cupo (RNF de concurrencia).
+    /// </summary>
+    public uint Version { get; private set; }
 
     public IReadOnlyCollection<Horario> Horarios => horarios.AsReadOnly();
 
     public int CuposDisponibles => Cupo - CuposOcupados;
+
+    /// <summary>RN-03: una matrícula activa más, si queda cupo.</summary>
+    public void OcuparCupo()
+    {
+        if (CuposDisponibles <= 0)
+        {
+            throw new BusinessRuleException("RN-03", $"El grupo {Nrc} no tiene cupos disponibles.");
+        }
+
+        CuposOcupados++;
+    }
+
+    /// <summary>Una matrícula activa menos (retiro, cambio de grupo o cancelación).</summary>
+    public void LiberarCupo()
+    {
+        if (CuposOcupados > 0)
+        {
+            CuposOcupados--;
+        }
+    }
+
+    /// <summary>
+    /// RN-02 y RN-11: en qué estados se puede matricular, retirar o cambiar de grupo. Al administrador no se le
+    /// aplican las restricciones comunes (supuesto 1 de la spec de matriculas): opera en Planificado, Abierto,
+    /// Cerrado y EnCurso. Nadie opera en un grupo Finalizado o Cancelado.
+    /// </summary>
+    public void ValidarMovimiento(bool esAdministrador)
+    {
+        if (Estado is EstadoGrupo.Finalizado or EstadoGrupo.Cancelado)
+        {
+            throw new BusinessRuleException(
+                "RN-11", $"El grupo {Nrc} está {Estado}: no admite matrículas, retiros ni cambios.");
+        }
+
+        if (esAdministrador || Estado == EstadoGrupo.Abierto)
+        {
+            return;
+        }
+
+        if (Estado == EstadoGrupo.Planificado)
+        {
+            throw new BusinessRuleException("RN-02", $"El grupo {Nrc} todavía no está abierto a matrícula.");
+        }
+
+        throw new BusinessRuleException(
+            "RN-11",
+            $"El grupo {Nrc} está {Estado}: no admite matrículas, retiros ni cambios. Contacte a la administración.");
+    }
 
     /// <summary>
     /// Forma canónica del NRC: en mayúsculas para que RN-13 no distinga capitalización.

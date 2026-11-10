@@ -10,7 +10,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 
 | Tarea | Estado | Código | Pruebas unitarias | Verificación manual | Commit |
 |---|---|:---:|:---:|:---:|:---:|
-| T1. Dominio de matrículas y cupos | Pendiente | ⬜ | ⬜ | ➖ | ⬜ |
+| T1. Dominio de matrículas y cupos | Completada | ✅ | ✅ | ➖ | ✅ |
 | T2. Persistencia, `xmin` y migración `AgregaMatricula` | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T3. Matricular, detalle y concurrencia | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T4. Retirar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -37,7 +37,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 
 | Origen | Verificación | Tarea |
 |---|---|---|
-| `grupos` T1 | Una prueba unitaria de que `Grupo.ActualizarDatos` rechaza un cupo menor que `CuposOcupados` (`RF-45`) | T1 |
+| `grupos` T1 | Una prueba unitaria de que `Grupo.ActualizarDatos` rechaza un cupo menor que `CuposOcupados` (`RF-45`) | T1 — ✅ cumplida (2026-11-10) |
 | `grupos` T8 | La oferta académica incluye los grupos `Abierto` sin cupos disponibles (`cuposDisponibles = 0`) | T3 |
 
 ## Detalle
@@ -55,6 +55,11 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - `MatriculaTests`: estado y fecha iniciales; `Retirar` asigna estado, fecha y motivo; retirar dos veces → `RF-52`.
   - `GrupoTests` (ampliado): `OcuparCupo` hasta llenar y `RN-03` al pasarse; `LiberarCupo` en 0 no baja; `ValidarMovimiento` en cada estado para estudiante y administrador; `ActualizarDatos` con un cupo menor que `CuposOcupados` → `RF-45` (✅ heredada de `grupos` T1).
   - `ReglasPeriodoTests`: periodos traslapados, contenidos, que comparten un día, contiguos sin compartir día y separados.
+  - Resultado (2026-11-10): `dotnet build` sin warnings; 252/252 pruebas unitarias en verde (33 nuevas: 5 de `Matricula`, 18 de `Grupo` y 10 casos de `ClasesSeTraslapan`, cada uno comprobado en los dos sentidos). ✅ Heredada de `grupos` T1: `ActualizarDatos` con un cupo menor que `CuposOcupados` → `RF-45`, e igual a los ocupados se acepta.
+  - Detalles que la spec no fijaba:
+    - La entidad se llama `Matricula`, como en `docs/arquitectura.md`, pero ese nombre a secas resuelve al espacio de nombres raíz `Matricula` desde cualquier otro espacio de nombres (`CS0118`). Quien la use fuera de `Matricula.Domain.Entities` declara un alias: `using MatriculaEntidad = Matricula.Domain.Entities.Matricula;` (así lo hacen las pruebas). Aplica a T2 en adelante.
+    - `Grupo.Version` ya existe pero todavía no está configurada como `xmin`: hasta T2, EF la ve como una columna nueva y `has-pending-model-changes` lo reporta. No se debe correr la API contra la BD entre T1 y T2.
+    - Mensajes: `RN-02` dice que el grupo todavía no está abierto; `RN-11` nombra el estado y, para el estudiante, sugiere contactar a la administración.
 - Files: `src/Matricula.Domain/Enums/{EstadoMatricula,MotivoRetiro}.cs`, `src/Matricula.Domain/Entities/{Matricula,Grupo}.cs`, `src/Matricula.Domain/Reglas/ReglasPeriodo.cs`, `tests/Matricula.UnitTests/Domain/{MatriculaTests,GrupoTests,ReglasPeriodoTests}.cs`
 
 ### T2. Persistencia, `xmin` y migración `AgregaMatricula`

@@ -28,6 +28,13 @@ public static class ReglasPeriodo
     public static bool RetiroDentroDelPeriodo(DateOnly fechaLimiteRetiro, DateOnly inicioMatricula, DateOnly finClases) =>
         inicioMatricula <= fechaLimiteRetiro && fechaLimiteRetiro <= finClases;
 
+    /// <summary>
+    /// Supuesto 4 de la spec de matriculas (RN-06): dos periodos se traslapan si sus clases comparten al menos un día,
+    /// ambos extremos incluidos.
+    /// </summary>
+    public static bool ClasesSeTraslapan(DateOnly inicioA, DateOnly finA, DateOnly inicioB, DateOnly finB) =>
+        inicioA <= finB && inicioB <= finA;
+
     public static bool Coherente(
         DateOnly inicioClases,
         DateOnly finClases,

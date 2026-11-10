@@ -99,4 +99,26 @@ public class ReglasPeriodoTests
     {
         Assert.False(ReglasPeriodo.Coherente(InicioClases, FinClases, InicioMatricula, FinMatricula, FinClases.AddDays(1)));
     }
+
+    // El periodo B empieza "desplazamiento" días después del inicio de A (InicioClases–FinClases) y dura "duracion" días.
+    [Theory]
+    [InlineData(10, 30, true)]    // B empieza dentro de A
+    [InlineData(-30, 40, true)]   // B termina dentro de A
+    [InlineData(10, 5, true)]     // B contenido en A
+    [InlineData(-10, 400, true)]  // B contiene a A
+    [InlineData(0, 149, true)]    // mismas fechas
+    [InlineData(149, 30, true)]   // B empieza el último día de A
+    [InlineData(-30, 30, true)]   // B termina el primer día de A
+    [InlineData(150, 30, false)]  // B empieza el día siguiente al fin de A
+    [InlineData(-31, 30, false)]  // B termina el día anterior al inicio de A
+    [InlineData(200, 60, false)]  // separados
+    public void ClasesSeTraslapan_SegunPosicionDelOtroPeriodo_DevuelveLoEsperado(
+        int desplazamiento, int duracion, bool esperado)
+    {
+        var inicioB = InicioClases.AddDays(desplazamiento);
+        var finB = inicioB.AddDays(duracion);
+
+        Assert.Equal(esperado, ReglasPeriodo.ClasesSeTraslapan(InicioClases, FinClases, inicioB, finB));
+        Assert.Equal(esperado, ReglasPeriodo.ClasesSeTraslapan(inicioB, finB, InicioClases, FinClases));
+    }
 }

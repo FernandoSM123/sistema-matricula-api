@@ -4,7 +4,7 @@ Módulo `matriculas` del [mapa de módulos](mapa-modulos.md). Depende de `grupos
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/matriculas/plan.md) | [Aprobadas](../tasks/matriculas/todo.md) | 1/13 |
+| **Aprobada** | [Aprobado](../tasks/matriculas/plan.md) | [Aprobadas](../tasks/matriculas/todo.md) | 2/13 |
 
 **Historial:**
 - 2026-11-10: v1 en revisión, con once supuestos y tres preguntas abiertas (excepciones del administrador en RN-11, alcance de RN-36 y RN-06 al agregar horarios).

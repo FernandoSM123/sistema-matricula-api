@@ -31,6 +31,10 @@ public class GrupoConfiguration : IEntityTypeConfiguration<Grupo>
 
         builder.Ignore(g => g.CuposDisponibles);
 
+        // Concurrencia del último cupo: Npgsql mapea un uint con IsRowVersion a la columna de sistema xmin, que
+        // PostgreSQL cambia en cada UPDATE. No crea columna.
+        builder.Property(g => g.Version).IsRowVersion();
+
         // Estado y Modalidad (texto) siguen las convenciones de AppDbContext.
     }
 }

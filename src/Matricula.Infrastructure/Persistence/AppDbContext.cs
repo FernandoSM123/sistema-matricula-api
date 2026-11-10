@@ -1,6 +1,7 @@
 using Matricula.Application.Abstractions;
 using Matricula.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using MatriculaEntidad = Matricula.Domain.Entities.Matricula;
 
 namespace Matricula.Infrastructure.Persistence;
 
@@ -16,6 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Periodo> Periodos => Set<Periodo>();
     public DbSet<Grupo> Grupos => Set<Grupo>();
     public DbSet<Horario> Horarios => Set<Horario>();
+    public DbSet<MatriculaEntidad> Matriculas => Set<MatriculaEntidad>();
 
 
     // cómo se mapean las clases a tablas

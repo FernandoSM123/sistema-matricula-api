@@ -1,5 +1,6 @@
 using Matricula.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using MatriculaEntidad = Matricula.Domain.Entities.Matricula;
 
 namespace Matricula.Application.Abstractions;
 
@@ -17,6 +18,7 @@ public interface IAppDbContext
     DbSet<Periodo> Periodos { get; }
     DbSet<Grupo> Grupos { get; }
     DbSet<Horario> Horarios { get; }
+    DbSet<MatriculaEntidad> Matriculas { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

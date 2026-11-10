@@ -11,7 +11,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | Tarea | Estado | Código | Pruebas unitarias | Verificación manual | Commit |
 |---|---|:---:|:---:|:---:|:---:|
 | T1. Dominio de matrículas y cupos | Completada | ✅ | ✅ | ➖ | ✅ |
-| T2. Persistencia, `xmin` y migración `AgregaMatricula` | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T2. Persistencia, `xmin` y migración `AgregaMatricula` | Completada | ✅ | ➖ | ✅ | ✅ |
 | T3. Matricular, detalle y concurrencia | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T4. Retirar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T5. Cambiar de grupo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -71,6 +71,11 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - `dotnet ef database update` aplica la migración; el SQL muestra el índice único con `WHERE estado = 'Activa'`, las FK con `ON DELETE RESTRICT` y ninguna columna nueva en `grupo`.
   - `dotnet ef migrations has-pending-model-changes` → sin cambios pendientes.
   - Regresión: editar un grupo, agregar un bloque y cambiar su estado siguen respondiendo `200`/`201`/`204`.
+  - Resultado (2026-11-10): `AgregaMatricula` aplicada a la BD de desarrollo y sin cambios de modelo pendientes. El script de la migración crea `matricula` con `fk_matricula_estudiante_estudiante_id` y `fk_matricula_grupo_grupo_id` (`ON DELETE RESTRICT`), `ix_matricula_estudiante_id_grupo_id` único con `WHERE estado = 'Activa'` e `ix_matricula_grupo_id_estado`. Aunque el `Up` de la migración lleva un `AddColumn("xmin")`, Npgsql no genera SQL para las columnas de sistema: `grupo` no cambia. Regresión: 13/13 verificaciones correctas contra la API local (crear grupo, agregar y quitar bloques, editar dos veces seguidas, recorrer los estados hasta `Finalizado`, cancelar, detalle sin `version` y oferta pública). 252/252 pruebas unitarias en verde.
+  - Detalles que la spec no fijaba:
+    - `IAppDbContext`, `AppDbContext` y `MatriculaConfiguration` usan el alias `MatriculaEntidad` (ver T1); el `DbSet` se llama `Matriculas`.
+    - El filtro del índice se escribe con `nameof(EstadoMatricula.Activa)`, así no se desincroniza del texto que guarda la conversión del enum.
+    - Para verificar a mano se usa la cuenta de prueba `humo.adm.742345@correo.local` (creada en la prueba de humo de `estudiantes`), a la que se le pidió una temporal por olvido y se le definió una contraseña de prueba. La cuenta real `admin@instituto.local` no se tocó.
 - Files: `src/Matricula.Infrastructure/Persistence/Configurations/{MatriculaConfiguration,GrupoConfiguration}.cs`, `src/Matricula.Application/Abstractions/IAppDbContext.cs`, `src/Matricula.Infrastructure/Persistence/AppDbContext.cs`, migración
 
 ### T3. Matricular, detalle y concurrencia

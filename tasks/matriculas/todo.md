@@ -16,7 +16,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T4. Retirar | Completada | ✅ | ➖ | ✅ | ✅ |
 | T5. Cambiar de grupo | Completada | ✅ | ➖ | ✅ | ✅ |
 | T6. Matrículas e historial de un estudiante | Completada | ✅ | ➖ | ✅ | ✅ |
-| T7. Horario del estudiante | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T7. Horario del estudiante | Completada | ✅ | ➖ | ✅ | ✅ |
 | T8. Estudiantes de un grupo y detalle para el matriculado | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T9. RN-12 al cancelar un grupo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T10. RN-06 al agregar un bloque | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -163,6 +163,10 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - `/me/horario` como estudiante y `/estudiantes/{id}/horario` dan los mismos bloques, ordenados por día y hora; sin los grupos de los que se retiró.
   - Sin `periodoId` y sin periodo vigente → `404` pidiendo el `periodoId`.
   - Regresión: `/me/horario` como profesor sigue igual; como admin → `403`.
+  - Resultado (2026-11-10): 18/18 verificaciones correctas contra la API local. Un estudiante con cuatro grupos en el periodo vigente (uno de ellos con dos bloques en días distintos), uno retirado y otro cancelado: el horario trae solo los tres bloques de los grupos activos, ordenados por día y hora, igual en `/me/horario` y en `/estudiantes/{id}/horario`. Además: con `periodoId` de otro periodo trae solo los bloques de ese periodo; otro estudiante ve solo los suyos; sin matrículas → `200` con lista vacía; estudiante o periodo inexistente → `404`; sin periodo vigente → `404` pidiendo el `periodoId` (estudiante y admin), y con `periodoId` explícito sigue respondiendo. Regresión: `/me/horario` como profesor y `/profesores/{id}/horario` siguen igual; admin en `/me/horario`, estudiante o profesor en `/estudiantes/{id}/horario` → `403`; sin token → `401`. La BD queda sin periodo vigente.
+  - Detalles que la spec no fijaba:
+    - `Grupo` no tiene navegación a sus matrículas; el filtro del estudiante es una subconsulta sobre `db.Matriculas` (`DelEstudiante`), y el resto de la consulta se comparte con el profesor y el aula.
+    - Un grupo cancelado no aparece aunque la matrícula siga `Activa` (hasta T9 cancelar no retira las matrículas).
 - Files: `src/Matricula.Application/Grupos/Consultas/HorarioSemanalService.cs`, `src/Matricula.Api/Seguridad/Politicas.cs`, `src/Matricula.Api/Controllers/{EstudiantesController,MeController}.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T8. Estudiantes de un grupo y detalle para el matriculado

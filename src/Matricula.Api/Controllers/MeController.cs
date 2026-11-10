@@ -68,11 +68,12 @@ public class MeController(
         Ok(await grupoService.ListarMisGruposAsync(request, cancellationToken));
 
     /// <summary>
-    /// Horario semanal del profesor de la sesión (RF-28). Sin periodoId usa el vigente; si no hay vigente responde 404
-    /// pidiendo el periodoId. El módulo matriculas lo amplía a los estudiantes (RF-21).
+    /// Horario semanal de la sesión: para el profesor, sus grupos (RF-28); para el estudiante, los grupos en que tiene
+    /// una matrícula activa (RF-21). Sin grupos cancelados. Sin periodoId usa el vigente; si no hay vigente responde 404
+    /// pidiendo el periodoId.
     /// </summary>
     [HttpGet("horario")]
-    [Authorize(Policy = Politicas.Profesor)]
+    [Authorize(Policy = Politicas.ProfesorOEstudiante)]
     [ProducesResponseType<IReadOnlyList<BloqueHorarioResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]

@@ -627,12 +627,14 @@ Authorization: Bearer {{token}}
 
 ###
 
-# Mis grupos y mi horario (RF-27, RF-28), solo con token de profesor (otro rol → 403). Mismos filtros que arriba.
+# Mis grupos (RF-27), solo con token de profesor (otro rol → 403). Mismos filtros que arriba.
 GET {{host}}/api/v1/me/grupos?periodoId=1
 Authorization: Bearer {{token}}
 
 ###
 
+# Mi horario: con token de profesor, sus grupos (RF-28); con token de estudiante, los grupos en que tiene una matrícula
+# activa (RF-21). Administrador → 403. Sin periodoId usa el vigente; sin vigente → 404 pidiendo el periodoId.
 GET {{host}}/api/v1/me/horario
 Authorization: Bearer {{token}}
 
@@ -729,6 +731,13 @@ Authorization: Bearer {{token}}
 
 # Lo mismo para el estudiante de la sesión.
 GET {{host}}/api/v1/me/matriculas?estado=Activa
+Authorization: Bearer {{token}}
+
+###
+
+# Horario semanal de un estudiante (RF-21), solo administrador: bloques de los grupos con matrícula activa, por día y
+# hora, sin grupos cancelados. Sin periodoId usa el vigente; estudiante o periodo inexistente → 404.
+GET {{host}}/api/v1/estudiantes/1/horario?periodoId=1
 Authorization: Bearer {{token}}
 
 ###

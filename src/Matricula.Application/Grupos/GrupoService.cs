@@ -255,6 +255,27 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
     }
 
     /// <summary>
+    /// RF-46 y RN-34: solo un grupo que nunca tuvo matrículas, ni siquiera retiradas; si no, se cancela. Sus bloques se
+    /// quitan en el mismo guardado, en cualquier estado y sin cascada (supuesto 9).
+    /// </summary>
+    public async Task EliminarAsync(int id, CancellationToken cancellationToken)
+    {
+        var grupo = await BuscarConHorariosAsync(id, cancellationToken);
+
+        if (await db.Matriculas.AnyAsync(m => m.GrupoId == id, cancellationToken))
+        {
+            throw new BusinessRuleException(
+                "RN-34", $"El grupo {grupo.Nrc} tiene matrículas y no se puede eliminar. Cancélelo en su lugar.");
+        }
+
+        // Si alguien se matricula a la vez, el token de concurrencia del grupo hace fallar a uno de los dos
+        // (409 CONCURRENCIA), en lugar de una violación de llave foránea.
+        db.Horarios.RemoveRange(grupo.Horarios);
+        db.Grupos.Remove(grupo);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
     /// RF-48: solo mientras el grupo está Planificado. Un bloque de otro grupo responde 404.
     /// </summary>
     public async Task QuitarHorarioAsync(int grupoId, int horarioId, CancellationToken cancellationToken)

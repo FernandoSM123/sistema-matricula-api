@@ -602,6 +602,13 @@ Content-Type: application/json
 
 ###
 
+# Eliminar un grupo (RF-46): 204, en cualquier estado, junto con sus bloques de horario; su NRC queda libre. Si tuvo
+# matrículas, aunque estén retiradas → 409 RN-34 (se cancela en su lugar). Inexistente → 404. Solo administrador.
+DELETE {{host}}/api/v1/grupos/1
+Authorization: Bearer {{token}}
+
+###
+
 # Oferta académica (RF-50): pública, sin token. Grupos Abierto del periodo vigente con horarios y cupos disponibles
 # (incluidos los llenos); del profesor solo el nombre. Filtros: cursoId, modalidad; search busca en el curso y el NRC.
 # Sin periodo vigente → 200 con la lista vacía.

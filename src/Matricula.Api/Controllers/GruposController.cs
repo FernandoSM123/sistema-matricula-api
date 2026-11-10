@@ -134,6 +134,23 @@ public class GruposController(GrupoService grupoService, MatriculaService matric
         Ok(await grupoService.ObtenerAsync(id, cancellationToken));
 
     /// <summary>
+    /// Elimina un grupo que nunca tuvo matrículas (RF-46), junto con sus bloques de horario, en cualquier estado. Si
+    /// tuvo alguna, aunque esté retirada, responde 409 RN-34: se cancela en su lugar.
+    /// </summary>
+    [HttpDelete("{id:int}")]
+    [Authorize(Policy = Politicas.Administrador)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Eliminar(int id, CancellationToken cancellationToken)
+    {
+        await grupoService.EliminarAsync(id, cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
     /// Estudiantes de un grupo (RF-49), para el administrador o el profesor del grupo; otro profesor recibe 403 RN-18.
     /// Por defecto los de matrícula activa (estado=Retirada para los retirados); search busca en nombre, apellidos y
     /// cédula. No incluye teléfono ni dirección.

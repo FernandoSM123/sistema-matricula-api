@@ -20,7 +20,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T8. Estudiantes de un grupo y detalle para el matriculado | Completada | ✅ | ➖ | ✅ | ✅ |
 | T9. RN-12 al cancelar un grupo | Completada | ✅ | ➖ | ✅ | ✅ |
 | T10. RN-06 al agregar un bloque | Completada | ✅ | ➖ | ✅ | ✅ |
-| T11. Eliminar grupos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T11. Eliminar grupos | Completada | ✅ | ➖ | ✅ | ✅ |
 | T12. RN-36 y eliminar estudiantes con su cuenta | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T13. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 
@@ -219,6 +219,9 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - Grupo sin matrículas (con bloques, en `Planificado` y en `Abierto`) → `204`; el detalle → `404`; su NRC se registra de nuevo → `201`.
   - Con matrículas, aunque estén retiradas → `409 RN-34`; nunca `500`.
   - Id inexistente → `404`; profesor o estudiante → `403`.
+  - Resultado (2026-11-10): 19/19 verificaciones correctas contra la API local. Sin matrículas, se eliminan grupos en `Planificado` (con 2 bloques), `Abierto`, `Finalizado` y `Cancelado` → `204`; el detalle → `404`; su NRC se registra de nuevo → `201` y su bloque ya no ocupa al profesor (sin `RN-07`); al quedar sin grupos, su curso se puede eliminar. Con una matrícula activa, retirada, o con el grupo ya cancelado → `409 RN-34` sugiriendo cancelar, y el grupo sigue con sus bloques. Inexistente → `404`; profesor o estudiante → `403`; sin token → `401`. La BD queda sin periodo vigente.
+  - Detalles que la spec no fijaba:
+    - Si alguien se matricula mientras se elimina el grupo, el token de concurrencia del grupo (`xmin`) hace fallar a uno de los dos con `409 CONCURRENCIA` en lugar de una violación de llave foránea. No se reprodujo manualmente.
 - Files: `src/Matricula.Application/Grupos/GrupoService.cs`, `src/Matricula.Api/Controllers/GruposController.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T12. RN-36 y eliminar estudiantes con su cuenta

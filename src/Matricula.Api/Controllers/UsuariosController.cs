@@ -23,7 +23,9 @@ public class UsuariosController(UsuarioService usuarioService) : ApiControllerBa
         Ok(await usuarioService.ReenviarTemporalAsync(id, cancellationToken));
 
     /// <summary>
-    /// Desactiva la cuenta (RF-14): no puede ingresar y sus sesiones se cierran. No se permite con el último administrador activo.
+    /// Desactiva la cuenta (RF-14): no puede ingresar y sus sesiones se cierran. No se permite con el último administrador
+    /// activo (RN-30), con un profesor con grupos activos (RN-37) ni con un estudiante con matrículas activas en un
+    /// periodo en curso (RN-36).
     /// </summary>
     [HttpPost("{id:int}/desactivar")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

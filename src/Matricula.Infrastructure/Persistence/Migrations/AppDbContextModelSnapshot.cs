@@ -321,6 +321,12 @@ namespace Matricula.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("profesor_id");
 
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id")
                         .HasName("pk_grupo");
 
@@ -388,6 +394,64 @@ namespace Matricula.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_horario_grupo_id");
 
                     b.ToTable("horario", (string)null);
+                });
+
+            modelBuilder.Entity("Matricula.Domain.Entities.Matricula", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("estado");
+
+                    b.Property<int>("EstudianteId")
+                        .HasColumnType("integer")
+                        .HasColumnName("estudiante_id");
+
+                    b.Property<DateTimeOffset>("FechaCreacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_creacion");
+
+                    b.Property<DateOnly>("FechaMatricula")
+                        .HasColumnType("date")
+                        .HasColumnName("fecha_matricula");
+
+                    b.Property<DateTimeOffset?>("FechaModificacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_modificacion");
+
+                    b.Property<DateOnly?>("FechaRetiro")
+                        .HasColumnType("date")
+                        .HasColumnName("fecha_retiro");
+
+                    b.Property<int>("GrupoId")
+                        .HasColumnType("integer")
+                        .HasColumnName("grupo_id");
+
+                    b.Property<string>("MotivoRetiro")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("motivo_retiro");
+
+                    b.HasKey("Id")
+                        .HasName("pk_matricula");
+
+                    b.HasIndex("EstudianteId", "GrupoId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_matricula_estudiante_id_grupo_id")
+                        .HasFilter("estado = 'Activa'");
+
+                    b.HasIndex("GrupoId", "Estado")
+                        .HasDatabaseName("ix_matricula_grupo_id_estado");
+
+                    b.ToTable("matricula", (string)null);
                 });
 
             modelBuilder.Entity("Matricula.Domain.Entities.Periodo", b =>
@@ -670,6 +734,27 @@ namespace Matricula.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_horario_grupo_grupo_id");
+                });
+
+            modelBuilder.Entity("Matricula.Domain.Entities.Matricula", b =>
+                {
+                    b.HasOne("Matricula.Domain.Entities.Estudiante", "Estudiante")
+                        .WithMany()
+                        .HasForeignKey("EstudianteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_matricula_estudiante_estudiante_id");
+
+                    b.HasOne("Matricula.Domain.Entities.Grupo", "Grupo")
+                        .WithMany()
+                        .HasForeignKey("GrupoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_matricula_grupo_grupo_id");
+
+                    b.Navigation("Estudiante");
+
+                    b.Navigation("Grupo");
                 });
 
             modelBuilder.Entity("Matricula.Domain.Entities.Profesor", b =>

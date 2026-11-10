@@ -3,6 +3,8 @@ using Matricula.Api.Seguridad;
 using Matricula.Application.Auth;
 using Matricula.Application.Common.Paginacion;
 using Matricula.Application.Estudiantes;
+using Matricula.Application.Grupos.Consultas;
+using Matricula.Application.Matriculas;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -10,8 +12,33 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace Matricula.Api.Controllers;
 
 [Authorize(Policy = Politicas.Administrador)]
-public class EstudiantesController(EstudianteService estudianteService) : ApiControllerBase
+public class EstudiantesController(
+    EstudianteService estudianteService,
+    MatriculaService matriculaService,
+    HorarioSemanalService horarioService) : ApiControllerBase
 {
+    /// <summary>
+    /// Horario semanal de un estudiante (RF-21): los bloques de los grupos en que tiene una matrícula activa, sin grupos
+    /// cancelados. Sin periodoId usa el vigente; si no hay vigente responde 404 pidiendo el periodoId.
+    /// </summary>
+    [HttpGet("{id:int}/horario")]
+    [ProducesResponseType<IReadOnlyList<BloqueHorarioResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<BloqueHorarioResponse>>> Horario(
+        int id, [FromQuery] int? periodoId, CancellationToken cancellationToken) =>
+        Ok(await horarioService.HorarioEstudianteAsync(id, periodoId, cancellationToken));
+
+    /// <summary>
+    /// Matrículas de un estudiante (RF-20, RF-54): sin estado es su historial de matrículas y retiros; con
+    /// estado=Activa, los cursos y grupos en que está matriculado. Filtro por periodo; search busca en el curso y el NRC.
+    /// </summary>
+    [HttpGet("{id:int}/matriculas")]
+    [ProducesResponseType<PagedResult<MatriculaResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PagedResult<MatriculaResponse>>> Matriculas(
+        int id, [FromQuery] ListarMatriculasRequest request, CancellationToken cancellationToken) =>
+        Ok(await matriculaService.ListarDeEstudianteAsync(id, request, cancellationToken));
+
     /// <summary>
     /// Registra un estudiante por un administrador (RF-02). La temporal se envía a su correo y nunca aparece en
     /// la respuesta; con correoEnviado en false se puede reenviar.
@@ -68,7 +95,8 @@ public class EstudiantesController(EstudianteService estudianteService) : ApiCon
         Ok(await estudianteService.ActualizarAsync(id, request, cancellationToken));
 
     /// <summary>
-    /// Desactiva al estudiante y su cuenta (RF-19, RN-38): no puede ingresar y sus sesiones se cierran.
+    /// Desactiva al estudiante y su cuenta (RF-19, RN-38): no puede ingresar y sus sesiones se cierran. Con matrículas
+    /// activas en un periodo en curso responde 409 RN-36: primero hay que retirarlo.
     /// </summary>
     [HttpPost("{id:int}/desactivar")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -77,6 +105,20 @@ public class EstudiantesController(EstudianteService estudianteService) : ApiCon
     public async Task<IActionResult> Desactivar(int id, CancellationToken cancellationToken)
     {
         await estudianteService.DesactivarAsync(id, cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Elimina un estudiante que nunca tuvo matrículas, junto con su cuenta (RF-19, RN-35); sus sesiones se cortan. Si
+    /// tuvo alguna, aunque esté retirada, responde 409 RN-34: se desactiva en su lugar.
+    /// </summary>
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Eliminar(int id, CancellationToken cancellationToken)
+    {
+        await estudianteService.EliminarAsync(id, cancellationToken);
         return NoContent();
     }
 

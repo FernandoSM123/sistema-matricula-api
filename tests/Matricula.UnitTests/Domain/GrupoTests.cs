@@ -380,6 +380,118 @@ public class GrupoTests
     }
 
     [Fact]
+    public void OcuparCupo_HastaLlenar_AumentaOcupadosYReduceDisponibles()
+    {
+        var grupo = CrearGrupo();
+
+        for (var i = 0; i < 25; i++)
+        {
+            grupo.OcuparCupo();
+        }
+
+        Assert.Equal(25, grupo.CuposOcupados);
+        Assert.Equal(0, grupo.CuposDisponibles);
+    }
+
+    [Fact]
+    public void OcuparCupo_GrupoLleno_LanzaRn03YNoCambiaOcupados()
+    {
+        var grupo = new Grupo("10001", CursoId, ProfesorId, PeriodoId, AulaId, 1, Modalidad.Presencial);
+        grupo.OcuparCupo();
+
+        var excepcion = Assert.Throws<BusinessRuleException>(grupo.OcuparCupo);
+
+        Assert.Equal("RN-03", excepcion.Code);
+        Assert.Equal(1, grupo.CuposOcupados);
+    }
+
+    [Fact]
+    public void LiberarCupo_ConOcupados_ReduceOcupados()
+    {
+        var grupo = CrearGrupo();
+        grupo.OcuparCupo();
+        grupo.OcuparCupo();
+
+        grupo.LiberarCupo();
+
+        Assert.Equal(1, grupo.CuposOcupados);
+        Assert.Equal(24, grupo.CuposDisponibles);
+    }
+
+    [Fact]
+    public void LiberarCupo_SinOcupados_NoBajaDeCero()
+    {
+        var grupo = CrearGrupo();
+
+        grupo.LiberarCupo();
+
+        Assert.Equal(0, grupo.CuposOcupados);
+    }
+
+    // Verificación heredada de grupos T1: el cupo no baja de los ocupados.
+    [Fact]
+    public void ActualizarDatos_CupoMenorQueOcupados_LanzaRf45YNoCambiaElCupo()
+    {
+        var grupo = CrearGrupo();
+        for (var i = 0; i < 10; i++)
+        {
+            grupo.OcuparCupo();
+        }
+
+        var excepcion = Assert.Throws<BusinessRuleException>(() => ActualizarCon(grupo, cupo: 9));
+
+        Assert.Equal("RF-45", excepcion.Code);
+        Assert.Equal(25, grupo.Cupo);
+    }
+
+    [Fact]
+    public void ActualizarDatos_CupoIgualAOcupados_LoAcepta()
+    {
+        var grupo = CrearGrupo();
+        for (var i = 0; i < 10; i++)
+        {
+            grupo.OcuparCupo();
+        }
+
+        ActualizarCon(grupo, cupo: 10);
+
+        Assert.Equal(10, grupo.Cupo);
+        Assert.Equal(0, grupo.CuposDisponibles);
+    }
+
+    [Theory]
+    [InlineData(EstadoGrupo.Abierto, false)]
+    [InlineData(EstadoGrupo.Abierto, true)]
+    [InlineData(EstadoGrupo.Planificado, true)]
+    [InlineData(EstadoGrupo.Cerrado, true)]
+    [InlineData(EstadoGrupo.EnCurso, true)]
+    public void ValidarMovimiento_EstadoPermitido_NoLanza(EstadoGrupo estado, bool esAdministrador)
+    {
+        var grupo = CrearGrupoEn(estado);
+
+        var excepcion = Record.Exception(() => grupo.ValidarMovimiento(esAdministrador));
+
+        Assert.Null(excepcion);
+    }
+
+    [Theory]
+    [InlineData(EstadoGrupo.Planificado, false, "RN-02")]
+    [InlineData(EstadoGrupo.Cerrado, false, "RN-11")]
+    [InlineData(EstadoGrupo.EnCurso, false, "RN-11")]
+    [InlineData(EstadoGrupo.Finalizado, false, "RN-11")]
+    [InlineData(EstadoGrupo.Cancelado, false, "RN-11")]
+    [InlineData(EstadoGrupo.Finalizado, true, "RN-11")]
+    [InlineData(EstadoGrupo.Cancelado, true, "RN-11")]
+    public void ValidarMovimiento_EstadoNoPermitido_LanzaLaRegla(EstadoGrupo estado, bool esAdministrador, string codigo)
+    {
+        var grupo = CrearGrupoEn(estado);
+
+        var excepcion = Assert.Throws<BusinessRuleException>(() => grupo.ValidarMovimiento(esAdministrador));
+
+        Assert.Equal(codigo, excepcion.Code);
+    }
+
+    [Fact]
     public void ActualizarDatos_ModalidadSinAulaRequerida_LanzaRn09YNoCambiaNada()
     {
         var grupo = CrearGrupo();

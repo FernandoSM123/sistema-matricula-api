@@ -1,6 +1,6 @@
 @host = http://localhost:5022
 
-# Recorrido de los módulos acceso, estudiantes, profesores, catalogos y grupos. Ejecuta primero el login con tus credenciales: las demás peticiones usan
+# Recorrido de los módulos acceso, estudiantes, profesores, catalogos, grupos y matriculas. Ejecuta primero el login con tus credenciales: las demás peticiones usan
 # {{token}}. Primer ingreso: login con la temporal de AdminSeed → cambio-obligatorio → login con la nueva.
 
 GET {{host}}/health
@@ -207,7 +207,8 @@ Content-Type: application/json
 
 
 # Desactivar un estudiante (RF-19, RN-38): desactiva su cuenta y cierra sus sesiones. Es lo mismo que
-# /usuarios/{usuarioId}/desactivar. La guarda RN-36 la añade el módulo matriculas.
+# /usuarios/{usuarioId}/desactivar. Con matrículas activas en un periodo en curso (vigente o no) → 409 RN-36 con la
+# cantidad: primero hay que retirarlo.
 POST {{host}}/api/v1/estudiantes/1/desactivar
 Authorization: Bearer {{token}}
 
@@ -215,6 +216,13 @@ Authorization: Bearer {{token}}
 
 # Reactivar un estudiante (RF-19, RN-39): un estudiante que regresa se reactiva, no se registra de nuevo.
 POST {{host}}/api/v1/estudiantes/1/reactivar
+Authorization: Bearer {{token}}
+
+###
+
+# Eliminar un estudiante (RF-19): 204 junto con su cuenta (RN-35); sus sesiones dejan de valer y su correo y cédula
+# quedan libres. Si tuvo matrículas, aunque estén retiradas → 409 RN-34 (se desactiva en su lugar). Inexistente → 404.
+DELETE {{host}}/api/v1/estudiantes/1
 Authorization: Bearer {{token}}
 
 ###
@@ -539,7 +547,7 @@ Authorization: Bearer {{token}}
 ###
 
 # Detalle de un grupo (RF-44): horarios, cupo, ocupados y disponibles. Inexistente → 404.
-# Profesor con un grupo ajeno o estudiante con un grupo que no está Abierto → 403 RN-18.
+# Profesor con un grupo ajeno, o estudiante con un grupo que no está Abierto y en el que nunca se matriculó → 403 RN-18.
 GET {{host}}/api/v1/grupos/1
 Authorization: Bearer {{token}}
 
@@ -568,6 +576,7 @@ Content-Type: application/json
 # Agregar un bloque de horario (RF-48). 201 con el grupo. Horas "HH:mm" o "HH:mm:ss"; horaFin ≤ horaInicio → 400 (RN-15).
 # Traslape con otro bloque del grupo → 409 RN-14. Choque con otro grupo del mismo profesor / aula en el mismo periodo
 # → 409 RN-07 / RN-08, con el NRC del otro grupo (los cancelados no cuentan). Bloques contiguos sí se permiten.
+# Si dejaría a algún estudiante matriculado con choque de horario → 409 RN-06 con cuántos y un NRC (sin nombres).
 # Grupo finalizado o cancelado → 409 RF-48.
 POST {{host}}/api/v1/grupos/1/horarios
 Authorization: Bearer {{token}}
@@ -589,7 +598,8 @@ Authorization: Bearer {{token}}
 
 # Cambiar el estado de un grupo (RF-47): 204. Planificado → Abierto → Cerrado → EnCurso → Finalizado, un paso a la vez,
 # o Cancelado mientras no haya finalizado. Abrir sin horarios, saltar, retroceder o cancelar un finalizado → 409 RF-47.
-# Repetir el estado actual → 204 sin cambios.
+# Repetir el estado actual → 204 sin cambios. Cancelar retira las matrículas activas (motivo CancelacionGrupo, fecha de
+# hoy) y libera sus cupos en el mismo guardado (RN-12), aunque haya pasado la fecha límite de retiro.
 POST {{host}}/api/v1/grupos/1/estado
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -597,6 +607,13 @@ Content-Type: application/json
 {
   "estado": "Abierto"
 }
+
+###
+
+# Eliminar un grupo (RF-46): 204, en cualquier estado, junto con sus bloques de horario; su NRC queda libre. Si tuvo
+# matrículas, aunque estén retiradas → 409 RN-34 (se cancela en su lugar). Inexistente → 404. Solo administrador.
+DELETE {{host}}/api/v1/grupos/1
+Authorization: Bearer {{token}}
 
 ###
 
@@ -627,12 +644,14 @@ Authorization: Bearer {{token}}
 
 ###
 
-# Mis grupos y mi horario (RF-27, RF-28), solo con token de profesor (otro rol → 403). Mismos filtros que arriba.
+# Mis grupos (RF-27), solo con token de profesor (otro rol → 403). Mismos filtros que arriba.
 GET {{host}}/api/v1/me/grupos?periodoId=1
 Authorization: Bearer {{token}}
 
 ###
 
+# Mi horario: con token de profesor, sus grupos (RF-28); con token de estudiante, los grupos en que tiene una matrícula
+# activa (RF-21). Administrador → 403. Sin periodoId usa el vigente; sin vigente → 404 pidiendo el periodoId.
 GET {{host}}/api/v1/me/horario
 Authorization: Bearer {{token}}
 
@@ -658,6 +677,92 @@ Authorization: Bearer {{token}}
 ###
 
 DELETE {{host}}/api/v1/periodos/1
+Authorization: Bearer {{token}}
+
+###
+
+# --- Módulo matriculas ---
+
+# Matricular a un estudiante (RF-51), solo administrador: 201 + Location. Al administrador no se le aplican el estado
+# Abierto ni las fechas de matrícula, pero sí RN-01 (inactivo), RN-03 (sin cupo), RN-05 (curso repetido en el periodo),
+# RN-06 (choque de horario) y RN-11 en grupos Finalizado o Cancelado. Dos peticiones por el último cupo: una 201 y la
+# otra 409 RN-03 o CONCURRENCIA.
+POST {{host}}/api/v1/matriculas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "estudianteId": 1,
+  "grupoId": 1
+}
+
+###
+
+# Matricularse (RF-51), con el token de un estudiante: su id sale del token. El grupo debe estar Abierto (RN-02, RN-11)
+# y hoy dentro del rango de matrícula del periodo (RN-04). Location → /matriculas/{id}.
+POST {{host}}/api/v1/me/matriculas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "grupoId": 1
+}
+
+###
+
+# Detalle de una matrícula: administrador o el estudiante dueño; la de otro estudiante → 403 RN-18.
+GET {{host}}/api/v1/matriculas/1
+Authorization: Bearer {{token}}
+
+###
+
+# Retirar una matrícula (RF-52): administrador o el estudiante dueño (otro → 403 RN-18). Queda Retirada con la fecha de
+# hoy y el cupo se libera. El estudiante necesita el grupo Abierto (RN-11) y estar dentro de la fecha límite de retiro
+# (RN-10); al administrador no se le aplican, salvo en grupos Finalizado o Cancelado. Ya retirada → 409 RF-52.
+POST {{host}}/api/v1/matriculas/1/retiro
+Authorization: Bearer {{token}}
+
+###
+
+# Cambiar de grupo (RF-53): administrador o el estudiante dueño. El destino debe ser otro grupo del mismo curso y periodo
+# (si no → 409 RF-53). La matrícula original queda Retirada con motivo CambioGrupo y se crea una nueva: 201 + Location a
+# la nueva. Si el destino no cumple (RN-02, RN-03, RN-06, RN-11) o el origen ya no permite retiros (RN-10, RN-11), no
+# cambia nada. El cambio se rige por la fecha límite de retiro, no por el rango de matrícula.
+POST {{host}}/api/v1/matriculas/1/cambio-grupo
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "grupoDestinoId": 2
+}
+
+###
+
+# Matrículas de un estudiante (RF-20, RF-54), solo administrador. Sin estado: historial de matrículas y retiros, con
+# fechas y motivo; con estado=Activa: los cursos y grupos en que está matriculado. Filtro por periodo; search busca en
+# el nombre o código del curso y en el NRC. Incluye estudiantes y grupos inactivos (RN-40).
+GET {{host}}/api/v1/estudiantes/1/matriculas?periodoId=&estado=&search=&page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+###
+
+# Lo mismo para el estudiante de la sesión.
+GET {{host}}/api/v1/me/matriculas?estado=Activa
+Authorization: Bearer {{token}}
+
+###
+
+# Horario semanal de un estudiante (RF-21), solo administrador: bloques de los grupos con matrícula activa, por día y
+# hora, sin grupos cancelados. Sin periodoId usa el vigente; estudiante o periodo inexistente → 404.
+GET {{host}}/api/v1/estudiantes/1/horario?periodoId=1
+Authorization: Bearer {{token}}
+
+###
+
+# Estudiantes de un grupo (RF-49): administrador o el profesor del grupo (otro profesor → 403 RN-18; estudiante → 403).
+# Por defecto estado=Activa; estado=Retirada para los retirados. search busca en nombre, apellidos y cédula. Sin
+# teléfono ni dirección. Grupo inexistente → 404.
+GET {{host}}/api/v1/grupos/1/estudiantes?estado=Activa&search=&page=1&pageSize=20
 Authorization: Bearer {{token}}
 
 ###

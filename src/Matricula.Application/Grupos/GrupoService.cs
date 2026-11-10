@@ -1,6 +1,7 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
 using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Matriculas;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
 using Matricula.Domain.Exceptions;
@@ -9,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Matricula.Application.Grupos;
 
-public class GrupoService(IAppDbContext db, ICurrentUser currentUser)
+public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLocal fechaLocal)
 {
     /// <summary>
     /// RF-43 con la visibilidad de RN-18: el profesor solo ve sus grupos y el estudiante solo los Abierto (supuesto 7),
@@ -193,7 +194,8 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser)
 
     /// <summary>
     /// RF-44: incluye los horarios, el cupo, los ocupados y los disponibles. RN-18: un profesor solo ve el detalle de
-    /// sus grupos y un estudiante el de los Abierto; otro grupo existente responde 403.
+    /// sus grupos y un estudiante el de los Abierto y el de los grupos en que tiene o tuvo una matrícula; otro grupo
+    /// existente responde 403.
     /// </summary>
     public async Task<GrupoDetalleResponse> ObtenerAsync(int id, CancellationToken cancellationToken)
     {
@@ -206,7 +208,8 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser)
         var visible = currentUser.Rol switch
         {
             nameof(Rol.Profesor) => detalle.ProfesorId == ProfesorActual(),
-            nameof(Rol.Estudiante) => detalle.Estado == EstadoGrupo.Abierto,
+            nameof(Rol.Estudiante) => detalle.Estado == EstadoGrupo.Abierto
+                || await TieneMatriculaAsync(id, cancellationToken),
             _ => true,
         };
 
@@ -218,14 +221,24 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser)
         return detalle.OrdenarHorarios();
     }
 
+    // Activa o retirada: el estudiante puede revisar el grupo de su historial.
+    private Task<bool> TieneMatriculaAsync(int grupoId, CancellationToken cancellationToken)
+    {
+        var estudianteId = currentUser.EstudianteId
+            ?? throw new ForbiddenException("Su sesión no identifica a un estudiante. Inicie sesión de nuevo.");
+
+        return db.Matriculas.AnyAsync(m => m.GrupoId == grupoId && m.EstudianteId == estudianteId, cancellationToken);
+    }
+
     // Un token emitido antes de que existiera el claim no lo trae: basta con iniciar sesión de nuevo.
     private int ProfesorActual() =>
         currentUser.ProfesorId
         ?? throw new ForbiddenException("Su sesión no identifica a un profesor. Inicie sesión de nuevo.");
 
     /// <summary>
-    /// RF-48: agrega un bloque. Rechaza el traslape con otro bloque del grupo (RN-14) y con los grupos del mismo
-    /// profesor (RN-07) o la misma aula (RN-08) en el periodo.
+    /// RF-48: agrega un bloque. Rechaza el traslape con otro bloque del grupo (RN-14), con los grupos del mismo
+    /// profesor (RN-07) o la misma aula (RN-08) en el periodo, y que deje con choque a un estudiante matriculado (RN-06,
+    /// supuesto 13).
     /// </summary>
     public async Task<GrupoDetalleResponse> AgregarHorarioAsync(
         int grupoId, AgregarHorarioRequest request, CancellationToken cancellationToken)
@@ -235,9 +248,31 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser)
         var grupo = await BuscarConHorariosAsync(grupoId, cancellationToken);
         var horario = grupo.AgregarHorario(request.Dia!.Value, request.HoraInicio!.Value, request.HoraFin!.Value);
         await ValidarTraslapesAsync(grupo, [horario], grupo.ProfesorId, grupo.AulaId, cancellationToken);
+        await db.ValidarBloquesSinChoquesAsync(grupo, [horario], cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
         return await ObtenerAsync(grupoId, cancellationToken);
+    }
+
+    /// <summary>
+    /// RF-46 y RN-34: solo un grupo que nunca tuvo matrículas, ni siquiera retiradas; si no, se cancela. Sus bloques se
+    /// quitan en el mismo guardado, en cualquier estado y sin cascada (supuesto 9).
+    /// </summary>
+    public async Task EliminarAsync(int id, CancellationToken cancellationToken)
+    {
+        var grupo = await BuscarConHorariosAsync(id, cancellationToken);
+
+        if (await db.Matriculas.AnyAsync(m => m.GrupoId == id, cancellationToken))
+        {
+            throw new BusinessRuleException(
+                "RN-34", $"El grupo {grupo.Nrc} tiene matrículas y no se puede eliminar. Cancélelo en su lugar.");
+        }
+
+        // Si alguien se matricula a la vez, el token de concurrencia del grupo hace fallar a uno de los dos
+        // (409 CONCURRENCIA), en lugar de una violación de llave foránea.
+        db.Horarios.RemoveRange(grupo.Horarios);
+        db.Grupos.Remove(grupo);
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     /// <summary>
@@ -255,8 +290,8 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser)
     }
 
     /// <summary>
-    /// RF-47: avanza un paso del flujo normal o cancela. Pedir el estado actual no cambia nada. El módulo matriculas
-    /// añade RN-12 a la cancelación.
+    /// RF-47: avanza un paso del flujo normal o cancela. Pedir el estado actual no cambia nada. Al cancelar se
+    /// retiran las matrículas activas y se liberan sus cupos (RN-12).
     /// </summary>
     public async Task CambiarEstadoAsync(int grupoId, CambiarEstadoRequest request, CancellationToken cancellationToken)
     {
@@ -264,8 +299,32 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser)
 
         // Los horarios se cargan porque abrir un grupo exige al menos un bloque.
         var grupo = await BuscarConHorariosAsync(grupoId, cancellationToken);
+        var estadoAnterior = grupo.Estado;
         grupo.CambiarEstado(request.Estado!.Value);
+
+        if (grupo.Estado == EstadoGrupo.Cancelado && estadoAnterior != EstadoGrupo.Cancelado)
+        {
+            await RetirarPorCancelacionAsync(grupo, cancellationToken);
+        }
+
+        // Un solo guardado: estado, retiros y cupos. Si alguien se matricula a la vez, el token de concurrencia del
+        // grupo hace fallar a uno de los dos (409 CONCURRENCIA).
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    // RN-12: la cancelación retira todas las matrículas activas, sin revisar la fecha límite de retiro (supuesto 10).
+    private async Task RetirarPorCancelacionAsync(Grupo grupo, CancellationToken cancellationToken)
+    {
+        var activas = await db.Matriculas
+            .Where(m => m.GrupoId == grupo.Id && m.Estado == EstadoMatricula.Activa)
+            .ToListAsync(cancellationToken);
+
+        var hoy = fechaLocal.Hoy();
+        foreach (var matricula in activas)
+        {
+            matricula.Retirar(hoy, MotivoRetiro.CancelacionGrupo);
+            grupo.LiberarCupo();
+        }
     }
 
     private async Task<Grupo> BuscarConHorariosAsync(int id, CancellationToken cancellationToken) =>

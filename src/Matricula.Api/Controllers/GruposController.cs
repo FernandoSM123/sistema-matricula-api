@@ -2,6 +2,7 @@ using Matricula.Api.Common;
 using Matricula.Api.Seguridad;
 using Matricula.Application.Common.Paginacion;
 using Matricula.Application.Grupos;
+using Matricula.Application.Matriculas;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,7 +10,7 @@ namespace Matricula.Api.Controllers;
 
 // Las políticas van por acción: un atributo de clase se sumaría al de cada una y dejaría las lecturas solo para
 // administradores.
-public class GruposController(GrupoService grupoService) : ApiControllerBase
+public class GruposController(GrupoService grupoService, MatriculaService matriculaService) : ApiControllerBase
 {
     /// <summary>
     /// Crea un grupo Planificado y sin horarios (RF-42). Responde RN-17 si el curso, profesor o aula están inactivos,
@@ -50,7 +51,8 @@ public class GruposController(GrupoService grupoService) : ApiControllerBase
     /// <summary>
     /// Cambia el estado de un grupo (RF-47): Planificado → Abierto → Cerrado → EnCurso → Finalizado, o Cancelado
     /// mientras no haya finalizado. Para abrir hace falta al menos un bloque de horario. Otra transición responde
-    /// RF-47; repetir el estado actual responde igual.
+    /// RF-47; repetir el estado actual responde igual. Cancelar retira las matrículas activas con motivo
+    /// CancelacionGrupo y libera sus cupos (RN-12), aunque haya pasado la fecha límite de retiro.
     /// </summary>
     [HttpPost("{id:int}/estado")]
     [Authorize(Policy = Politicas.Administrador)]
@@ -69,8 +71,9 @@ public class GruposController(GrupoService grupoService) : ApiControllerBase
 
     /// <summary>
     /// Agrega un bloque de horario (RF-48) y devuelve el grupo. Responde RN-14 si se traslapa con otro bloque del
-    /// grupo, RN-07 o RN-08 si choca con otro grupo del mismo profesor o aula en el periodo, y RF-48 si el grupo está
-    /// finalizado o cancelado.
+    /// grupo, RN-07 o RN-08 si choca con otro grupo del mismo profesor o aula en el periodo, RN-06 si dejaría a algún
+    /// estudiante matriculado con choque de horario (da cuántos, sin nombrarlos) y RF-48 si el grupo está finalizado o
+    /// cancelado.
     /// </summary>
     [HttpPost("{id:int}/horarios")]
     [Authorize(Policy = Politicas.Administrador)]
@@ -129,4 +132,36 @@ public class GruposController(GrupoService grupoService) : ApiControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<GrupoDetalleResponse>> Obtener(int id, CancellationToken cancellationToken) =>
         Ok(await grupoService.ObtenerAsync(id, cancellationToken));
+
+    /// <summary>
+    /// Elimina un grupo que nunca tuvo matrículas (RF-46), junto con sus bloques de horario, en cualquier estado. Si
+    /// tuvo alguna, aunque esté retirada, responde 409 RN-34: se cancela en su lugar.
+    /// </summary>
+    [HttpDelete("{id:int}")]
+    [Authorize(Policy = Politicas.Administrador)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Eliminar(int id, CancellationToken cancellationToken)
+    {
+        await grupoService.EliminarAsync(id, cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Estudiantes de un grupo (RF-49), para el administrador o el profesor del grupo; otro profesor recibe 403 RN-18.
+    /// Por defecto los de matrícula activa (estado=Retirada para los retirados); search busca en nombre, apellidos y
+    /// cédula. No incluye teléfono ni dirección.
+    /// </summary>
+    [HttpGet("{id:int}/estudiantes")]
+    [Authorize(Policy = Politicas.AdministradorOProfesor)]
+    [ProducesResponseType<PagedResult<EstudianteGrupoResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PagedResult<EstudianteGrupoResponse>>> Estudiantes(
+        int id, [FromQuery] ListarEstudiantesGrupoRequest request, CancellationToken cancellationToken) =>
+        Ok(await matriculaService.ListarEstudiantesGrupoAsync(id, request, cancellationToken));
 }

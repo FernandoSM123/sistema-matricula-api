@@ -4,12 +4,13 @@ Módulo `auditoria` del [mapa de módulos](mapa-modulos.md). Depende de `acceso`
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [En revisión](../tasks/auditoria/plan.md) | [En revisión](../tasks/auditoria/todo.md) | 0/5 |
+| **Aprobada** | [Aprobado](../tasks/auditoria/plan.md) | [Aprobadas](../tasks/auditoria/todo.md) | 0/5 |
 
 **Historial:**
 - 2026-11-10: v1 en revisión, con doce supuestos y una pregunta abierta (cómo hacer inmutable la tabla, porque `REVOKE` no aplica al superusuario `postgres`).
 - 2026-11-10: resuelta la pregunta 1 con la opción (c): la inmutabilidad (RN-43) se garantiza solo en la aplicación, sin `REVOKE` ni triggers en la BD. Se corrigieron el punto 1, los criterios de éxito, las verificaciones manuales y `docs/arquitectura.md` §5.1. v1 aprobada con sus doce supuestos.
 - 2026-11-10: aclaración al redactar el plan, sin cambio de alcance: los registros de creación se arman después del primer guardado, porque antes las FK hacia entidades nuevas del mismo guardado tienen ids temporales (punto 2). Plan y lista de 5 tareas en revisión.
+- 2026-11-10: plan y lista de tareas aprobados; la implementación empezará por T1.
 
 ## Objetivo
 

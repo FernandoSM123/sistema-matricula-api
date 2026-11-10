@@ -2,7 +2,7 @@
 
 Módulo `auditoria` del [mapa](../../specs/mapa-modulos.md). Spec: [`specs/SPEC-auditoria.md`](../../specs/SPEC-auditoria.md) · Tareas: [`todo.md`](todo.md)
 
-**Estado del plan:** En revisión
+**Estado del plan:** Aprobado (2026-11-10)
 
 ## Enfoque
 

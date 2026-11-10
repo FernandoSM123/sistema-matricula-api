@@ -2,7 +2,7 @@
 
 Módulo `auditoria` del [mapa](../../specs/mapa-modulos.md). Spec: [`specs/SPEC-auditoria.md`](../../specs/SPEC-auditoria.md) · Plan: [`plan.md`](plan.md)
 
-**Estado de la lista:** En revisión
+**Estado de la lista:** Aprobada (2026-11-10)
 
 Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula.UnitTests` en verde, la verificación indicada y un commit pequeño que cite los RF/RN. Las peticiones nuevas se agregan a `src/Matricula.Api/Matricula.Api.http` en la misma tarea.
 

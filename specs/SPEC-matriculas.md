@@ -4,7 +4,7 @@ Módulo `matriculas` del [mapa de módulos](mapa-modulos.md). Depende de `grupos
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/matriculas/plan.md) | [Aprobadas](../tasks/matriculas/todo.md) | 12/13 |
+| **Aprobada** | [Aprobado](../tasks/matriculas/plan.md) | [Aprobadas](../tasks/matriculas/todo.md) | 13/13 tareas completadas: **módulo completado** (2026-11-10) |
 
 **Historial:**
 - 2026-11-10: v1 en revisión, con once supuestos y tres preguntas abiertas (excepciones del administrador en RN-11, alcance de RN-36 y RN-06 al agregar horarios).
@@ -13,6 +13,7 @@ Módulo `matriculas` del [mapa de módulos](mapa-modulos.md). Depende de `grupos
 - 2026-11-10: resuelta la pregunta 3 con la opción (a): agregar un bloque que haría chocar a un estudiante matriculado responde `409 RN-06` (supuesto 13). Sin preguntas abiertas; v1 queda en revisión hasta que el usuario la lea y la apruebe.
 - 2026-11-10: v1 aprobada, con sus trece supuestos. Plan y lista de 13 tareas en revisión.
 - 2026-11-10: plan y lista de tareas aprobados; la implementación empezará por T1.
+- 2026-11-10: módulo completado (13/13 tareas), sin cambios de alcance. Detalles de implementación que la spec no fijaba: la clase `Matricula` choca con el espacio de nombres raíz y se usa con el alias `MatriculaEntidad`; las reglas de matrícula que consultan la BD viven en `GuardasMatriculas` (RN-05, RN-06 por estudiante y RN-06 al agregar un bloque); las consultas de matrículas y la lista de estudiantes de un grupo viven en `MatriculaService`, y el horario del estudiante en `HorarioSemanalService`; el `GlobalExceptionHandler` ya traducía `DbUpdateConcurrencyException` a `409 CONCURRENCIA`, así que cancelar y eliminar grupos no la capturan. Con este módulo se completan todos los del mapa.
 
 ## Objetivo
 

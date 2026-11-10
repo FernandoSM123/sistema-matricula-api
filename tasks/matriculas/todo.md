@@ -22,7 +22,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T10. RN-06 al agregar un bloque | Completada | ✅ | ➖ | ✅ | ✅ |
 | T11. Eliminar grupos | Completada | ✅ | ➖ | ✅ | ✅ |
 | T12. RN-36 y eliminar estudiantes con su cuenta | Completada | ✅ | ➖ | ✅ | ✅ |
-| T13. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T13. Cierre del módulo | Completada | ✅ | ➖ | ✅ | ✅ |
 
 **Estados de tarea:**
 - **Pendiente:** no se ha empezado.
@@ -247,4 +247,6 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - `cuposOcupados` coincide con el conteo de matrículas activas en los grupos usados en las pruebas.
   - Estados de la spec, el mapa y esta lista al día; las verificaciones heredadas de `grupos` marcadas como cumplidas en el mapa. Con este módulo se completan todos los del mapa.
 - Verify: prueba de humo final con datos nuevos sobre toda la tabla de verificación de la spec; `dotnet build` sin warnings; pruebas unitarias en verde; `has-pending-model-changes` sin cambios.
+  - Resultado (2026-11-10): prueba de humo final con datos nuevos: 69/69 verificaciones correctas contra la API local, una o más por cada fila de la tabla de la spec, con tokens de administrador, profesor (el del grupo y otro), estudiante, sin token y con cambio pendiente (`403`, RN-24). Usa tres periodos (vigente, con la fecha límite de retiro pasada y con la matrícula cerrada) e incluye las dos peticiones simultáneas por el último cupo (una `201`, otra `409`), la oferta con un grupo `Abierto` lleno (heredada de `grupos` T8) y, al final, el horario sin periodo vigente (`404`). `cuposOcupados` coincide con el conteo de matrículas activas en los 15 grupos usados. `dotnet build --no-incremental` con 0 advertencias y 0 errores; 252/252 pruebas unitarias en verde; `has-pending-model-changes` sin cambios. `Matricula.Api.http` tiene las peticiones de todos los endpoints del módulo; las verificaciones heredadas de `grupos` T1 y T8 ya estaban marcadas como cumplidas en el mapa (T1 y T3).
+  - Datos de prueba: los scripts de verificación dejaron en la BD de desarrollo periodos (movidos 40 años adelante para que no haya vigente), cursos, profesores, estudiantes, grupos y matrículas con correos `@prueba.local`, y un administrador de prueba desactivado. No se borraron: las matrículas nunca se eliminan (RN-35) y RN-34 impide eliminar lo que tiene datos relacionados.
 - Files: `src/Matricula.Api/Matricula.Api.http`, `specs/mapa-modulos.md`, `specs/SPEC-matriculas.md`, `tasks/matriculas/todo.md`

@@ -4,11 +4,12 @@ Módulo `auditoria` del [mapa de módulos](mapa-modulos.md). Depende de `acceso`
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | — | — | — |
+| **Aprobada** | [En revisión](../tasks/auditoria/plan.md) | [En revisión](../tasks/auditoria/todo.md) | 0/5 |
 
 **Historial:**
 - 2026-11-10: v1 en revisión, con doce supuestos y una pregunta abierta (cómo hacer inmutable la tabla, porque `REVOKE` no aplica al superusuario `postgres`).
 - 2026-11-10: resuelta la pregunta 1 con la opción (c): la inmutabilidad (RN-43) se garantiza solo en la aplicación, sin `REVOKE` ni triggers en la BD. Se corrigieron el punto 1, los criterios de éxito, las verificaciones manuales y `docs/arquitectura.md` §5.1. v1 aprobada con sus doce supuestos.
+- 2026-11-10: aclaración al redactar el plan, sin cambio de alcance: los registros de creación se arman después del primer guardado, porque antes las FK hacia entidades nuevas del mismo guardado tienen ids temporales (punto 2). Plan y lista de 5 tareas en revisión.
 
 ## Objetivo
 
@@ -47,11 +48,11 @@ Cubre RF-56 y RF-57, las reglas RN-42 a RN-46, la consulta 11 de la sección 6 y
 2. **Captura en `AppDbContext`** (RF-56, RN-42), en `Infrastructure/Persistence/Auditoria/`:
    - `AppDbContext` sobrescribe `SaveChangesAsync(bool, CancellationToken)`. El `SaveChangesAsync(CancellationToken)` de `IAppDbContext` pasa por ahí.
    - Flujo:
-     1. Recorre `ChangeTracker.Entries<EntidadBase>()` en estado `Added`, `Modified` o `Deleted` y arma un `RegistroAuditoria` por entrada, con las reglas del punto 3. Las modificaciones sin cambios auditables no generan registro (RN-46).
-     2. Si no hay registros, guarda como siempre y termina.
+     1. Recorre `ChangeTracker.Entries<EntidadBase>()` en estado `Added`, `Modified` o `Deleted`. Arma ya los registros de modificación y eliminación, con las reglas del punto 3, porque después del guardado se pierden los valores originales. Las creaciones solo se anotan. Las modificaciones sin cambios auditables no generan registro (RN-46).
+     2. Si no hay registros ni creaciones, guarda como siempre y termina.
      3. Si no hay una transacción en curso, abre una.
      4. `base.SaveChangesAsync()`: las entidades nuevas reciben su `Id`.
-     5. Completa el `EntidadId` de las creaciones, agrega los registros y llama de nuevo a `base.SaveChangesAsync()`.
+     5. Arma los registros de creación con el `EntidadId` y los valores ya definitivos. Antes del guardado, las FK hacia entidades nuevas del mismo guardado (por ejemplo, `Estudiante.UsuarioId` en el registro público) tienen un id temporal. Agrega todos los registros y llama de nuevo a `base.SaveChangesAsync()`.
      6. Confirma la transacción, si la abrió. Ante cualquier excepción la revierte y la relanza, sin capturarla: `DbUpdateConcurrencyException` sigue llegando a `GlobalExceptionHandler` como hoy.
    - `SaveChanges` síncrono: ningún servicio lo usa. Se sobrescribe para lanzar `InvalidOperationException`, así ninguna escritura se salta la auditoría.
    - La lógica vive en una clase de Infrastructure (por ejemplo, `CapturaAuditoria`), inyectada en `AppDbContext`, que usa `ICurrentUser`, `TimeProvider` y las reglas puras del dominio (punto 3). `AppDbContext` solo la orquesta.

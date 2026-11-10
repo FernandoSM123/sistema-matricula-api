@@ -15,6 +15,7 @@ Para que un estudiante se pueda matricular en un grupo, se deben cumplir dos con
 - Evitar los choques de horario de estudiantes, profesores y aulas.
 - Dar a cada tipo de usuario acceso solo a la información y las acciones que le corresponden.
 - Ofrecer consultas y listados para la gestión académica.
+- Dejar constancia de quién cambió cada dato, cuándo y qué cambió.
 
 ### 1.3 Alcance
 **Incluido:**
@@ -24,6 +25,7 @@ Para que un estudiante se pueda matricular en un grupo, se deben cumplir dos con
 - Gestión de estudiantes, profesores, cursos, periodos académicos, aulas, grupos y horarios.
 - Proceso de matrícula, retiro y cambio de grupo.
 - Consultas y listados académicos.
+- Auditoría de los cambios de datos: registro automático de cada creación, modificación y eliminación, consultable por el administrador.
 
 **Fuera del alcance de esta versión** (posibles mejoras futuras):
 - Calificaciones e historial académico.
@@ -33,7 +35,8 @@ Para que un estudiante se pueda matricular en un grupo, se deben cumplir dos con
 - Control de asistencia.
 - Emisión de certificados.
 - Reportes estadísticos (ocupación, demanda, ingresos).
-- Auditoría detallada de cambios.
+- Auditoría de eventos que no cambian datos, como inicios de sesión fallidos, cierres de sesión o envíos de correo.
+- Depuración o archivado de los registros de auditoría antiguos.
 - Uso de enlaces de un solo uso enviados por correo, en lugar de contraseñas temporales, tanto para activar cuentas nuevas como para el olvido de contraseña.
 
 ---
@@ -82,6 +85,7 @@ Para que un estudiante se pueda matricular en un grupo, se deben cumplir dos con
 | Ver los estudiantes de un grupo | — | ✔ | Solo de sus grupos | — |
 | Ver los cursos matriculados de un estudiante | — | ✔ | — | Solo los suyos |
 | Ver los grupos asignados a un profesor | — | ✔ | Solo los suyos | — |
+| Consultar la auditoría de cambios | — | ✔ | — | — |
 
 ---
 
@@ -233,6 +237,23 @@ Perfil ─► Cambiar contraseña ─► Contraseña actual + nueva + confirmaci
   - El estudiante no puede quedar sin su matrícula original si el nuevo grupo no cumple las reglas.
 - **RF-54 Consultar el historial de matrícula de un estudiante:** muestra sus matrículas activas y retiradas, con sus fechas.
 
+### 3.11 Auditoría
+- **RF-56 Registrar los cambios de datos:**
+  - El sistema registra automáticamente cada creación, modificación y eliminación de los datos de la sección 5: usuarios, administradores, estudiantes, profesores, cursos, periodos, aulas, grupos, horarios y matrículas.
+  - Ninguna funcionalidad tiene que pedirlo: cualquier cambio que se guarde queda registrado (RN-42).
+  - Cada registro indica quién hizo el cambio, cuándo, sobre qué registro y qué datos cambiaron, con su valor anterior y su valor nuevo (§5.12).
+  - Solo se registran cambios de datos. Los eventos que no modifican datos, como un inicio de sesión fallido, quedan fuera del alcance (§1.3).
+- **RF-57 Consultar la auditoría:**
+  - Solo un administrador puede hacerlo.
+  - Es un único listado, paginado y ordenado del cambio más reciente al más antiguo.
+  - Permite filtrar, combinando los filtros, por:
+    - Entidad, por ejemplo Matrícula o Grupo.
+    - Registro concreto: el identificador del registro dentro de su entidad (por ejemplo, la matrícula 42).
+    - Usuario que hizo el cambio.
+    - Acción: creación, modificación o eliminación.
+    - Rango de fechas: desde y hasta, ambas opcionales. Para un solo día se indica la misma fecha en ambas.
+  - Los registros no se pueden modificar ni eliminar (RN-43).
+
 ---
 
 ## 4. Reglas de negocio
@@ -298,6 +319,9 @@ Los registros del sistema están relacionados entre sí; por ejemplo, un grupo d
 | Horario | Quitar el bloque | Sí, mientras el grupo esté Planificado |
 | Matrícula | Retirar (estado propio) | ❌ Nunca |
 | Usuario | Desactivar / reactivar | Solo junto con su estudiante o profesor, cuando estos se eliminan. Nunca por sí sola ni la de un administrador |
+| Registro de auditoría | No se modifica | ❌ Nunca (RN-43) |
+
+Los registros de auditoría **no cuentan como datos relacionados**: no impiden eliminar el registro que describen, y se conservan después de eliminarlo (RN-43).
 
 | Código | Regla |
 |---|---|
@@ -309,6 +333,16 @@ Los registros del sistema están relacionados entre sí; por ejemplo, un grupo d
 | RN-39 | Un registro inactivo se **reactiva**; no se vuelve a crear. Si se intenta registrar una cédula o un código que pertenece a un registro inactivo, el sistema lo indica y ofrece reactivarlo. Solo un administrador puede reactivar. |
 | RN-40 | Desactivar un registro no modifica su historial. Las matrículas, los grupos y los periodos pasados siguen mostrando sus datos. |
 | RN-41 | Los listados muestran solo los registros activos por defecto, con un filtro para incluir los inactivos. |
+
+### 4.3 Reglas de auditoría
+
+| Código | Regla |
+|---|---|
+| RN-42 | Todo cambio de datos queda registrado en la auditoría **en la misma operación** que lo produce: si la operación falla o se revierte, tampoco queda su registro; si se guarda, siempre queda. Una operación compuesta, como el cambio de grupo (RF-53) o la cancelación de un grupo (RN-12), deja un registro por cada dato afectado, todos con el mismo identificador de operación. |
+| RN-43 | Los registros de auditoría son inmutables: nadie, ni siquiera un administrador, los puede modificar ni eliminar. Se conservan aunque se elimine el registro que describen; en ese caso guardan los últimos valores que tenía. |
+| RN-44 | La auditoría nunca guarda contraseñas, contraseñas temporales ni otros datos secretos de la cuenta. De un cambio de contraseña o de temporal solo queda constancia de que ocurrió, sin el valor. |
+| RN-45 | Cada registro identifica a quien hizo el cambio con una copia de su correo y su rol en ese momento, que se conserva aunque la cuenta cambie o se elimine. Si no hay una sesión iniciada (registro público, olvido de contraseña, datos iniciales), se registra como **Sistema**. |
+| RN-46 | Los datos técnicos que se actualizan solos y no aportan a la auditoría (la fecha de modificación, la fecha del último ingreso y los datos internos de sesión y concurrencia) no se registran como cambios. Si una operación solo modifica esos datos, como un inicio de sesión normal o un cierre de sesión, no genera ningún registro. |
 
 ---
 
@@ -449,6 +483,20 @@ erDiagram
     USUARIO ||--o| ADMINISTRADOR : "accede como"
 ```
 
+Los **registros de auditoría** (§5.12) describen cambios de cualquiera de estos datos, pero no están relacionados con ellos: no impiden eliminarlos y se conservan después (RN-43).
+
+### 5.12 Registro de auditoría
+| Dato | Descripción | Obligatorio |
+|---|---|:---:|
+| Fecha y hora | Momento en que se guardó el cambio | Sí |
+| Acción | Creación, modificación o eliminación | Sí |
+| Entidad | Tipo de registro afectado, por ejemplo Matrícula o Grupo | Sí |
+| Identificador del registro | Identificador del registro afectado dentro de su entidad | Sí |
+| Cambios | Datos afectados. En una modificación, solo los que cambiaron, con su valor anterior y su valor nuevo. En una creación, los valores iniciales; en una eliminación, los últimos valores. Nunca incluye datos secretos (RN-44) | Sí |
+| Usuario | Cuenta que hizo el cambio; vacío si fue el Sistema (RN-45) | Condicional |
+| Correo y rol del usuario | Copia del momento del cambio (RN-45) | Condicional |
+| Identificador de la operación | Agrupa los registros producidos por una misma operación (RN-42) | Sí |
+
 ---
 
 ## 6. Consultas y listados requeridos
@@ -465,6 +513,7 @@ erDiagram
 | 8 | Ocupación de un aula por periodo | Administrador |
 | 9 | Oferta académica del periodo vigente, con los cupos disponibles | Todos |
 | 10 | Historial de matrículas y retiros de un estudiante | Administrador, el propio estudiante |
+| 11 | Auditoría de cambios, filtrable por entidad, registro, usuario, acción y rango de fechas (RF-57) | Administrador |
 
 Todos los listados deben permitir búsqueda y filtrado, y deben mostrarse por páginas cuando el volumen de datos sea grande.
 
@@ -479,6 +528,7 @@ Todos los listados deben permitir búsqueda y filtrado, y deben mostrarse por p�
     - La solicitud de contraseña temporal por olvido.
     - La consulta de la oferta académica (RF-50).
   - Ni las contraseñas ni las contraseñas temporales se almacenan en texto plano.
+  - La auditoría no guarda contraseñas, temporales ni otros datos secretos (RN-44).
 - **Correo electrónico:** el sistema debe poder enviar correos para:
   - Las contraseñas temporales de cuentas nuevas.
   - El olvido de contraseña.
@@ -488,6 +538,7 @@ Todos los listados deben permitir búsqueda y filtrado, y deben mostrarse por p�
   - No se pierde información histórica: las matrículas retiradas y los registros inactivos se conservan.
   - No se eliminan datos en cascada ni quedan datos huérfanos. Un registro con datos relacionados no se puede eliminar (ver la sección 4.2).
   - Las operaciones compuestas, como el cambio de grupo, se completan por completo o no se hacen.
+- **Trazabilidad:** todo cambio de datos queda registrado en la auditoría junto con la operación que lo produce, y esos registros no se modifican ni se eliminan (RN-42, RN-43).
 - **Validación:** el sistema debe rechazar los datos incompletos o inválidos con mensajes claros que indiquen qué dato o qué regla se incumplió.
 - **Concurrencia:** si dos estudiantes intentan tomar el último cupo de un grupo al mismo tiempo, solo uno debe lograrlo.
 - **Usabilidad:** los mensajes de error y de confirmación deben ser comprensibles para el usuario final.
@@ -510,4 +561,6 @@ Todos los listados deben permitir búsqueda y filtrado, y deben mostrarse por p�
 | **Eliminación física** | Borrar un registro de forma permanente. Solo se permite si no tiene datos relacionados. |
 | **Registro público** | Registro que hace una persona por su cuenta, sin iniciar sesión; siempre crea una cuenta de estudiante. |
 | **Contraseña temporal** | Contraseña aleatoria que genera el sistema y envía al correo del usuario. Se genera cuando un administrador crea una cuenta, cuando reenvía una temporal o cuando el usuario olvida su contraseña. Al ingresar con ella, se debe definir una nueva. |
+| **Auditoría** | Registro automático e inmutable de los cambios de datos: quién hizo cada cambio, cuándo, sobre qué registro y qué valores cambiaron. |
+| **Sistema** | Autor que se registra en la auditoría cuando un cambio ocurre sin una sesión iniciada, por ejemplo en el registro público o en los datos iniciales. |
 | **Olvido de contraseña** | Proceso que inicia una persona sin sesión cuando olvidó su contraseña. Recibe por correo una contraseña temporal que vence en 1 hora y, al ingresar con ella, debe definir una nueva. |

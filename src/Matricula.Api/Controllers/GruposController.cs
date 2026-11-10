@@ -51,7 +51,8 @@ public class GruposController(GrupoService grupoService, MatriculaService matric
     /// <summary>
     /// Cambia el estado de un grupo (RF-47): Planificado → Abierto → Cerrado → EnCurso → Finalizado, o Cancelado
     /// mientras no haya finalizado. Para abrir hace falta al menos un bloque de horario. Otra transición responde
-    /// RF-47; repetir el estado actual responde igual.
+    /// RF-47; repetir el estado actual responde igual. Cancelar retira las matrículas activas con motivo
+    /// CancelacionGrupo y libera sus cupos (RN-12), aunque haya pasado la fecha límite de retiro.
     /// </summary>
     [HttpPost("{id:int}/estado")]
     [Authorize(Policy = Politicas.Administrador)]

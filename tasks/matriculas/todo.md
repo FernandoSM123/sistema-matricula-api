@@ -18,7 +18,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T6. Matrículas e historial de un estudiante | Completada | ✅ | ➖ | ✅ | ✅ |
 | T7. Horario del estudiante | Completada | ✅ | ➖ | ✅ | ✅ |
 | T8. Estudiantes de un grupo y detalle para el matriculado | Completada | ✅ | ➖ | ✅ | ✅ |
-| T9. RN-12 al cancelar un grupo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T9. RN-12 al cancelar un grupo | Completada | ✅ | ➖ | ✅ | ✅ |
 | T10. RN-06 al agregar un bloque | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T11. Eliminar grupos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T12. RN-36 y eliminar estudiantes con su cuenta | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -192,6 +192,10 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - Cancelar un grupo con matrículas activas y retiradas → `204`; las activas quedan `Retirada` con `CancelacionGrupo`; las ya retiradas no cambian; `cuposOcupados = 0`.
   - Funciona aunque haya pasado la fecha límite de retiro.
   - Repetir la cancelación → `204` sin cambios. Cancelar un grupo sin matrículas sigue igual.
+  - Resultado (2026-11-10): 20/20 verificaciones correctas contra la API local, en un periodo con la fecha límite de retiro ya pasada (el estudiante recibe `RN-10` al retirarse). Cancelar el grupo con dos activas y una retirada por el admin → `204`: las activas quedan `Retirada` con `CancelacionGrupo` y la fecha de hoy, la retirada conserva `RetiroVoluntario`, `cuposOcupados = 0` y los tres aparecen en `/grupos/{id}/estudiantes?estado=Retirada`. Repetir → `204` sin cambios; sin matrículas → `204`; un `Finalizado` sigue en `409 RF-47`. Después: retirar la matrícula cancelada → `409 RF-52`; matricularse en el grupo cancelado → `409 RN-11`; matricularse en otro grupo del mismo curso → `201` (sin `RN-05`); el horario ya no trae el grupo. Cancelar desde `EnCurso` también retira. La BD queda sin periodo vigente.
+  - Detalles que la spec no fijaba:
+    - Solo se retira al pasar a `Cancelado` desde otro estado; repetir la cancelación no vuelve a consultar las matrículas.
+    - Si alguien se matricula mientras se cancela, el token de concurrencia del grupo (`xmin`) hace fallar a uno de los dos; el `GlobalExceptionHandler` ya traduce `DbUpdateConcurrencyException` a `409 CONCURRENCIA`, así que `GrupoService` no la captura.
 - Files: `src/Matricula.Application/Grupos/GrupoService.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T10. RN-06 al agregar un bloque

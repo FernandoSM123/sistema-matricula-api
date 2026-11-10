@@ -589,7 +589,8 @@ Authorization: Bearer {{token}}
 
 # Cambiar el estado de un grupo (RF-47): 204. Planificado → Abierto → Cerrado → EnCurso → Finalizado, un paso a la vez,
 # o Cancelado mientras no haya finalizado. Abrir sin horarios, saltar, retroceder o cancelar un finalizado → 409 RF-47.
-# Repetir el estado actual → 204 sin cambios.
+# Repetir el estado actual → 204 sin cambios. Cancelar retira las matrículas activas (motivo CancelacionGrupo, fecha de
+# hoy) y libera sus cupos en el mismo guardado (RN-12), aunque haya pasado la fecha límite de retiro.
 POST {{host}}/api/v1/grupos/1/estado
 Authorization: Bearer {{token}}
 Content-Type: application/json

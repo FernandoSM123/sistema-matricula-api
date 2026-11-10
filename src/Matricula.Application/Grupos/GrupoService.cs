@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Matricula.Application.Grupos;
 
-public class GrupoService(IAppDbContext db, ICurrentUser currentUser)
+public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLocal fechaLocal)
 {
     /// <summary>
     /// RF-43 con la visibilidad de RN-18: el profesor solo ve sus grupos y el estudiante solo los Abierto (supuesto 7),
@@ -266,8 +266,8 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser)
     }
 
     /// <summary>
-    /// RF-47: avanza un paso del flujo normal o cancela. Pedir el estado actual no cambia nada. El módulo matriculas
-    /// añade RN-12 a la cancelación.
+    /// RF-47: avanza un paso del flujo normal o cancela. Pedir el estado actual no cambia nada. Al cancelar se
+    /// retiran las matrículas activas y se liberan sus cupos (RN-12).
     /// </summary>
     public async Task CambiarEstadoAsync(int grupoId, CambiarEstadoRequest request, CancellationToken cancellationToken)
     {
@@ -275,8 +275,32 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser)
 
         // Los horarios se cargan porque abrir un grupo exige al menos un bloque.
         var grupo = await BuscarConHorariosAsync(grupoId, cancellationToken);
+        var estadoAnterior = grupo.Estado;
         grupo.CambiarEstado(request.Estado!.Value);
+
+        if (grupo.Estado == EstadoGrupo.Cancelado && estadoAnterior != EstadoGrupo.Cancelado)
+        {
+            await RetirarPorCancelacionAsync(grupo, cancellationToken);
+        }
+
+        // Un solo guardado: estado, retiros y cupos. Si alguien se matricula a la vez, el token de concurrencia del
+        // grupo hace fallar a uno de los dos (409 CONCURRENCIA).
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    // RN-12: la cancelación retira todas las matrículas activas, sin revisar la fecha límite de retiro (supuesto 10).
+    private async Task RetirarPorCancelacionAsync(Grupo grupo, CancellationToken cancellationToken)
+    {
+        var activas = await db.Matriculas
+            .Where(m => m.GrupoId == grupo.Id && m.Estado == EstadoMatricula.Activa)
+            .ToListAsync(cancellationToken);
+
+        var hoy = fechaLocal.Hoy();
+        foreach (var matricula in activas)
+        {
+            matricula.Retirar(hoy, MotivoRetiro.CancelacionGrupo);
+            grupo.LiberarCupo();
+        }
     }
 
     private async Task<Grupo> BuscarConHorariosAsync(int id, CancellationToken cancellationToken) =>

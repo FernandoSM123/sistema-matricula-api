@@ -22,6 +22,19 @@ public class MeController(
     MatriculaService matriculaService) : ApiControllerBase
 {
     /// <summary>
+    /// Matrículas del estudiante de la sesión (RF-20, RF-54): sin estado es su historial de matrículas y retiros; con
+    /// estado=Activa, los cursos y grupos en que está matriculado. Filtro por periodo; search busca en el curso y el NRC.
+    /// </summary>
+    [HttpGet("matriculas")]
+    [Authorize(Policy = Politicas.Estudiante)]
+    [ProducesResponseType<PagedResult<MatriculaResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<PagedResult<MatriculaResponse>>> MisMatriculas(
+        [FromQuery] ListarMatriculasRequest request, CancellationToken cancellationToken) =>
+        Ok(await matriculaService.ListarMiasAsync(request, cancellationToken));
+
+    /// <summary>
     /// El estudiante de la sesión se matricula en un grupo (RF-51). El grupo debe estar Abierto y dentro del rango de
     /// matrícula; responde RN-02, RN-03, RN-04, RN-05, RN-06, RN-11 o CONCURRENCIA. El Location apunta a
     /// /matriculas/{id}.

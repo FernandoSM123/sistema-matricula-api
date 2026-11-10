@@ -718,3 +718,17 @@ Content-Type: application/json
 }
 
 ###
+
+# Matrículas de un estudiante (RF-20, RF-54), solo administrador. Sin estado: historial de matrículas y retiros, con
+# fechas y motivo; con estado=Activa: los cursos y grupos en que está matriculado. Filtro por periodo; search busca en
+# el nombre o código del curso y en el NRC. Incluye estudiantes y grupos inactivos (RN-40).
+GET {{host}}/api/v1/estudiantes/1/matriculas?periodoId=&estado=&search=&page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+###
+
+# Lo mismo para el estudiante de la sesión.
+GET {{host}}/api/v1/me/matriculas?estado=Activa
+Authorization: Bearer {{token}}
+
+###

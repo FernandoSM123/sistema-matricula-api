@@ -15,7 +15,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T3. Matricular, detalle y concurrencia | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Retirar | Completada | ✅ | ➖ | ✅ | ✅ |
 | T5. Cambiar de grupo | Completada | ✅ | ➖ | ✅ | ✅ |
-| T6. Matrículas e historial de un estudiante | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T6. Matrículas e historial de un estudiante | Completada | ✅ | ➖ | ✅ | ✅ |
 | T7. Horario del estudiante | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T8. Estudiantes de un grupo y detalle para el matriculado | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T9. RN-12 al cancelar un grupo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -149,6 +149,10 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - Sin filtros: activas y retiradas con fechas y motivo (RF-54); `estado=Activa`: solo las activas (RF-20); `periodoId`, `search` y paginación filtran.
   - `/me/matriculas` da lo mismo que `/estudiantes/{id}/matriculas` para el mismo estudiante; otro estudiante solo ve las suyas.
   - Profesor o admin en `/me/matriculas` → `403`; estudiante en `/estudiantes/{id}/matriculas` → `403`; sin token → `401`.
+  - Resultado (2026-11-10): 24/24 verificaciones correctas contra la API local, con un estudiante que se matriculó, se retiró, cambió de grupo y tiene matrículas en dos periodos. Además de la lista: la retirada trae fecha y motivo (`CambioGrupo`); cada fila trae grupo, curso, periodo, profesor y fechas; la búsqueda encuentra por NRC (sin distinguir mayúsculas), por parte del nombre del curso y por su código; `periodoId` y `estado` se combinan; estado inexistente → `400`; estudiante inexistente → `404`; las matrículas de un estudiante inactivo se siguen viendo (RN-40); un profesor en cualquiera de los dos → `403`. La BD queda sin periodo vigente.
+  - Detalles que la spec no fijaba:
+    - Orden: inicio de clases del periodo descendente, nombre del curso y, dentro del mismo curso, la matrícula más nueva primero (`Id` descendente): tras un cambio de grupo la activa queda antes que la retirada.
+    - Los dos endpoints viven en `MatriculaService` (`ListarDeEstudianteAsync`, `ListarMiasAsync`) con un `ListarAsync` común; no hizo falta un servicio de consultas aparte.
 - Files: `src/Matricula.Application/Matriculas/{MatriculaService o Consultas/...,ListarMatriculasRequest}.cs`, `src/Matricula.Api/Controllers/{EstudiantesController,MeController}.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T7. Horario del estudiante

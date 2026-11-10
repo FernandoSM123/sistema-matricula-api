@@ -3,6 +3,7 @@ using Matricula.Api.Seguridad;
 using Matricula.Application.Auth;
 using Matricula.Application.Common.Paginacion;
 using Matricula.Application.Estudiantes;
+using Matricula.Application.Matriculas;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -10,8 +11,20 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace Matricula.Api.Controllers;
 
 [Authorize(Policy = Politicas.Administrador)]
-public class EstudiantesController(EstudianteService estudianteService) : ApiControllerBase
+public class EstudiantesController(EstudianteService estudianteService, MatriculaService matriculaService)
+    : ApiControllerBase
 {
+    /// <summary>
+    /// Matrículas de un estudiante (RF-20, RF-54): sin estado es su historial de matrículas y retiros; con
+    /// estado=Activa, los cursos y grupos en que está matriculado. Filtro por periodo; search busca en el curso y el NRC.
+    /// </summary>
+    [HttpGet("{id:int}/matriculas")]
+    [ProducesResponseType<PagedResult<MatriculaResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PagedResult<MatriculaResponse>>> Matriculas(
+        int id, [FromQuery] ListarMatriculasRequest request, CancellationToken cancellationToken) =>
+        Ok(await matriculaService.ListarDeEstudianteAsync(id, request, cancellationToken));
+
     /// <summary>
     /// Registra un estudiante por un administrador (RF-02). La temporal se envía a su correo y nunca aparece en
     /// la respuesta; con correoEnviado en false se puede reenviar.

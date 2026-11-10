@@ -1,5 +1,6 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
+using Matricula.Application.Common.Paginacion;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
 using Matricula.Domain.Exceptions;
@@ -152,6 +153,68 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
         }
 
         return matricula;
+    }
+
+    /// <summary>
+    /// RF-20 y RF-54 (consultas 2 y 10) para el administrador. Incluye matrículas de grupos y estudiantes inactivos
+    /// (RN-40).
+    /// </summary>
+    public async Task<PagedResult<MatriculaResponse>> ListarDeEstudianteAsync(
+        int estudianteId, ListarMatriculasRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!await db.Estudiantes.AnyAsync(e => e.Id == estudianteId, cancellationToken))
+        {
+            throw new NotFoundException($"No existe el estudiante {estudianteId}.");
+        }
+
+        return await ListarAsync(estudianteId, request, cancellationToken);
+    }
+
+    /// <summary>RF-20 y RF-54 para el estudiante de la sesión (RN-18).</summary>
+    public Task<PagedResult<MatriculaResponse>> ListarMiasAsync(
+        ListarMatriculasRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        return ListarAsync(EstudianteActual(), request, cancellationToken);
+    }
+
+    // Periodo más reciente primero, luego curso. Dentro de un mismo curso, la matrícula más nueva primero: tras un
+    // cambio de grupo la activa queda antes que la retirada.
+    private Task<PagedResult<MatriculaResponse>> ListarAsync(
+        int estudianteId, ListarMatriculasRequest request, CancellationToken cancellationToken)
+    {
+        var query = db.Matriculas.AsNoTracking().Where(m => m.EstudianteId == estudianteId);
+
+        if (request.PeriodoId is { } periodoId)
+        {
+            query = query.Where(m => m.Grupo.PeriodoId == periodoId);
+        }
+
+        if (request.Estado is { } estado)
+        {
+            query = query.Where(m => m.Estado == estado);
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+#pragma warning disable CA1304, CA1311, CA1862 // ToLower se traduce a lower() en SQL; la cultura no aplica.
+            var termino = request.Search.Trim().ToLower();
+            query = query.Where(m =>
+                m.Grupo.Curso.Nombre.ToLower().Contains(termino)
+                || m.Grupo.Curso.Codigo.ToLower().Contains(termino)
+                || m.Grupo.Nrc.ToLower().Contains(termino));
+#pragma warning restore CA1304, CA1311, CA1862
+        }
+
+        return query
+            .OrderByDescending(m => m.Grupo.Periodo.InicioClases)
+            .ThenBy(m => m.Grupo.Curso.Nombre)
+            .ThenByDescending(m => m.Id)
+            .Select(MatriculaProyecciones.AResponse)
+            .ToPagedResultAsync(request, cancellationToken);
     }
 
     // Orden de RF-51: RN-01, RN-02/RN-11, RN-04, RN-05, RN-06 y al final RN-03, para que un grupo lleno no oculte un

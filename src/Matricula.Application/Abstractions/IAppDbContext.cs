@@ -15,6 +15,8 @@ public interface IAppDbContext
     DbSet<Curso> Cursos { get; }
     DbSet<Aula> Aulas { get; }
     DbSet<Periodo> Periodos { get; }
+    DbSet<Grupo> Grupos { get; }
+    DbSet<Horario> Horarios { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

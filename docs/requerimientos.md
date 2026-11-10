@@ -153,7 +153,7 @@ Perfil ─► Cambiar contraseña ─► Contraseña actual + nueva + confirmaci
 - **RF-14 Desactivar o reactivar usuarios:**
   - Un usuario desactivado no puede iniciar sesión ni recibir contraseñas temporales.
   - Desactivar una cuenta no borra el historial de la persona.
-  - Los usuarios nunca se eliminan físicamente (ver la sección 4.2).
+  - Una cuenta no se elimina por sí sola: solo se elimina junto con su estudiante o profesor, cuando este se elimina por no tener datos relacionados (RN-35 y sección 4.2).
 - **RF-55 Listar, consultar y modificar administradores:**
   - Solo un administrador puede hacerlo.
   - El listado permite buscar por nombre, cédula o correo y filtrar por estado (activo o inactivo).
@@ -168,7 +168,7 @@ Perfil ─► Cambiar contraseña ─► Contraseña actual + nueva + confirmaci
 - **RF-19 Desactivar, reactivar o eliminar un estudiante:**
   - Lo normal es **desactivarlo**. No se puede desactivar si tiene matrículas activas en el periodo vigente.
   - Un estudiante inactivo que regresa al instituto se **reactiva**, no se registra de nuevo.
-  - Solo se puede **eliminar** si no tiene matrículas, por ejemplo si se registró por error.
+  - Solo se puede **eliminar** si no tiene matrículas, por ejemplo si se registró por error. Al eliminarlo también se elimina su cuenta de usuario (RN-35).
   - Desactivar o reactivar al estudiante también desactiva o reactiva su cuenta de usuario.
 - **RF-20 Listar los cursos y grupos matriculados de un estudiante:** con filtro por periodo.
 - **RF-21 Consultar el horario semanal de un estudiante.**
@@ -181,7 +181,7 @@ Perfil ─► Cambiar contraseña ─► Contraseña actual + nueva + confirmaci
 - **RF-26 Desactivar, reactivar o eliminar un profesor:**
   - Lo normal es **desactivarlo**. No se puede desactivar si tiene grupos Planificados, Abiertos, Cerrados o En curso; primero hay que reasignar esos grupos a otro profesor.
   - Un profesor inactivo que regresa al instituto se **reactiva**.
-  - Solo se puede **eliminar** si nunca tuvo grupos asignados.
+  - Solo se puede **eliminar** si nunca tuvo grupos asignados, por ejemplo si se registró por error. Al eliminarlo también se elimina su cuenta de usuario (RN-35).
   - Desactivar o reactivar al profesor también desactiva o reactiva su cuenta de usuario.
 - **RF-27 Listar los cursos y grupos asignados a un profesor:** con filtro por periodo.
 - **RF-28 Consultar el horario semanal de un profesor.**
@@ -288,8 +288,8 @@ Los registros del sistema están relacionados entre sí; por ejemplo, un grupo d
 
 | Entidad | Operación normal | ¿Se puede eliminar físicamente? |
 |---|---|---|
-| Estudiante | Desactivar / reactivar | Solo si nunca tuvo matrículas |
-| Profesor | Desactivar / reactivar | Solo si nunca tuvo grupos |
+| Estudiante | Desactivar / reactivar | Solo si nunca tuvo matrículas, junto con su cuenta |
+| Profesor | Desactivar / reactivar | Solo si nunca tuvo grupos, junto con su cuenta |
 | Administrador | Desactivar / reactivar su cuenta | ❌ Nunca |
 | Curso | Desactivar / reactivar | Solo si nunca tuvo grupos |
 | Aula | Desactivar / reactivar | Solo si nunca tuvo grupos |
@@ -297,12 +297,12 @@ Los registros del sistema están relacionados entre sí; por ejemplo, un grupo d
 | Grupo | Cancelar (estado propio) | Solo si nunca tuvo matrículas |
 | Horario | Quitar el bloque | Sí, mientras el grupo esté Planificado |
 | Matrícula | Retirar (estado propio) | ❌ Nunca |
-| Usuario | Desactivar / reactivar | ❌ Nunca |
+| Usuario | Desactivar / reactivar | Solo junto con su estudiante o profesor, cuando estos se eliminan. Nunca por sí sola ni la de un administrador |
 
 | Código | Regla |
 |---|---|
 | RN-34 | Un registro solo se puede eliminar físicamente si no tiene datos relacionados. En caso contrario, el sistema rechaza la eliminación e indica que se debe desactivar, cancelar o retirar. |
-| RN-35 | Las matrículas y las cuentas de usuario nunca se eliminan físicamente. |
+| RN-35 | Las matrículas nunca se eliminan físicamente. Una cuenta de usuario solo se elimina junto con su estudiante o profesor, cuando este se elimina por no tener datos relacionados (RN-34); nunca por sí sola, y la de un administrador nunca. |
 | RN-36 | No se puede desactivar a un estudiante con matrículas activas en el periodo vigente; primero hay que retirarlo. |
 | RN-37 | No se puede desactivar a un profesor, curso o aula con grupos Planificados, Abiertos, Cerrados o En curso. Primero hay que reasignar o cancelar esos grupos. |
 | RN-38 | Desactivar o reactivar a un estudiante o profesor también desactiva o reactiva su cuenta de usuario, y viceversa. |

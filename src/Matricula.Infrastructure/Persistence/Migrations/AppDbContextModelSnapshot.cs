@@ -262,6 +262,134 @@ namespace Matricula.Infrastructure.Persistence.Migrations
                     b.ToTable("estudiante", (string)null);
                 });
 
+            modelBuilder.Entity("Matricula.Domain.Entities.Grupo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AulaId")
+                        .HasColumnType("integer")
+                        .HasColumnName("aula_id");
+
+                    b.Property<int>("Cupo")
+                        .HasColumnType("integer")
+                        .HasColumnName("cupo");
+
+                    b.Property<int>("CuposOcupados")
+                        .HasColumnType("integer")
+                        .HasColumnName("cupos_ocupados");
+
+                    b.Property<int>("CursoId")
+                        .HasColumnType("integer")
+                        .HasColumnName("curso_id");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("estado");
+
+                    b.Property<DateTimeOffset>("FechaCreacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_creacion");
+
+                    b.Property<DateTimeOffset?>("FechaModificacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_modificacion");
+
+                    b.Property<string>("Modalidad")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("modalidad");
+
+                    b.Property<string>("Nrc")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("nrc");
+
+                    b.Property<int>("PeriodoId")
+                        .HasColumnType("integer")
+                        .HasColumnName("periodo_id");
+
+                    b.Property<int>("ProfesorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("profesor_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_grupo");
+
+                    b.HasIndex("AulaId")
+                        .HasDatabaseName("ix_grupo_aula_id");
+
+                    b.HasIndex("CursoId")
+                        .HasDatabaseName("ix_grupo_curso_id");
+
+                    b.HasIndex("Nrc")
+                        .IsUnique()
+                        .HasDatabaseName("ix_grupo_nrc");
+
+                    b.HasIndex("ProfesorId")
+                        .HasDatabaseName("ix_grupo_profesor_id");
+
+                    b.HasIndex("PeriodoId", "AulaId")
+                        .HasDatabaseName("ix_grupo_periodo_id_aula_id");
+
+                    b.HasIndex("PeriodoId", "ProfesorId")
+                        .HasDatabaseName("ix_grupo_periodo_id_profesor_id");
+
+                    b.ToTable("grupo", (string)null);
+                });
+
+            modelBuilder.Entity("Matricula.Domain.Entities.Horario", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Dia")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("dia");
+
+                    b.Property<DateTimeOffset>("FechaCreacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_creacion");
+
+                    b.Property<DateTimeOffset?>("FechaModificacion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_modificacion");
+
+                    b.Property<int>("GrupoId")
+                        .HasColumnType("integer")
+                        .HasColumnName("grupo_id");
+
+                    b.Property<TimeOnly>("HoraFin")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("hora_fin");
+
+                    b.Property<TimeOnly>("HoraInicio")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("hora_inicio");
+
+                    b.HasKey("Id")
+                        .HasName("pk_horario");
+
+                    b.HasIndex("GrupoId")
+                        .HasDatabaseName("ix_horario_grupo_id");
+
+                    b.ToTable("horario", (string)null);
+                });
+
             modelBuilder.Entity("Matricula.Domain.Entities.Periodo", b =>
                 {
                     b.Property<int>("Id")
@@ -496,6 +624,54 @@ namespace Matricula.Infrastructure.Persistence.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("Matricula.Domain.Entities.Grupo", b =>
+                {
+                    b.HasOne("Matricula.Domain.Entities.Aula", "Aula")
+                        .WithMany()
+                        .HasForeignKey("AulaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_grupo_aula_aula_id");
+
+                    b.HasOne("Matricula.Domain.Entities.Curso", "Curso")
+                        .WithMany()
+                        .HasForeignKey("CursoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_grupo_curso_curso_id");
+
+                    b.HasOne("Matricula.Domain.Entities.Periodo", "Periodo")
+                        .WithMany()
+                        .HasForeignKey("PeriodoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_grupo_periodos_periodo_id");
+
+                    b.HasOne("Matricula.Domain.Entities.Profesor", "Profesor")
+                        .WithMany()
+                        .HasForeignKey("ProfesorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_grupo_profesores_profesor_id");
+
+                    b.Navigation("Aula");
+
+                    b.Navigation("Curso");
+
+                    b.Navigation("Periodo");
+
+                    b.Navigation("Profesor");
+                });
+
+            modelBuilder.Entity("Matricula.Domain.Entities.Horario", b =>
+                {
+                    b.HasOne("Matricula.Domain.Entities.Grupo", null)
+                        .WithMany("Horarios")
+                        .HasForeignKey("GrupoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_horario_grupo_grupo_id");
+                });
+
             modelBuilder.Entity("Matricula.Domain.Entities.Profesor", b =>
                 {
                     b.HasOne("Matricula.Domain.Entities.Usuario", "Usuario")
@@ -515,6 +691,11 @@ namespace Matricula.Infrastructure.Persistence.Migrations
                         .HasForeignKey("CreadoPorId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_usuario_usuario_creado_por_id");
+                });
+
+            modelBuilder.Entity("Matricula.Domain.Entities.Grupo", b =>
+                {
+                    b.Navigation("Horarios");
                 });
 #pragma warning restore 612, 618
         }

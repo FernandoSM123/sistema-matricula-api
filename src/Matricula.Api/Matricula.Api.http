@@ -1,6 +1,6 @@
 @host = http://localhost:5022
 
-# Recorrido de los módulos acceso, estudiantes, profesores y catalogos. Ejecuta primero el login con tus credenciales: las demás peticiones usan
+# Recorrido de los módulos acceso, estudiantes, profesores, catalogos y grupos. Ejecuta primero el login con tus credenciales: las demás peticiones usan
 # {{token}}. Primer ingreso: login con la temporal de AdminSeed → cambio-obligatorio → login con la nueva.
 
 GET {{host}}/health
@@ -308,7 +308,7 @@ Content-Type: application/json
 ###
 
 # Desactivar un profesor (RF-26, RN-38): desactiva su cuenta y cierra sus sesiones. Es lo mismo que
-# /usuarios/{usuarioId}/desactivar. La guarda RN-37 la añade el módulo grupos.
+# /usuarios/{usuarioId}/desactivar. Con grupos Planificado, Abierto, Cerrado o EnCurso → 409 RN-37 (por las dos rutas).
 POST {{host}}/api/v1/profesores/1/desactivar
 Authorization: Bearer {{token}}
 
@@ -316,6 +316,13 @@ Authorization: Bearer {{token}}
 
 # Reactivar un profesor (RF-26, RN-39): un profesor que regresa se reactiva, no se registra de nuevo.
 POST {{host}}/api/v1/profesores/1/reactivar
+Authorization: Bearer {{token}}
+
+###
+
+# Eliminar un profesor (RF-26): 204 si nunca tuvo grupos; se elimina también su cuenta (RN-35) y sus tokens dejan de
+# valer. Su correo y su cédula se pueden registrar de nuevo. Con algún grupo, incluso cancelado → 409 RN-34 (desactivarlo).
+DELETE {{host}}/api/v1/profesores/1
 Authorization: Bearer {{token}}
 
 ###
@@ -369,7 +376,7 @@ Content-Type: application/json
 
 ###
 
-# Desactivar un curso (RF-33): 204, también al repetir. La guarda RN-37 la añade el módulo grupos.
+# Desactivar un curso (RF-33): 204, también al repetir. Con grupos activos → 409 RN-37.
 POST {{host}}/api/v1/cursos/1/desactivar
 Authorization: Bearer {{token}}
 
@@ -409,6 +416,7 @@ Authorization: Bearer {{token}}
 ###
 
 # Editar un aula (RF-40), también si está inactiva. Código de otra aula, activa o inactiva → 409 RN-13.
+# Capacidad menor que el cupo de un grupo no Finalizado ni Cancelado → 409 RN-09.
 PUT {{host}}/api/v1/aulas/1
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -421,7 +429,7 @@ Content-Type: application/json
 
 ###
 
-# Desactivar un aula (RF-40): 204, también al repetir. La guarda RN-37 la añade el módulo grupos.
+# Desactivar un aula (RF-40): 204, también al repetir. Con grupos activos → 409 RN-37.
 POST {{host}}/api/v1/aulas/1/desactivar
 Authorization: Bearer {{token}}
 
@@ -483,5 +491,173 @@ Content-Type: application/json
   "finMatricula": "2027-02-15",
   "fechaLimiteRetiro": "2027-01-31"
 }
+
+###
+
+# Crear un grupo (RF-42): nace Planificado y sin horarios. 201 + Location. El NRC se guarda en mayúsculas.
+# Presencial e Hibrida llevan aulaId; Virtual no (400). Curso, profesor o aula inactivos → 409 RN-17;
+# cupo mayor que la capacidad del aula → 409 RN-09; NRC repetido → 409 RN-13; ids inexistentes → 404.
+POST {{host}}/api/v1/grupos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nrc": "10001",
+  "cursoId": 1,
+  "profesorId": 1,
+  "periodoId": 1,
+  "aulaId": 1,
+  "cupo": 25,
+  "modalidad": "Presencial"
+}
+
+###
+
+# Crear un grupo virtual: sin aulaId.
+POST {{host}}/api/v1/grupos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nrc": "10002",
+  "cursoId": 1,
+  "profesorId": 1,
+  "periodoId": 1,
+  "aulaId": null,
+  "cupo": 40,
+  "modalidad": "Virtual"
+}
+
+###
+
+# Listar grupos (RF-43), con cualquier sesión. Filtros: cursoId, profesorId, periodoId, estado, modalidad; search busca
+# en el NRC. Orden: periodo más reciente, curso, NRC. Un profesor solo ve los suyos y un estudiante solo los Abierto,
+# aunque envíen otro filtro (RN-18).
+GET {{host}}/api/v1/grupos?periodoId=1&estado=Abierto&page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+###
+
+# Detalle de un grupo (RF-44): horarios, cupo, ocupados y disponibles. Inexistente → 404.
+# Profesor con un grupo ajeno o estudiante con un grupo que no está Abierto → 403 RN-18.
+GET {{host}}/api/v1/grupos/1
+Authorization: Bearer {{token}}
+
+###
+
+# Editar un grupo (RF-45): 200 con el detalle. En Planificado se cambia todo; en Abierto, Cerrado o EnCurso solo
+# profesor, aula, modalidad y cupo (otro cambio → 409 RF-45); en Finalizado o Cancelado nada (409 RF-45).
+# Curso, profesor o aula nuevos e inactivos → 409 RN-17; cupo sobre la capacidad → 409 RN-09; NRC de otro grupo
+# → 409 RN-13; profesor o aula nuevos que chocan con otro grupo del periodo → 409 RN-07 / RN-08.
+PUT {{host}}/api/v1/grupos/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nrc": "10001",
+  "cursoId": 1,
+  "profesorId": 1,
+  "periodoId": 1,
+  "aulaId": 1,
+  "cupo": 30,
+  "modalidad": "Presencial"
+}
+
+###
+
+# Agregar un bloque de horario (RF-48). 201 con el grupo. Horas "HH:mm" o "HH:mm:ss"; horaFin ≤ horaInicio → 400 (RN-15).
+# Traslape con otro bloque del grupo → 409 RN-14. Choque con otro grupo del mismo profesor / aula en el mismo periodo
+# → 409 RN-07 / RN-08, con el NRC del otro grupo (los cancelados no cuentan). Bloques contiguos sí se permiten.
+# Grupo finalizado o cancelado → 409 RF-48.
+POST {{host}}/api/v1/grupos/1/horarios
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "dia": "Lunes",
+  "horaInicio": "08:00",
+  "horaFin": "10:00"
+}
+
+###
+
+# Quitar un bloque (RF-48): 204. Solo con el grupo Planificado; si no → 409 RF-48. Bloque de otro grupo → 404.
+DELETE {{host}}/api/v1/grupos/1/horarios/1
+Authorization: Bearer {{token}}
+
+###
+
+# Cambiar el estado de un grupo (RF-47): 204. Planificado → Abierto → Cerrado → EnCurso → Finalizado, un paso a la vez,
+# o Cancelado mientras no haya finalizado. Abrir sin horarios, saltar, retroceder o cancelar un finalizado → 409 RF-47.
+# Repetir el estado actual → 204 sin cambios.
+POST {{host}}/api/v1/grupos/1/estado
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "estado": "Abierto"
+}
+
+###
+
+# Oferta académica (RF-50): pública, sin token. Grupos Abierto del periodo vigente con horarios y cupos disponibles
+# (incluidos los llenos); del profesor solo el nombre. Filtros: cursoId, modalidad; search busca en el curso y el NRC.
+# Sin periodo vigente → 200 con la lista vacía.
+GET {{host}}/api/v1/oferta-academica?search=prog&page=1&pageSize=20
+
+###
+
+# Grupos de un curso (RF-34), con cualquier sesión. Filtros: periodoId, estado; search busca en el NRC. El administrador
+# ve cualquier estado; profesores y estudiantes solo los Abierto. Curso inexistente → 404.
+GET {{host}}/api/v1/cursos/1/grupos?periodoId=1
+Authorization: Bearer {{token}}
+
+###
+
+# Grupos de un profesor (RF-27), solo administrador: todos los estados; filtro periodoId; search por NRC. 404 si no existe.
+GET {{host}}/api/v1/profesores/1/grupos?periodoId=1
+Authorization: Bearer {{token}}
+
+###
+
+# Horario semanal de un profesor (RF-28), solo administrador: bloques por día y hora, sin grupos cancelados.
+# Sin periodoId usa el vigente; si no hay vigente → 404 pidiendo el periodoId.
+GET {{host}}/api/v1/profesores/1/horario?periodoId=1
+Authorization: Bearer {{token}}
+
+###
+
+# Mis grupos y mi horario (RF-27, RF-28), solo con token de profesor (otro rol → 403). Mismos filtros que arriba.
+GET {{host}}/api/v1/me/grupos?periodoId=1
+Authorization: Bearer {{token}}
+
+###
+
+GET {{host}}/api/v1/me/horario
+Authorization: Bearer {{token}}
+
+###
+
+# Ocupación de un aula (RF-41), solo administrador: bloques de sus grupos no cancelados en el periodo, de todos los
+# profesores. Sin periodoId usa el vigente; si no hay vigente → 404 pidiendo el periodoId.
+GET {{host}}/api/v1/aulas/1/ocupacion?periodoId=1
+Authorization: Bearer {{token}}
+
+###
+
+# Eliminar un curso, aula o periodo (RF-33, RF-40, RF-37), solo administrador: 204 si nunca tuvo grupos. Con algún
+# grupo, incluso cancelado → 409 RN-34 (el curso o aula se desactiva; el periodo se corrige o se conserva).
+DELETE {{host}}/api/v1/cursos/1
+Authorization: Bearer {{token}}
+
+###
+
+DELETE {{host}}/api/v1/aulas/1
+Authorization: Bearer {{token}}
+
+###
+
+DELETE {{host}}/api/v1/periodos/1
+Authorization: Bearer {{token}}
 
 ###

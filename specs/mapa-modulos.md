@@ -23,7 +23,7 @@
 | `estudiantes` | [Aprobada](SPEC-estudiantes.md) | [Aprobado](../tasks/estudiantes/plan.md) | [Aprobadas](../tasks/estudiantes/todo.md) | 9/9 | Completado |
 | `profesores` | [Aprobada](SPEC-profesores.md) | [Aprobado](../tasks/profesores/plan.md) | [Aprobadas](../tasks/profesores/todo.md) | 7/7 | Completado |
 | `catalogos` | [Aprobada](SPEC-catalogos.md) | [Aprobado](../tasks/catalogos/plan.md) | [Aprobadas](../tasks/catalogos/todo.md) | 10/10 | Completado |
-| `grupos` | — | — | — | — | Sin empezar |
+| `grupos` | [Aprobada](SPEC-grupos.md) | [Aprobado](../tasks/grupos/plan.md) | [Aprobadas](../tasks/grupos/todo.md) | 13/13 | Completado |
 | `matriculas` | — | — | — | — | Sin empezar |
 
 **Estados de un documento** (spec, plan o lista de tareas):
@@ -48,8 +48,10 @@ Verificaciones que un módulo no pudo hacer por falta de datos o endpoints. Se c
 |---|---|---|
 | `fundacion` T1 | `acceso` | Un dato duplicado que llegue a la BD (por ejemplo, el correo de `usuario`) responde `409` con `code: "RN-13"`, sin el nombre de la restricción — ✅ cumplida en `acceso` T10 (2026-10-19) |
 | `fundacion` T1 | `acceso` | El `400` de validación (primer DTO con validador, por ejemplo el login) incluye `traceId` — ✅ cumplida en `acceso` T5 (2026-10-19) |
-| `fundacion` T3 | primer módulo con un controller de nombre compuesto | Su ruta sale en kebab-case (por ejemplo, `/api/v1/cambio-grupo`) |
+| `fundacion` T3 | primer módulo con un controller de nombre compuesto | Su ruta sale en kebab-case (por ejemplo, `/api/v1/cambio-grupo`) — ✅ cumplida en `grupos` T8 (2026-11-05): `/api/v1/oferta-academica` |
 | `acceso` T10 | `estudiantes` | Un endpoint de administrador (por ejemplo, `POST /api/v1/administradores`) con el token de un estudiante responde `403`, no `401` ni `200` — ✅ cumplida en `estudiantes` T3 (2026-10-27) |
+| `grupos` T1 | `matriculas` | Una prueba unitaria de que `Grupo.ActualizarDatos` rechaza un cupo menor que `CuposOcupados` (`409 RF-45`), cuando exista el método que incrementa `CuposOcupados` |
+| `grupos` T8 | `matriculas` | La oferta académica incluye los grupos `Abierto` sin cupos disponibles (`cuposDisponibles = 0`) |
 
 ## Decisiones aprobadas
 
@@ -64,3 +66,4 @@ Verificaciones que un módulo no pudo hacer por falta de datos o endpoints. Se c
 7. **El correo vive solo en `Usuario`** (2026-10-19, RN-31). `Estudiante`, `Profesor` y `Administrador` no tienen columna de correo: lo leen de su cuenta, y editar el correo de la persona actualiza su `Usuario`. Así no hay que sincronizar dos copias.
 8. **El rol de una cuenta no cambia** (2026-10-19, RN-31). No hay cambio de rol en ningún módulo. Si una persona pasa a cumplir otro rol, se le crea una cuenta nueva (con otro correo) y el registro de persona de ese rol; la cuenta anterior se desactiva si deja de cumplirlo. RN-20 y RN-30 ya no mencionan el cambio de rol.
 9. **"Hoy" es la fecha local del instituto** (2026-11-02). Las comparaciones con fechas sin hora (periodo vigente, RN-04, RN-10, fecha de registro, fecha de nacimiento) usan `IFechaLocal.Hoy()`, que aplica la zona de `Instituto:ZonaHoraria` (`America/Costa_Rica`). Ningún módulo calcula la fecha de hoy desde UTC. Las marcas de tiempo siguen en UTC. Se implementa en `catalogos`.
+10. **Eliminar un estudiante o profesor elimina también su cuenta** (2026-11-05, RN-35). Solo cuando la persona se puede eliminar por no tener datos relacionados (sin matrículas o sin grupos), y en el mismo guardado, sin cascada. Una cuenta nunca se elimina por sí sola, y la de un administrador nunca. Así no quedan cuentas sin persona (RN-31) y el correo se puede volver a registrar. Se corrigieron RF-14, RF-19, RF-26, RN-35 y la tabla de §4.2. Lo implementa `grupos` para profesores y `matriculas` para estudiantes.

@@ -1,6 +1,7 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
 using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Grupos;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
@@ -73,6 +74,24 @@ public class AulaService(IAppDbContext db)
             throw new BusinessRuleException("RN-13", $"Ya existe un aula con el código {codigo}.");
         }
 
+        // RN-09: la capacidad no baja del cupo de un grupo que todavía usa el aula.
+        if (request.Capacidad < aula.Capacidad)
+        {
+            var mayor = await db.Grupos.AsNoTracking()
+                .Where(GuardasGrupos.Activo)
+                .Where(g => g.AulaId == id && g.Cupo > request.Capacidad)
+                .OrderByDescending(g => g.Cupo)
+                .Select(g => new { g.Nrc, g.Cupo })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (mayor is not null)
+            {
+                throw new BusinessRuleException(
+                    "RN-09",
+                    $"La capacidad ({request.Capacidad}) quedaría por debajo del cupo del grupo {mayor.Nrc} ({mayor.Cupo}).");
+            }
+        }
+
         aula.ActualizarDatos(request.Codigo, request.Ubicacion, request.Capacidad);
         await db.SaveChangesAsync(cancellationToken);
 
@@ -95,6 +114,11 @@ public class AulaService(IAppDbContext db)
     public async Task DesactivarAsync(int id, CancellationToken cancellationToken)
     {
         var aula = await BuscarAsync(id, cancellationToken);
+        if (aula.Activo)
+        {
+            await db.ValidarSinGruposActivosAsync(g => g.AulaId == id, $"el aula {aula.Codigo}", cancellationToken);
+        }
+
         aula.Desactivar();
         await db.SaveChangesAsync(cancellationToken);
     }
@@ -106,6 +130,23 @@ public class AulaService(IAppDbContext db)
     {
         var aula = await BuscarAsync(id, cancellationToken);
         aula.Reactivar();
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// RF-40 y RN-34: solo un aula que nunca tuvo grupos, ni siquiera cancelados. Si no, se desactiva.
+    /// </summary>
+    public async Task EliminarAsync(int id, CancellationToken cancellationToken)
+    {
+        var aula = await BuscarAsync(id, cancellationToken);
+
+        if (await db.Grupos.AnyAsync(g => g.AulaId == id, cancellationToken))
+        {
+            throw new BusinessRuleException(
+                "RN-34", $"El aula {aula.Codigo} tiene grupos y no se puede eliminar. Desactívela en su lugar.");
+        }
+
+        db.Aulas.Remove(aula);
         await db.SaveChangesAsync(cancellationToken);
     }
 

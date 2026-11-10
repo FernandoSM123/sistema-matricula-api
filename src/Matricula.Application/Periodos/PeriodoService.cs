@@ -72,15 +72,29 @@ public class PeriodoService(IAppDbContext db, IFechaLocal fechaLocal)
     /// </summary>
     public async Task<PeriodoResponse> ObtenerVigenteAsync(CancellationToken cancellationToken)
     {
+        var id = await ObtenerIdVigenteAsync(cancellationToken)
+            ?? throw new NotFoundException("No hay un periodo vigente.");
+
+        return await db.Periodos.AsNoTracking()
+            .Where(p => p.Id == id)
+            .Select(PeriodoProyecciones.AResponse)
+            .SingleAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Id del periodo vigente, o null si no hay. Para las consultas de otros módulos que lo usan por defecto (la oferta
+    /// académica, el horario semanal y la ocupación de un aula).
+    /// </summary>
+    public async Task<int?> ObtenerIdVigenteAsync(CancellationToken cancellationToken)
+    {
         var hoy = fechaLocal.Hoy();
 
         return await db.Periodos.AsNoTracking()
             .Where(p => p.InicioMatricula <= hoy && hoy <= p.FinClases)
             .OrderByDescending(p => p.InicioMatricula)
             .ThenByDescending(p => p.Id)
-            .Select(PeriodoProyecciones.AResponse)
-            .FirstOrDefaultAsync(cancellationToken)
-            ?? throw new NotFoundException("No hay un periodo vigente.");
+            .Select(p => (int?)p.Id)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     /// <summary>
@@ -110,5 +124,25 @@ public class PeriodoService(IAppDbContext db, IFechaLocal fechaLocal)
         await db.SaveChangesAsync(cancellationToken);
 
         return periodo.ToResponse();
+    }
+
+    /// <summary>
+    /// RF-37 y RN-34: solo un periodo sin grupos, ni siquiera cancelados. Los periodos no se desactivan: uno con grupos
+    /// se corrige o se conserva como historial.
+    /// </summary>
+    public async Task EliminarAsync(int id, CancellationToken cancellationToken)
+    {
+        var periodo = await db.Periodos.SingleOrDefaultAsync(p => p.Id == id, cancellationToken)
+            ?? throw new NotFoundException($"No existe el periodo {id}.");
+
+        if (await db.Grupos.AnyAsync(g => g.PeriodoId == id, cancellationToken))
+        {
+            throw new BusinessRuleException(
+                "RN-34",
+                $"El periodo {periodo.Nombre} tiene grupos y no se puede eliminar. Corrija sus datos o consérvelo como historial.");
+        }
+
+        db.Periodos.Remove(periodo);
+        await db.SaveChangesAsync(cancellationToken);
     }
 }

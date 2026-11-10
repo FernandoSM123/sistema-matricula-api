@@ -1,6 +1,8 @@
 using Matricula.Api.Common;
 using Matricula.Api.Seguridad;
 using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Grupos;
+using Matricula.Application.Grupos.Consultas;
 using Matricula.Application.Profesores;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +10,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace Matricula.Api.Controllers;
 
 [Authorize(Policy = Politicas.Administrador)]
-public class ProfesoresController(ProfesorService profesorService) : ApiControllerBase
+public class ProfesoresController(
+    ProfesorService profesorService, GrupoService grupoService, HorarioSemanalService horarioService) : ApiControllerBase
 {
     /// <summary>
     /// Registra un profesor (RF-03, RF-22). La temporal se envía a su correo y nunca aparece en la respuesta; con
@@ -82,4 +85,39 @@ public class ProfesoresController(ProfesorService profesorService) : ApiControll
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ProfesorResponse>> Obtener(int id, CancellationToken cancellationToken) =>
         Ok(await profesorService.ObtenerAsync(id, cancellationToken));
+
+    /// <summary>
+    /// Elimina un profesor que nunca tuvo grupos, junto con su cuenta (RF-26, RN-35). Si tuvo alguno, incluso
+    /// cancelado, responde 409 RN-34: se desactiva en su lugar.
+    /// </summary>
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Eliminar(int id, CancellationToken cancellationToken)
+    {
+        await profesorService.EliminarAsync(id, cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Grupos de un profesor en todos los estados (RF-27), con filtro por periodo; search busca en el NRC.
+    /// </summary>
+    [HttpGet("{id:int}/grupos")]
+    [ProducesResponseType<PagedResult<GrupoResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PagedResult<GrupoResponse>>> ListarGrupos(
+        int id, [FromQuery] ListarGruposProfesorRequest request, CancellationToken cancellationToken) =>
+        Ok(await grupoService.ListarDeProfesorAsync(id, request, cancellationToken));
+
+    /// <summary>
+    /// Horario semanal de un profesor (RF-28): sus bloques del periodo, sin grupos cancelados, por día y hora. Sin
+    /// periodoId usa el vigente; si no hay vigente responde 404 pidiendo el periodoId.
+    /// </summary>
+    [HttpGet("{id:int}/horario")]
+    [ProducesResponseType<IReadOnlyList<BloqueHorarioResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<BloqueHorarioResponse>>> Horario(
+        int id, [FromQuery] int? periodoId, CancellationToken cancellationToken) =>
+        Ok(await horarioService.HorarioProfesorAsync(id, periodoId, cancellationToken));
 }

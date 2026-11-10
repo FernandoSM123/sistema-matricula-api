@@ -22,6 +22,13 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
             InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } postgres
         } ? postgres : null;
 
+        // Red de seguridad de RN-34: un registro que ganó datos relacionados entre la validación y el borrado. Las FK
+        // son Restrict, así que la BD rechaza el DELETE.
+        var violacionReferencia = exception is DbUpdateException
+        {
+            InnerException: PostgresException { SqlState: PostgresErrorCodes.ForeignKeyViolation } referencia
+        } ? referencia : null;
+
         var (status, title, code) = exception switch
         {
             BusinessRuleException e => (StatusCodes.Status409Conflict, "Regla de negocio incumplida", e.Code),
@@ -31,6 +38,7 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
             UnauthorizedException => (StatusCodes.Status401Unauthorized, "No autenticado", null),
             DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, "Conflicto de concurrencia", "CONCURRENCIA"),
             _ when violacionUnicidad is not null => (StatusCodes.Status409Conflict, "Dato duplicado", "RN-13"),
+            _ when violacionReferencia is not null => (StatusCodes.Status409Conflict, "Registro en uso", "RN-34"),
             _ => (StatusCodes.Status500InternalServerError, "Error interno", (string?)null)
         };
 
@@ -45,6 +53,11 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
             // solo va al log, para no exponer la estructura de la BD.
             detail = "Ya existe un registro con ese mismo valor (cédula, correo, código, NRC o nombre). Revise los datos.";
             logger.LogWarning("Violación de unicidad en la restricción {Restriccion}", violacionUnicidad.ConstraintName);
+        }
+        else if (violacionReferencia is not null)
+        {
+            detail = "El registro tiene datos relacionados y no se puede eliminar. Desactívelo en su lugar.";
+            logger.LogWarning("Violación de llave foránea en la restricción {Restriccion}", violacionReferencia.ConstraintName);
         }
         else if (status == StatusCodes.Status500InternalServerError)
         {

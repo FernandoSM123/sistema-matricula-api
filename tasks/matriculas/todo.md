@@ -19,7 +19,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T7. Horario del estudiante | Completada | ✅ | ➖ | ✅ | ✅ |
 | T8. Estudiantes de un grupo y detalle para el matriculado | Completada | ✅ | ➖ | ✅ | ✅ |
 | T9. RN-12 al cancelar un grupo | Completada | ✅ | ➖ | ✅ | ✅ |
-| T10. RN-06 al agregar un bloque | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T10. RN-06 al agregar un bloque | Completada | ✅ | ➖ | ✅ | ✅ |
 | T11. Eliminar grupos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T12. RN-36 y eliminar estudiantes con su cuenta | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T13. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -205,6 +205,10 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - Bloque que choca con otro grupo de un estudiante matriculado → `409 RN-06` y el bloque no se guarda; también como admin.
   - Bloque sin choque, o que choca solo con un grupo del que el estudiante se retiró → `201`.
   - Grupo sin matrículas: se comporta como antes.
+  - Resultado (2026-11-10): 14/14 verificaciones correctas contra la API local (los bloques solo los agrega el admin, así que todos los casos son como admin). Un bloque que choca con el grupo de dos matriculados → `409 RN-06`, con "2 estudiantes" y el NRC, sin nombres, y el bloque no se guarda; con un solo afectado el mensaje dice "1 estudiante". `RN-14` sigue respondiendo antes que `RN-06`. Chocar solo con un grupo del que el estudiante se retiró, o un bloque contiguo → `201`, y el horario del estudiante muestra los bloques nuevos. Grupo sin matrículas, o cuyo único estudiante se retiró → `201` aunque el bloque coincida con otro grupo. Tras cancelar el grupo con que chocaba (RN-12 retira esas matrículas), el mismo bloque → `201`. La BD queda sin periodo vigente.
+  - Detalles que la spec no fijaba:
+    - La guarda es `GuardasMatriculas.ValidarBloquesSinChoquesAsync`, que reusa `BuscarChoquesAsync` con todos los estudiantes activos del grupo; si no hay ninguno, no consulta el periodo.
+    - El NRC del mensaje es el del primer choque encontrado; si hay varios grupos distintos, solo se nombra uno.
 - Files: `src/Matricula.Application/Grupos/GrupoService.cs`, `src/Matricula.Application/Matriculas/GuardasMatriculas.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T11. Eliminar grupos

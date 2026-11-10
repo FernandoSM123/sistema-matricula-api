@@ -96,6 +96,51 @@ public static class GuardasMatriculas
             ReglasHorario.SeTraslapan(b.Dia, b.HoraInicio, b.HoraFin, o.Dia, o.HoraInicio, o.HoraFin)))];
     }
 
+    /// <summary>
+    /// RN-06 al agregar bloques a un grupo con matrículas activas (supuesto 13): ningún estudiante matriculado puede
+    /// quedar con choque. El mensaje da cuántos estudiantes chocarían y un NRC con que chocan, sin nombrarlos.
+    /// </summary>
+    public static async Task ValidarBloquesSinChoquesAsync(
+        this IAppDbContext db,
+        Grupo grupo,
+        IReadOnlyCollection<Horario> bloques,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(db);
+        ArgumentNullException.ThrowIfNull(grupo);
+
+        var estudianteIds = await db.Matriculas.AsNoTracking()
+            .Where(m => m.GrupoId == grupo.Id && m.Estado == EstadoMatricula.Activa)
+            .Select(m => m.EstudianteId)
+            .ToListAsync(cancellationToken);
+
+        if (estudianteIds.Count == 0)
+        {
+            return;
+        }
+
+        var periodo = await db.Periodos.AsNoTracking()
+            .SingleAsync(p => p.Id == grupo.PeriodoId, cancellationToken);
+
+        var choques = await db.BuscarChoquesAsync(
+            estudianteIds, bloques, periodo, grupo.Id, ignorarMatriculaId: null, cancellationToken);
+
+        if (choques.Count == 0)
+        {
+            return;
+        }
+
+        var afectados = choques.Select(c => c.EstudianteId).Distinct().Count();
+        var c = choques[0];
+        throw new BusinessRuleException(
+            "RN-06",
+            afectados == 1
+                ? $"El bloque dejaría a 1 estudiante matriculado con choque de horario, por ejemplo con el grupo {c.Nrc} "
+                    + $"el {c.Dia} de {c.HoraInicio:HH\\:mm} a {c.HoraFin:HH\\:mm}."
+                : $"El bloque dejaría a {afectados} estudiantes matriculados con choque de horario, por ejemplo con el "
+                    + $"grupo {c.Nrc} el {c.Dia} de {c.HoraInicio:HH\\:mm} a {c.HoraFin:HH\\:mm}.");
+    }
+
     /// <summary>RN-06 para un estudiante: el mensaje nombra el grupo y el bloque con que choca.</summary>
     public static async Task ValidarSinChoquesAsync(
         this IAppDbContext db,

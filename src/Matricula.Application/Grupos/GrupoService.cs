@@ -1,6 +1,7 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
 using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Matriculas;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
 using Matricula.Domain.Exceptions;
@@ -235,8 +236,9 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
         ?? throw new ForbiddenException("Su sesión no identifica a un profesor. Inicie sesión de nuevo.");
 
     /// <summary>
-    /// RF-48: agrega un bloque. Rechaza el traslape con otro bloque del grupo (RN-14) y con los grupos del mismo
-    /// profesor (RN-07) o la misma aula (RN-08) en el periodo.
+    /// RF-48: agrega un bloque. Rechaza el traslape con otro bloque del grupo (RN-14), con los grupos del mismo
+    /// profesor (RN-07) o la misma aula (RN-08) en el periodo, y que deje con choque a un estudiante matriculado (RN-06,
+    /// supuesto 13).
     /// </summary>
     public async Task<GrupoDetalleResponse> AgregarHorarioAsync(
         int grupoId, AgregarHorarioRequest request, CancellationToken cancellationToken)
@@ -246,6 +248,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
         var grupo = await BuscarConHorariosAsync(grupoId, cancellationToken);
         var horario = grupo.AgregarHorario(request.Dia!.Value, request.HoraInicio!.Value, request.HoraFin!.Value);
         await ValidarTraslapesAsync(grupo, [horario], grupo.ProfesorId, grupo.AulaId, cancellationToken);
+        await db.ValidarBloquesSinChoquesAsync(grupo, [horario], cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
         return await ObtenerAsync(grupoId, cancellationToken);

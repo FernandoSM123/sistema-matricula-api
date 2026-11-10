@@ -568,6 +568,7 @@ Content-Type: application/json
 # Agregar un bloque de horario (RF-48). 201 con el grupo. Horas "HH:mm" o "HH:mm:ss"; horaFin ≤ horaInicio → 400 (RN-15).
 # Traslape con otro bloque del grupo → 409 RN-14. Choque con otro grupo del mismo profesor / aula en el mismo periodo
 # → 409 RN-07 / RN-08, con el NRC del otro grupo (los cancelados no cuentan). Bloques contiguos sí se permiten.
+# Si dejaría a algún estudiante matriculado con choque de horario → 409 RN-06 con cuántos y un NRC (sin nombres).
 # Grupo finalizado o cancelado → 409 RF-48.
 POST {{host}}/api/v1/grupos/1/horarios
 Authorization: Bearer {{token}}

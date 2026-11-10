@@ -71,8 +71,9 @@ public class GruposController(GrupoService grupoService, MatriculaService matric
 
     /// <summary>
     /// Agrega un bloque de horario (RF-48) y devuelve el grupo. Responde RN-14 si se traslapa con otro bloque del
-    /// grupo, RN-07 o RN-08 si choca con otro grupo del mismo profesor o aula en el periodo, y RF-48 si el grupo está
-    /// finalizado o cancelado.
+    /// grupo, RN-07 o RN-08 si choca con otro grupo del mismo profesor o aula en el periodo, RN-06 si dejaría a algún
+    /// estudiante matriculado con choque de horario (da cuántos, sin nombrarlos) y RF-48 si el grupo está finalizado o
+    /// cancelado.
     /// </summary>
     [HttpPost("{id:int}/horarios")]
     [Authorize(Policy = Politicas.Administrador)]

@@ -181,6 +181,57 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
         return ListarAsync(EstudianteActual(), request, cancellationToken);
     }
 
+    /// <summary>
+    /// RF-49 (consulta 3): los estudiantes de un grupo, para el administrador o el profesor del grupo (RN-18). Ordena
+    /// por apellidos, nombre e id de la matrícula.
+    /// </summary>
+    public async Task<PagedResult<EstudianteGrupoResponse>> ListarEstudiantesGrupoAsync(
+        int grupoId, ListarEstudiantesGrupoRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var grupo = await db.Grupos.AsNoTracking()
+            .Where(g => g.Id == grupoId)
+            .Select(g => new { g.ProfesorId })
+            .SingleOrDefaultAsync(cancellationToken)
+            ?? throw new NotFoundException($"No existe el grupo {grupoId}.");
+
+        if (currentUser.Rol == nameof(Rol.Profesor) && grupo.ProfesorId != ProfesorActual())
+        {
+            throw new ForbiddenException("Solo puede consultar los estudiantes de sus grupos.", "RN-18");
+        }
+
+        var query = db.Matriculas.AsNoTracking().Where(m => m.GrupoId == grupoId && m.Estado == request.Estado);
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+#pragma warning disable CA1304, CA1311, CA1862 // ToLower se traduce a lower() en SQL; la cultura no aplica.
+            var termino = request.Search.Trim().ToLower();
+            query = query.Where(m =>
+                m.Estudiante.Nombre.ToLower().Contains(termino)
+                || m.Estudiante.Apellidos.ToLower().Contains(termino)
+                || m.Estudiante.Cedula.ToLower().Contains(termino));
+#pragma warning restore CA1304, CA1311, CA1862
+        }
+
+        return await query
+            .OrderBy(m => m.Estudiante.Apellidos)
+            .ThenBy(m => m.Estudiante.Nombre)
+            .ThenBy(m => m.Id)
+            .Select(m => new EstudianteGrupoResponse(
+                m.Id,
+                m.EstudianteId,
+                m.Estudiante.Cedula,
+                m.Estudiante.Nombre,
+                m.Estudiante.Apellidos,
+                m.Estudiante.Usuario.Correo,
+                m.FechaMatricula,
+                m.Estado,
+                m.FechaRetiro,
+                m.MotivoRetiro))
+            .ToPagedResultAsync(request, cancellationToken);
+    }
+
     // Periodo más reciente primero, luego curso. Dentro de un mismo curso, la matrícula más nueva primero: tras un
     // cambio de grupo la activa queda antes que la retirada.
     private Task<PagedResult<MatriculaResponse>> ListarAsync(
@@ -287,6 +338,10 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
     private bool EsAdministrador() => currentUser.Rol == nameof(Rol.Administrador);
 
     // Un token emitido antes de que existiera el claim no lo trae: basta con iniciar sesión de nuevo.
+    private int ProfesorActual() =>
+        currentUser.ProfesorId
+        ?? throw new ForbiddenException("Su sesión no identifica a un profesor. Inicie sesión de nuevo.");
+
     private int EstudianteActual() =>
         currentUser.EstudianteId
         ?? throw new ForbiddenException("Su sesión no identifica a un estudiante. Inicie sesión de nuevo.");

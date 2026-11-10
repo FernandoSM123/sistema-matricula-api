@@ -539,7 +539,7 @@ Authorization: Bearer {{token}}
 ###
 
 # Detalle de un grupo (RF-44): horarios, cupo, ocupados y disponibles. Inexistente → 404.
-# Profesor con un grupo ajeno o estudiante con un grupo que no está Abierto → 403 RN-18.
+# Profesor con un grupo ajeno, o estudiante con un grupo que no está Abierto y en el que nunca se matriculó → 403 RN-18.
 GET {{host}}/api/v1/grupos/1
 Authorization: Bearer {{token}}
 
@@ -738,6 +738,14 @@ Authorization: Bearer {{token}}
 # Horario semanal de un estudiante (RF-21), solo administrador: bloques de los grupos con matrícula activa, por día y
 # hora, sin grupos cancelados. Sin periodoId usa el vigente; estudiante o periodo inexistente → 404.
 GET {{host}}/api/v1/estudiantes/1/horario?periodoId=1
+Authorization: Bearer {{token}}
+
+###
+
+# Estudiantes de un grupo (RF-49): administrador o el profesor del grupo (otro profesor → 403 RN-18; estudiante → 403).
+# Por defecto estado=Activa; estado=Retirada para los retirados. search busca en nombre, apellidos y cédula. Sin
+# teléfono ni dirección. Grupo inexistente → 404.
+GET {{host}}/api/v1/grupos/1/estudiantes?estado=Activa&search=&page=1&pageSize=20
 Authorization: Bearer {{token}}
 
 ###

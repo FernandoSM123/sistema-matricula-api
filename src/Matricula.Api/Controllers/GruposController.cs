@@ -2,6 +2,7 @@ using Matricula.Api.Common;
 using Matricula.Api.Seguridad;
 using Matricula.Application.Common.Paginacion;
 using Matricula.Application.Grupos;
+using Matricula.Application.Matriculas;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,7 +10,7 @@ namespace Matricula.Api.Controllers;
 
 // Las políticas van por acción: un atributo de clase se sumaría al de cada una y dejaría las lecturas solo para
 // administradores.
-public class GruposController(GrupoService grupoService) : ApiControllerBase
+public class GruposController(GrupoService grupoService, MatriculaService matriculaService) : ApiControllerBase
 {
     /// <summary>
     /// Crea un grupo Planificado y sin horarios (RF-42). Responde RN-17 si el curso, profesor o aula están inactivos,
@@ -129,4 +130,19 @@ public class GruposController(GrupoService grupoService) : ApiControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<GrupoDetalleResponse>> Obtener(int id, CancellationToken cancellationToken) =>
         Ok(await grupoService.ObtenerAsync(id, cancellationToken));
+
+    /// <summary>
+    /// Estudiantes de un grupo (RF-49), para el administrador o el profesor del grupo; otro profesor recibe 403 RN-18.
+    /// Por defecto los de matrícula activa (estado=Retirada para los retirados); search busca en nombre, apellidos y
+    /// cédula. No incluye teléfono ni dirección.
+    /// </summary>
+    [HttpGet("{id:int}/estudiantes")]
+    [Authorize(Policy = Politicas.AdministradorOProfesor)]
+    [ProducesResponseType<PagedResult<EstudianteGrupoResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PagedResult<EstudianteGrupoResponse>>> Estudiantes(
+        int id, [FromQuery] ListarEstudiantesGrupoRequest request, CancellationToken cancellationToken) =>
+        Ok(await matriculaService.ListarEstudiantesGrupoAsync(id, request, cancellationToken));
 }

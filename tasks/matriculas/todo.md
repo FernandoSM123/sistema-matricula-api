@@ -17,7 +17,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T5. Cambiar de grupo | Completada | ✅ | ➖ | ✅ | ✅ |
 | T6. Matrículas e historial de un estudiante | Completada | ✅ | ➖ | ✅ | ✅ |
 | T7. Horario del estudiante | Completada | ✅ | ➖ | ✅ | ✅ |
-| T8. Estudiantes de un grupo y detalle para el matriculado | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T8. Estudiantes de un grupo y detalle para el matriculado | Completada | ✅ | ➖ | ✅ | ✅ |
 | T9. RN-12 al cancelar un grupo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T10. RN-06 al agregar un bloque | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T11. Eliminar grupos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -179,6 +179,10 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - Admin y el profesor del grupo → `200` con los activos; `estado=Retirada` → los retirados; otro profesor → `403 RN-18`; estudiante → `403`.
   - La respuesta no trae teléfono ni dirección.
   - Estudiante: detalle de un grupo `Cerrado` donde está matriculado → `200`; donde no → `403 RN-18`.
+  - Resultado (2026-11-10): 24/24 verificaciones correctas contra la API local. Lista de estudiantes: por defecto los 3 activos, ordenados por apellidos, con matrícula, cédula, nombre, apellidos, correo, fecha y estado, sin teléfono ni dirección; `estado=Retirada` trae al retirado con fecha y motivo; búsqueda por cédula (sin distinguir mayúsculas) y por apellidos; paginación; estado inexistente → `400`; grupo inexistente → `404` (también para un profesor); otro grupo trae solo los suyos. Acceso: su profesor → `200`, otro profesor → `403 RN-18`, estudiante → `403`, sin token → `401`. Detalle: grupo `Cerrado` donde está matriculado o del que se retiró → `200`; donde no → `403 RN-18`; un `Abierto` sin matrícula sigue en `200`; regresión del profesor (`403 RN-18` el ajeno, `200` el suyo). La BD queda sin periodo vigente.
+  - Detalles que la spec no fijaba:
+    - La lista vive en `MatriculaService.ListarEstudiantesGrupoAsync` (consulta sobre matrículas); `GruposController` recibe `MatriculaService`. El grupo inexistente se revisa antes que la propiedad, así que un profesor recibe `404` y no `403` con un id que no existe.
+    - `Estado` del request no es anulable: sin parámetro vale `Activa`, y no hay forma de pedir activos y retirados juntos (la spec no lo pide).
 - Files: `src/Matricula.Application/Matriculas/{...,ListarEstudiantesGrupoRequest,EstudianteGrupoResponse}.cs`, `src/Matricula.Application/Grupos/GrupoService.cs`, `src/Matricula.Api/Controllers/GruposController.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T9. RN-12 al cancelar un grupo

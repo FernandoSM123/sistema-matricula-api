@@ -193,7 +193,8 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser)
 
     /// <summary>
     /// RF-44: incluye los horarios, el cupo, los ocupados y los disponibles. RN-18: un profesor solo ve el detalle de
-    /// sus grupos y un estudiante el de los Abierto; otro grupo existente responde 403.
+    /// sus grupos y un estudiante el de los Abierto y el de los grupos en que tiene o tuvo una matrícula; otro grupo
+    /// existente responde 403.
     /// </summary>
     public async Task<GrupoDetalleResponse> ObtenerAsync(int id, CancellationToken cancellationToken)
     {
@@ -206,7 +207,8 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser)
         var visible = currentUser.Rol switch
         {
             nameof(Rol.Profesor) => detalle.ProfesorId == ProfesorActual(),
-            nameof(Rol.Estudiante) => detalle.Estado == EstadoGrupo.Abierto,
+            nameof(Rol.Estudiante) => detalle.Estado == EstadoGrupo.Abierto
+                || await TieneMatriculaAsync(id, cancellationToken),
             _ => true,
         };
 
@@ -216,6 +218,15 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser)
         }
 
         return detalle.OrdenarHorarios();
+    }
+
+    // Activa o retirada: el estudiante puede revisar el grupo de su historial.
+    private Task<bool> TieneMatriculaAsync(int grupoId, CancellationToken cancellationToken)
+    {
+        var estudianteId = currentUser.EstudianteId
+            ?? throw new ForbiddenException("Su sesión no identifica a un estudiante. Inicie sesión de nuevo.");
+
+        return db.Matriculas.AnyAsync(m => m.GrupoId == grupoId && m.EstudianteId == estudianteId, cancellationToken);
     }
 
     // Un token emitido antes de que existiera el claim no lo trae: basta con iniciar sesión de nuevo.

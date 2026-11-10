@@ -14,7 +14,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T2. Persistencia, `xmin` y migración `AgregaMatricula` | Completada | ✅ | ➖ | ✅ | ✅ |
 | T3. Matricular, detalle y concurrencia | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Retirar | Completada | ✅ | ➖ | ✅ | ✅ |
-| T5. Cambiar de grupo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T5. Cambiar de grupo | Completada | ✅ | ➖ | ✅ | ✅ |
 | T6. Matrículas e historial de un estudiante | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T7. Horario del estudiante | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T8. Estudiantes de un grupo y detalle para el matriculado | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -133,6 +133,11 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - Después de la fecha límite de retiro → `409 RN-10` para el estudiante; después del fin de matrícula pero antes de la fecha límite → `201` (supuesto 3).
   - Admin: destino `Cerrado` y fuera de fechas → `201`.
   - Estudiante con la matrícula de otro → `403 RN-18`.
+  - Resultado (2026-11-10): 31/31 verificaciones correctas contra la API local. Además de la lista: el `Location` apunta a la matrícula nueva, que tiene la fecha de hoy y el mismo estudiante; el origen queda `Retirada` con `CambioGrupo` y la fecha de hoy; tras cada rechazo (lleno, `Planificado` → `RN-02`, `Cerrado` → `RN-11`, choque con otro grupo → `RN-06` con su NRC) la matrícula original sigue `Activa` y ningún cupo cambia; destino inexistente → `404`; cambiar desde una matrícula ya retirada → `RF-52`; admin desde un origen `Finalizado` → `RN-11`; la matrícula ajena sigue `Activa` tras el `403 RN-18`; profesor → `403`; sin token → `401`; sin destino → `400`. Para el supuesto 3, el estudiante no puede matricularse en el periodo con la matrícula cerrada (`RN-04`), pero sí cambiar de grupo dentro de la fecha límite (`201`). La BD queda sin periodo vigente.
+  - En la primera corrida dos verificaciones del administrador fallaron por el script (el estudiante elegido ya tenía otro grupo del curso y la API respondió bien `RN-05`); se usó otro estudiante. Una corrida intermedia se cortó por el límite de 10 logins por minuto (`429`); se repitió completa.
+  - Detalles que la spec no fijaba:
+    - El cambio también revisa RN-01 sobre el estudiante, como matricular; se extrajo a `ValidarEstudianteActivoAsync`.
+    - Orden: RN-18 → origen (`RF-52`, `RN-11`, `RN-10`) → destino igual al actual (`RF-53`) → `404` del destino → mismo curso y periodo (`RF-53`) → RN-01 → destino (`RN-02`/`RN-11`) → RN-05 → RN-06 → RN-03.
 - Files: `src/Matricula.Application/Matriculas/{MatriculaService,CambioGrupoRequest,CambioGrupoRequestValidator}.cs`, `src/Matricula.Api/Controllers/MatriculasController.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T6. Matrículas e historial de un estudiante

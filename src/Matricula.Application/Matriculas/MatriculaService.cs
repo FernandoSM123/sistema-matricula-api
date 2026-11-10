@@ -71,6 +71,51 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
         await GuardarAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// RF-53: mueve al estudiante a otro grupo del mismo curso y periodo. El origen sigue las reglas del retiro (RN-10,
+    /// RN-11) y el destino las de matricular salvo RN-04 (supuesto 3); RN-05 y RN-06 no cuentan la matrícula de origen.
+    /// Todo se guarda junto: si algo falla, la matrícula original y los cupos quedan como estaban.
+    /// </summary>
+    public async Task<MatriculaResponse> CambiarGrupoAsync(
+        int id, CambioGrupoRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var origen = await BuscarPropiaAsync(id, cancellationToken);
+        var hoy = fechaLocal.Hoy();
+        ValidarRetiro(origen, hoy);
+
+        // El validador ya exige el destino.
+        var destinoId = request.GrupoDestinoId!.Value;
+        if (destinoId == origen.GrupoId)
+        {
+            throw new BusinessRuleException("RF-53", "El estudiante ya está matriculado en ese grupo.");
+        }
+
+        var destino = await BuscarGrupoAsync(destinoId, cancellationToken);
+        if (destino.CursoId != origen.Grupo.CursoId || destino.PeriodoId != origen.Grupo.PeriodoId)
+        {
+            throw new BusinessRuleException(
+                "RF-53",
+                $"El grupo {destino.Nrc} no es del mismo curso y periodo que el grupo {origen.Grupo.Nrc}.");
+        }
+
+        await ValidarEstudianteActivoAsync(origen.EstudianteId, cancellationToken);
+        destino.ValidarMovimiento(EsAdministrador());
+        await db.ValidarCursoNoRepetidoAsync(origen.EstudianteId, destino, origen.Id, cancellationToken);
+        await db.ValidarSinChoquesAsync(origen.EstudianteId, destino, origen.Id, cancellationToken);
+        destino.OcuparCupo();
+
+        origen.Retirar(hoy, MotivoRetiro.CambioGrupo);
+        origen.Grupo.LiberarCupo();
+        var nueva = new MatriculaEntidad(origen.EstudianteId, destino.Id, hoy);
+        db.Matriculas.Add(nueva);
+
+        // Un solo guardado: es transaccional, y xmin protege los dos grupos.
+        await GuardarAsync(cancellationToken);
+        return await ObtenerAsync(nueva.Id, cancellationToken);
+    }
+
     // Reglas para dejar un grupo, compartidas por el retiro y el origen de un cambio de grupo (RF-52, RF-53).
     private void ValidarRetiro(MatriculaEntidad matricula, DateOnly hoy)
     {
@@ -114,16 +159,7 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
     private async Task<MatriculaResponse> MatricularAsync(
         int estudianteId, int grupoId, CancellationToken cancellationToken)
     {
-        var estudianteActivo = await db.Estudiantes.AsNoTracking()
-            .Where(e => e.Id == estudianteId)
-            .Select(e => (bool?)e.Usuario.Activo)
-            .SingleOrDefaultAsync(cancellationToken)
-            ?? throw new NotFoundException($"No existe el estudiante {estudianteId}.");
-
-        if (!estudianteActivo)
-        {
-            throw new BusinessRuleException("RN-01", "El estudiante está inactivo y no se puede matricular.");
-        }
+        await ValidarEstudianteActivoAsync(estudianteId, cancellationToken);
 
         var grupo = await BuscarGrupoAsync(grupoId, cancellationToken);
         var esAdministrador = EsAdministrador();
@@ -147,6 +183,21 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
         await GuardarAsync(cancellationToken);
 
         return await ObtenerAsync(matricula.Id, cancellationToken);
+    }
+
+    // RN-01. Un estudiante que no existe responde 404.
+    private async Task ValidarEstudianteActivoAsync(int estudianteId, CancellationToken cancellationToken)
+    {
+        var estudianteActivo = await db.Estudiantes.AsNoTracking()
+            .Where(e => e.Id == estudianteId)
+            .Select(e => (bool?)e.Usuario.Activo)
+            .SingleOrDefaultAsync(cancellationToken)
+            ?? throw new NotFoundException($"No existe el estudiante {estudianteId}.");
+
+        if (!estudianteActivo)
+        {
+            throw new BusinessRuleException("RN-01", "El estudiante está inactivo y no se puede matricular.");
+        }
     }
 
     // Con seguimiento: OcuparCupo y LiberarCupo cambian el grupo, y su xmin detecta otra operación simultánea.

@@ -704,3 +704,17 @@ POST {{host}}/api/v1/matriculas/1/retiro
 Authorization: Bearer {{token}}
 
 ###
+
+# Cambiar de grupo (RF-53): administrador o el estudiante dueño. El destino debe ser otro grupo del mismo curso y periodo
+# (si no → 409 RF-53). La matrícula original queda Retirada con motivo CambioGrupo y se crea una nueva: 201 + Location a
+# la nueva. Si el destino no cumple (RN-02, RN-03, RN-06, RN-11) o el origen ya no permite retiros (RN-10, RN-11), no
+# cambia nada. El cambio se rige por la fecha límite de retiro, no por el rango de matrícula.
+POST {{host}}/api/v1/matriculas/1/cambio-grupo
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "grupoDestinoId": 2
+}
+
+###

@@ -59,4 +59,25 @@ public class MatriculasController(MatriculaService matriculaService) : ApiContro
         await matriculaService.RetirarAsync(id, cancellationToken);
         return NoContent();
     }
+
+    /// <summary>
+    /// Cambia al estudiante a otro grupo del mismo curso y periodo (RF-53). La matrícula original queda Retirada con
+    /// motivo CambioGrupo y se crea una nueva en el destino; si alguna regla falla no cambia nada. Responde RF-53 (otro
+    /// curso, periodo o el mismo grupo), RN-10 y RN-11 sobre el origen, y RN-02, RN-03, RN-06, RN-11 o CONCURRENCIA
+    /// sobre el destino. El Location apunta a la matrícula nueva.
+    /// </summary>
+    [HttpPost("{id:int}/cambio-grupo")]
+    [Authorize(Policy = Politicas.AdministradorOEstudiante)]
+    [ProducesResponseType<MatriculaResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<MatriculaResponse>> CambiarGrupo(
+        int id, CambioGrupoRequest request, CancellationToken cancellationToken)
+    {
+        var nueva = await matriculaService.CambiarGrupoAsync(id, request, cancellationToken);
+        return CreatedAtAction(nameof(Obtener), new { id = nueva.Id }, nueva);
+    }
 }

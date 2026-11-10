@@ -54,6 +54,61 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
         return matricula;
     }
 
+    /// <summary>
+    /// RF-52: la matrícula queda Retirada con la fecha de hoy y el cupo se libera. El estudiante solo retira las suyas
+    /// (RN-18), con el grupo Abierto (RN-11) y hasta la fecha límite de retiro (RN-10); al administrador no se le
+    /// aplican el estado ni la fecha (supuesto 1).
+    /// </summary>
+    public async Task RetirarAsync(int id, CancellationToken cancellationToken)
+    {
+        var matricula = await BuscarPropiaAsync(id, cancellationToken);
+        var hoy = fechaLocal.Hoy();
+
+        ValidarRetiro(matricula, hoy);
+
+        matricula.Retirar(hoy, MotivoRetiro.RetiroVoluntario);
+        matricula.Grupo.LiberarCupo();
+        await GuardarAsync(cancellationToken);
+    }
+
+    // Reglas para dejar un grupo, compartidas por el retiro y el origen de un cambio de grupo (RF-52, RF-53).
+    private void ValidarRetiro(MatriculaEntidad matricula, DateOnly hoy)
+    {
+        if (matricula.Estado == EstadoMatricula.Retirada)
+        {
+            throw new BusinessRuleException("RF-52", "La matrícula ya está retirada.");
+        }
+
+        var esAdministrador = EsAdministrador();
+        matricula.Grupo.ValidarMovimiento(esAdministrador);
+
+        var periodo = matricula.Grupo.Periodo;
+        if (!esAdministrador && !periodo.PermiteRetiro(hoy))
+        {
+            throw new BusinessRuleException(
+                "RN-10",
+                $"La fecha límite de retiro del periodo {periodo.Nombre} fue el {periodo.FechaLimiteRetiro:dd/MM/yyyy}.");
+        }
+    }
+
+    // Con seguimiento y con el grupo (su periodo y sus bloques), porque retirar y cambiar modifican el grupo. RN-18: un
+    // estudiante solo opera sobre sus matrículas.
+    private async Task<MatriculaEntidad> BuscarPropiaAsync(int id, CancellationToken cancellationToken)
+    {
+        var matricula = await db.Matriculas
+            .Include(m => m.Grupo).ThenInclude(g => g.Periodo)
+            .Include(m => m.Grupo).ThenInclude(g => g.Horarios)
+            .SingleOrDefaultAsync(m => m.Id == id, cancellationToken)
+            ?? throw new NotFoundException($"No existe la matrícula {id}.");
+
+        if (currentUser.Rol == nameof(Rol.Estudiante) && matricula.EstudianteId != EstudianteActual())
+        {
+            throw new ForbiddenException("No tiene acceso a esta matrícula.", "RN-18");
+        }
+
+        return matricula;
+    }
+
     // Orden de RF-51: RN-01, RN-02/RN-11, RN-04, RN-05, RN-06 y al final RN-03, para que un grupo lleno no oculte un
     // error más útil.
     private async Task<MatriculaResponse> MatricularAsync(

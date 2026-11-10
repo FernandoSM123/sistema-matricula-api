@@ -13,7 +13,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T1. Dominio de matrículas y cupos | Completada | ✅ | ✅ | ➖ | ✅ |
 | T2. Persistencia, `xmin` y migración `AgregaMatricula` | Completada | ✅ | ➖ | ✅ | ✅ |
 | T3. Matricular, detalle y concurrencia | Completada | ✅ | ➖ | ✅ | ✅ |
-| T4. Retirar | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T4. Retirar | Completada | ✅ | ➖ | ✅ | ✅ |
 | T5. Cambiar de grupo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T6. Matrículas e historial de un estudiante | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T7. Horario del estudiante | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -116,6 +116,8 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
   - Grupo `Cerrado` → `409 RN-11` para el estudiante, `204` para el admin.
   - Retirar dos veces → `409 RF-52`. Volver a matricularse en el mismo grupo después → `201`.
   - Estudiante con la matrícula de otro → `403 RN-18`; id inexistente → `404`; profesor → `403`.
+  - Resultado (2026-11-10): 28/28 verificaciones correctas contra la API local. Además de la lista: el detalle muestra `Retirada`, la fecha de hoy y `RetiroVoluntario`, y conserva la fecha de matrícula; retirar dos veces → `RF-52` también como admin, sin tocar los cupos; volver a matricularse crea otra matrícula y la retirada se conserva (el índice único filtrado lo permite); retirado de un grupo, puede matricular otro del mismo curso y periodo (RN-05 solo con activas); el retiro libera el cupo de un grupo lleno y otro estudiante entra; los rechazos de RN-10 y RN-11 no cambian el estado ni los cupos; estudiante en `EnCurso` y `Finalizado` → `RN-11`; admin en `EnCurso` → `204` y en `Finalizado` → `RN-11`; la matrícula ajena sigue `Activa` tras el `403 RN-18`; sin token → `401`. La BD queda sin periodo vigente.
+  - Detalle de implementación: `ValidarRetiro` (RF-52, RN-11 y RN-10 según el rol) y `BuscarPropiaAsync` (carga con seguimiento la matrícula con su grupo, periodo y bloques, y aplica RN-18) quedan listos para el origen del cambio de grupo de T5. `RF-52` se revisa antes que `RN-11`, así una matrícula retirada por la cancelación de su grupo responde que ya está retirada.
 - Files: `src/Matricula.Application/Matriculas/MatriculaService.cs`, `src/Matricula.Api/Controllers/MatriculasController.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T5. Cambiar de grupo

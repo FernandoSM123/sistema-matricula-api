@@ -41,4 +41,22 @@ public class MatriculasController(MatriculaService matriculaService) : ApiContro
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<MatriculaResponse>> Obtener(int id, CancellationToken cancellationToken) =>
         Ok(await matriculaService.ObtenerAsync(id, cancellationToken));
+
+    /// <summary>
+    /// Retira una matrícula (RF-52): queda Retirada con la fecha de hoy y el cupo se libera. Un estudiante solo retira
+    /// las suyas (RN-18), con el grupo Abierto (RN-11) y hasta la fecha límite de retiro (RN-10); al administrador no se
+    /// le aplican el estado ni la fecha. Una matrícula ya retirada responde RF-52.
+    /// </summary>
+    [HttpPost("{id:int}/retiro")]
+    [Authorize(Policy = Politicas.AdministradorOEstudiante)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Retirar(int id, CancellationToken cancellationToken)
+    {
+        await matriculaService.RetirarAsync(id, cancellationToken);
+        return NoContent();
+    }
 }

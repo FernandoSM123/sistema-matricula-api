@@ -696,3 +696,11 @@ GET {{host}}/api/v1/matriculas/1
 Authorization: Bearer {{token}}
 
 ###
+
+# Retirar una matrícula (RF-52): administrador o el estudiante dueño (otro → 403 RN-18). Queda Retirada con la fecha de
+# hoy y el cupo se libera. El estudiante necesita el grupo Abierto (RN-11) y estar dentro de la fecha límite de retiro
+# (RN-10); al administrador no se le aplican, salvo en grupos Finalizado o Cancelado. Ya retirada → 409 RF-52.
+POST {{host}}/api/v1/matriculas/1/retiro
+Authorization: Bearer {{token}}
+
+###

@@ -4,10 +4,11 @@ Módulo `auditoria` del [mapa de módulos](mapa-modulos.md). Depende de `acceso`
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **En revisión** | — | — | — |
+| **Aprobada** | — | — | — |
 
 **Historial:**
 - 2026-11-10: v1 en revisión, con doce supuestos y una pregunta abierta (cómo hacer inmutable la tabla, porque `REVOKE` no aplica al superusuario `postgres`).
+- 2026-11-10: resuelta la pregunta 1 con la opción (c): la inmutabilidad (RN-43) se garantiza solo en la aplicación, sin `REVOKE` ni triggers en la BD. Se corrigieron el punto 1, los criterios de éxito, las verificaciones manuales y `docs/arquitectura.md` §5.1. v1 aprobada con sus doce supuestos.
 
 ## Objetivo
 
@@ -41,7 +42,7 @@ Cubre RF-56 y RF-57, las reglas RN-42 a RN-46, la consulta 11 de la sección 6 y
 
    Índices (`docs/arquitectura.md` §5.1): `(entidad, entidad_id)`, `(usuario_id)` y `(fecha)`.
 
-   Migración `AgregaRegistroAuditoria`: tabla `registro_auditoria` más la protección de inmutabilidad (pregunta abierta 1).
+   Migración `AgregaRegistroAuditoria`: tabla `registro_auditoria` con sus índices. Sin protección en la BD: la inmutabilidad la garantiza la aplicación (punto 6, pregunta 1).
 
 2. **Captura en `AppDbContext`** (RF-56, RN-42), en `Infrastructure/Persistence/Auditoria/`:
    - `AppDbContext` sobrescribe `SaveChangesAsync(bool, CancellationToken)`. El `SaveChangesAsync(CancellationToken)` de `IAppDbContext` pasa por ahí.
@@ -240,7 +241,6 @@ public void Diferencias_SoloCambiaUltimoIngreso_NoGeneraRegistro()
 | `entidadId` sin `entidad` · `entidad=Inexistente` · `desde > hasta` | `400` con el campo |
 | `GET /auditoria` con token de estudiante o profesor / sin token | `403` / `401` |
 | Con cambio de contraseña pendiente | `403` (RN-24) |
-| `UPDATE` o `DELETE` sobre `registro_auditoria` desde `psql` | Rechazado (pregunta abierta 1) |
 | Buscar `PasswordHash` o `TempPasswordHash` reales en `cambios` | No aparece ningún hash |
 
 ## Boundaries
@@ -251,7 +251,7 @@ public void Diferencias_SoloCambiaUltimoIngreso_NoGeneraRegistro()
 
 ## Success Criteria
 
-1. La migración crea `registro_auditoria` sin FK, con sus índices, `cambios` como `jsonb` y la protección de inmutabilidad acordada (pregunta abierta 1).
+1. La migración crea `registro_auditoria` sin FK, con sus índices y `cambios` como `jsonb`. Application solo puede leerla (`IQueryable`), y ningún endpoint la modifica.
 2. Cada creación, modificación y eliminación de las diez entidades deja su registro, con autor, fecha, `entidadId` real y los cambios del formato del punto 3 (RF-56).
 3. Una operación que falla no deja registros, y una operación compuesta deja todos los suyos con el mismo `operacionId` (RN-42).
 4. Ningún registro contiene hashes, temporales ni el `SecurityStamp` (RN-44). Los logins normales y los logouts no generan registros (RN-46).
@@ -279,11 +279,20 @@ Se aplican salvo que se corrijan en la revisión:
 
 ## Decisiones
 
-Se aplican las decisiones 1 a 5, 9 y 11 del mapa, y el diseño de `docs/arquitectura.md` §5.1, salvo lo que resuelva la pregunta abierta 1.
+Se aplican las decisiones 1 a 5, 9 y 11 del mapa, y el diseño de `docs/arquitectura.md` §5.1.
 
 ## Preguntas abiertas
 
-1. **Cómo hacer inmutable la tabla en la BD (RN-43).** `docs/arquitectura.md` §5.1 dice que la migración hace `REVOKE UPDATE, DELETE`. Pero la API se conecta como `postgres` (`appsettings.Development.json`), que es superusuario, y **los superusuarios ignoran los permisos**: el `REVOKE` no impediría nada. Opciones:
+1. ~~Cómo hacer inmutable la tabla en la BD (RN-43).~~ Resuelta el 2026-11-10 con la opción (c): sin protección en la BD. La aplicación no puede modificar ni eliminar registros (solo los lee por `IQueryable` y no hay endpoints de escritura). Quien tenga acceso directo a la BD sí podría alterarlos, y eso se acepta por ahora.
+
+No quedan preguntas abiertas.
+
+<details>
+<summary>Opciones que se evaluaron</summary>
+
+**Cómo hacer inmutable la tabla en la BD (RN-43).** `docs/arquitectura.md` §5.1 dice que la migración hace `REVOKE UPDATE, DELETE`. Pero la API se conecta como `postgres` (`appsettings.Development.json`), que es superusuario, y **los superusuarios ignoran los permisos**: el `REVOKE` no impediría nada. Opciones:
    - **(a) Triggers (recomendada).** En la migración, una función y triggers `BEFORE UPDATE OR DELETE` (por fila) y `BEFORE TRUNCATE` (por sentencia) que lanzan un error. Funcionan con cualquier usuario, incluido el superusuario, salvo que alguien los desactive a propósito. Son unas 15 líneas de SQL en la migración y el `Down` las elimina. Habría que corregir §5.1 de la arquitectura.
    - (b) Mantener el `REVOKE` y crear un usuario de BD propio para la API, que no sea superusuario. Es lo más correcto en producción, pero cambia la configuración de desarrollo y el README.
-   - (c) Sin protección en la BD: solo el código impide modificar, porque Application solo ve un `IQueryable`. Es lo más simple, pero `psql` podría alterar los registros.
+   - (c) Sin protección en la BD: solo el código impide modificar, porque Application solo ve un `IQueryable`. Es lo más simple, pero `psql` podría alterar los registros. **Elegida.**
+
+</details>

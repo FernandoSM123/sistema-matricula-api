@@ -26,7 +26,7 @@
 | `catalogos` | [Aprobada](SPEC-catalogos.md) | [Aprobado](../tasks/catalogos/plan.md) | [Aprobadas](../tasks/catalogos/todo.md) | 10/10 | Completado |
 | `grupos` | [Aprobada](SPEC-grupos.md) | [Aprobado](../tasks/grupos/plan.md) | [Aprobadas](../tasks/grupos/todo.md) | 13/13 | Completado |
 | `matriculas` | [Aprobada](SPEC-matriculas.md) | [Aprobado](../tasks/matriculas/plan.md) | [Aprobadas](../tasks/matriculas/todo.md) | 13/13 | Completado |
-| `auditoria` | [En revisión](SPEC-auditoria.md) | — | — | — | Planificación |
+| `auditoria` | [Aprobada](SPEC-auditoria.md) | — | — | — | Planificación |
 
 **Estados de un documento** (spec, plan o lista de tareas):
 - **Borrador:** se está escribiendo.
@@ -76,3 +76,4 @@ Verificaciones que un módulo no pudo hacer por falta de datos o endpoints. Se c
     - **Un único endpoint de consulta** para el administrador, con filtros combinables por entidad, registro, usuario, acción y rango de fechas.
     - El interceptor actual `AuditoriaInterceptor`, que solo asigna fechas, se renombra (por ejemplo, a `FechasInterceptor`) para no confundirlo con la auditoría.
     - No requiere paquetes NuGet nuevos.
+    - **Inmutable solo en la aplicación** (RN-43): Application lee los registros como `IQueryable` y no hay endpoints que los modifiquen. La BD no los protege; se acepta que alguien con acceso directo pueda alterarlos.

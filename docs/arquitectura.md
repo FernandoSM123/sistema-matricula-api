@@ -195,7 +195,7 @@ Así la auditoría y el cambio se guardan juntos o no se guarda ninguno (RN-42).
   - Ruido (RN-46): `FechaModificacion`, `UltimoIngreso` y `Version` (`xmin`).
   - Si después de excluirlas una modificación queda sin cambios, no se escribe ningún registro. Así un login normal o un logout no generan auditoría.
 - `RegistroAuditoria` no se audita a sí mismo.
-- **Inmutable (RN-43):** ni el código ni la API lo modifican o eliminan. La migración además hace `REVOKE UPDATE, DELETE` sobre la tabla, para que la base de datos también lo impida.
+- **Inmutable (RN-43) a nivel de aplicación:** `IAppDbContext` expone los registros solo como `IQueryable` y no hay endpoints que los modifiquen o eliminen. La base de datos no los protege (ni `REVOKE` ni triggers): en desarrollo la API se conecta como superusuario, que ignora los permisos, y por ahora se acepta que alguien con acceso directo a la BD pueda alterarlos (decisión 11 del mapa).
 - **Índices** para los filtros de RF-57: `(entidad, entidad_id)`, `(usuario_id)` y `(fecha)`.
 - **Consulta:** `AuditoriaService` en Application lee la tabla con `IAppDbContext`, proyecta a un DTO y pagina como los demás listados. El JSON de `Cambios` se devuelve como un objeto, no como texto.
 - **Fechas del filtro:** `desde` y `hasta` son `DateOnly` en la fecha local del instituto (decisión 9 del mapa). El servicio las convierte a un rango UTC `[desde 00:00, hasta + 1 día 00:00)` en la zona de `Instituto:ZonaHoraria`.

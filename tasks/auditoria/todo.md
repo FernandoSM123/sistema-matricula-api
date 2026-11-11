@@ -12,7 +12,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 |---|---|:---:|:---:|:---:|:---:|
 | T1. Dominio de la auditoría | Completada | ✅ | ✅ | ➖ | ✅ |
 | T2. Persistencia, migración `AgregaRegistroAuditoria` y `FechasInterceptor` | Completada | ✅ | ➖ | ✅ | ✅ |
-| T3. Captura en `SaveChangesAsync` | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T3. Captura en `SaveChangesAsync` | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Consulta `GET /api/v1/auditoria` | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T5. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 
@@ -117,7 +117,35 @@ Ninguna.
   - Cambiar la propia contraseña: `passwordHash` de `"***"` a `"***"`. `select count(*) from registro_auditoria where cambios::text like '%AQAAAA%'` → 0. Es el prefijo de los hashes de `PasswordHasher`; se confirma antes con un `password_hash` real.
   - Quitar un bloque de un grupo `Planificado`: `Eliminacion` de `Horario`. Eliminar un estudiante sin matrículas: `Eliminacion` de `Estudiante` y de `Usuario`, con sus últimos valores, y la eliminación responde `204`.
   - El seed del administrador, si corre, deja autor `null`.
-- Files: `src/Matricula.Infrastructure/Persistence/Auditoria/CapturaAuditoria.cs`, `src/Matricula.Infrastructure/Persistence/AppDbContext.cs`, `src/Matricula.Infrastructure/DependencyInjection.cs`
+  - Resultado (2026-11-11): `dotnet build` sin warnings, sin cambios de modelo pendientes y 293/293 pruebas unitarias en verde. Verificación manual contra la API local, con la cuenta de prueba `humo.adm.742345@correo.local` (usuario 29) y tres estudiantes nuevos de registro público (A = 90, B = 91, C = 92):
+
+    | Escenario | Resultado |
+    |---|---|
+    | Login del admin con la definitiva | 0 registros |
+    | Crear el curso 130 / editar solo su nombre | `Creacion` con todos los valores y el admin como autor / `Modificacion` con solo `nombre` |
+    | Registro público de A, B y C | Por cada uno, `Creacion` de `Usuario` y de `Estudiante` con autor `null` y el mismo `operacion_id`. `passwordHash: "***"`. El `usuarioId` del estudiante es el id real de la cuenta (por ejemplo, 289), no uno temporal |
+    | Admin matricula a A en el grupo 123 | `Creacion` de `Matricula` 113 y `Modificacion` de `Grupo` 123 (`cuposOcupados` 0 → 1), con el mismo `operacion_id` |
+    | Cambio de grupo de 123 a 124 | 4 registros con el mismo `operacion_id`: matrícula 113 retirada (estado, fecha y motivo `CambioGrupo`), los dos grupos con `cuposOcupados` y la `Creacion` de la matrícula 114 |
+    | Matricular a A en el grupo 128 (mismo curso y periodo) | `409 RN-05`, 0 registros |
+    | B y C en paralelo por el único cupo del grupo 128 | B `201`, C `409 RN-03`: solo los 2 registros de B |
+    | 7 ediciones en paralelo del grupo 128 | 6 `200` y 1 `409 CONCURRENCIA`: 6 registros, ninguno de la que falló |
+    | Olvido de contraseña de A | `Modificacion` de `Usuario` con `tempPasswordHash` `null` → `"***"`, el vencimiento y el motivo `Olvido`; autor `null` |
+    | Login de A con la definitiva y la temporal pendiente | `tempPasswordHash` `"***"` → `null` y el vencimiento y el motivo a `null`; autor `null` |
+    | Login normal y logout de A | 0 registros |
+    | A cambia su contraseña | `passwordHash` `"***"` → `"***"` y `fechaCambioContrasena`; autor A (`Estudiante`), con su correo |
+    | Hashes en `cambios` | El `password_hash` real empieza con `AQAAAA`; 0 registros lo contienen |
+    | Agregar el bloque 205 al grupo 126 (`Planificado`) y quitarlo | `Creacion` y `Eliminacion` de `Horario` con día, horas y `grupoId` |
+    | Desactivar a C y eliminarlo | `Modificacion` de `Usuario` (`activo` true → false, sin `securityStamp`). La eliminación responde `204` y deja la `Eliminacion` de `Estudiante` y de `Usuario` con sus últimos valores, con el mismo `operacion_id` |
+    | Seed del administrador | No aplica: ya existe un administrador y el seed no cambia nada al arrancar (0 registros al iniciar la API) |
+
+    Los 49 registros tienen un `operacion_id` de 32 caracteres. El grupo 128 volvió a su cupo de 20.
+  - Detalles que la tarea no fijaba:
+    - Además de `CapturaAuditoria`, la captura usa tres tipos de apoyo en `Persistence/Auditoria/`: `CambiosPendientes` (lo encontrado antes del guardado, que arma los registros con `Completar()`), `CambioCapturado` y `AutorCambio`. `CambiosPendientes` es público porque `AppDbContext` es público; sus constructores y los otros dos tipos son internos.
+    - Solo se sobrescribe `SaveChanges(bool)`: `SaveChanges()` lo llama, así que los dos lanzan la excepción.
+    - Las creaciones se registran después de las modificaciones y eliminaciones del mismo guardado, así que dentro de una operación sus ids de auditoría quedan al final.
+    - `jsonb` reordena las claves de `cambios` (primero las más cortas). El orden no tiene significado.
+    - Para forzar un conflicto real de concurrencia hicieron falta ediciones en paralelo del mismo grupo. Dos matrículas en paralelo se serializaron y la segunda falló por `RN-03`, no por `xmin`.
+- Files: `src/Matricula.Infrastructure/Persistence/Auditoria/{CapturaAuditoria,CambiosPendientes,CambioCapturado,AutorCambio}.cs`, `src/Matricula.Infrastructure/Persistence/AppDbContext.cs`, `src/Matricula.Infrastructure/DependencyInjection.cs`
 
 ### T4. Consulta `GET /api/v1/auditoria`
 - Acceptance:

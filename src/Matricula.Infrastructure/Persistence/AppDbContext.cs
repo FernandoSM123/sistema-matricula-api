@@ -1,11 +1,13 @@
 using Matricula.Application.Abstractions;
 using Matricula.Domain.Entities;
+using Matricula.Infrastructure.Persistence.Auditoria;
 using Microsoft.EntityFrameworkCore;
 using MatriculaEntidad = Matricula.Domain.Entities.Matricula;
 
 namespace Matricula.Infrastructure.Persistence;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options), IAppDbContext
+public class AppDbContext(DbContextOptions<AppDbContext> options, CapturaAuditoria captura)
+    : DbContext(options), IAppDbContext
 {
     // Un DbSet<T> representa una tabla y es el punto de entrada para consultarla o agregarle filas.
     public DbSet<Usuario> Usuarios => Set<Usuario>();
@@ -22,6 +24,44 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     // Sin DbSet público: Application solo puede leer la auditoría (RN-43). La entidad entra al modelo por
     // RegistroAuditoriaConfiguration.
     IQueryable<RegistroAuditoria> IAppDbContext.RegistrosAuditoria => Set<RegistroAuditoria>().AsNoTracking();
+
+    /// <summary>
+    /// Guarda los cambios junto con su auditoría (RF-56, RN-42), en una sola transacción: o quedan los dos o ninguno.
+    /// Detalle del flujo en docs/arquitectura.md §5.1.
+    /// </summary>
+    public override async Task<int> SaveChangesAsync(
+        bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        var pendientes = await captura.CapturarAsync(this, cancellationToken);
+        if (pendientes.EstaVacio)
+        {
+            return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+
+        // Si quien llama ya abrió una transacción, la confirma él. Sin confirmar, el Dispose la revierte.
+        await using var transaccion = Database.CurrentTransaction is null
+            ? await Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
+        // Siempre acepta los cambios: si no, el segundo guardado volvería a insertar las entidades del primero.
+        var filas = await base.SaveChangesAsync(acceptAllChangesOnSuccess: true, cancellationToken);
+        Set<RegistroAuditoria>().AddRange(pendientes.Completar());
+        await base.SaveChangesAsync(acceptAllChangesOnSuccess: true, cancellationToken);
+
+        if (transaccion is not null)
+        {
+            await transaccion.CommitAsync(cancellationToken);
+        }
+
+        return filas;
+    }
+
+    /// <summary>
+    /// Supuesto 12 de la spec de auditoria: ningún servicio guarda de forma síncrona, y así ningún guardado se salta la
+    /// auditoría por error.
+    /// </summary>
+    public override int SaveChanges(bool acceptAllChangesOnSuccess) =>
+        throw new InvalidOperationException("Use SaveChangesAsync: el guardado síncrono no registra la auditoría.");
 
 
     // cómo se mapean las clases a tablas

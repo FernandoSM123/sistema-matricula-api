@@ -1,6 +1,7 @@
 using Matricula.Application.Abstractions;
 using Matricula.Infrastructure.Email;
 using Matricula.Infrastructure.Persistence;
+using Matricula.Infrastructure.Persistence.Auditoria;
 using Matricula.Infrastructure.Persistence.Interceptors;
 using Matricula.Infrastructure.Seed;
 using Matricula.Infrastructure.Seguridad;
@@ -29,6 +30,7 @@ public static class DependencyInjection
         services.AddSingleton<IHasherContrasenas, HasherContrasenas>();
         services.AddSingleton<IGeneradorContrasenas, GeneradorContrasenas>();
         services.AddScoped<FechasInterceptor>();
+        services.AddScoped<CapturaAuditoria>();
 
         services.AddDbContext<AppDbContext>((sp, options) => options
             .UseNpgsql(connectionString)

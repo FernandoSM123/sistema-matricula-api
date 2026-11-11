@@ -14,7 +14,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T2. Persistencia, migración `AgregaRegistroAuditoria` y `FechasInterceptor` | Completada | ✅ | ➖ | ✅ | ✅ |
 | T3. Captura en `SaveChangesAsync` | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Consulta `GET /api/v1/auditoria` | Completada | ✅ | ➖ | ✅ | ✅ |
-| T5. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T5. Cierre del módulo | Implementada | ✅ | ➖ | ⬜ | ✅ |
 
 **Estados de tarea:**
 - **Pendiente:** no se ha empezado.
@@ -206,4 +206,18 @@ Ninguna.
   - Criterios de éxito de la spec cumplidos.
   - Estados al día en la spec, este `todo.md` y `specs/mapa-modulos.md` (módulo **Completado**).
 - Verify: `dotnet build` sin warnings, `dotnet test tests/Matricula.UnitTests` en verde y la tabla de verificación completa.
+  - Resultado (2026-11-11, parcial):
+    - `AGENTS.md`:
+      - Rangos actualizados a RF-01..RF-57 y RN-01..RN-46.
+      - En "Nunca": escribir con `ExecuteUpdate`, `ExecuteDelete`, SQL manual o el `SaveChanges` síncrono, y registrar la auditoría a mano o modificar o eliminar sus registros.
+    - Cancelación de un grupo con matrículas:
+      - El admin matriculó a A (90) y B (91) en el grupo 131 (matrículas 116 y 117) y lo canceló: `204`.
+      - Quedaron 3 registros con el mismo `operacion_id`:
+        - El grupo, con `estado` `Abierto` → `Cancelado` y `cuposOcupados` 2 → 0.
+        - Las dos matrículas, con `Retirada`, la fecha y el motivo `CancelacionGrupo`.
+      - `GET /auditoria?operacionId=…` devuelve los 3.
+    - Control final sobre los 58 registros: ninguno contiene un hash (`AQAAAA`), `securityStamp`, `ultimoIngreso`, `fechaModificacion` ni `version`.
+    - Las demás filas de la tabla de verificación de la spec quedaron cubiertas en T3 (captura) y T4 (consulta).
+    - `dotnet build` sin warnings; 293/293 pruebas unitarias en verde.
+  - **Pendiente:** el filtro de un día con un cambio hecho después de las 18:00 de Costa Rica (00:00 UTC del día siguiente). Al cerrar eran las 16:08 locales, así que todavía no se puede reproducir. La frontera está cubierta por las pruebas unitarias de `FechaInstituto.RangoUtc`.
 - Files: `AGENTS.md`, `specs/SPEC-auditoria.md`, `specs/mapa-modulos.md`, `tasks/auditoria/todo.md`

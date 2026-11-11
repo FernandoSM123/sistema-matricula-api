@@ -19,6 +19,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Horario> Horarios => Set<Horario>();
     public DbSet<MatriculaEntidad> Matriculas => Set<MatriculaEntidad>();
 
+    // Sin DbSet público: Application solo puede leer la auditoría (RN-43). La entidad entra al modelo por
+    // RegistroAuditoriaConfiguration.
+    IQueryable<RegistroAuditoria> IAppDbContext.RegistrosAuditoria => Set<RegistroAuditoria>().AsNoTracking();
+
 
     // cómo se mapean las clases a tablas
     protected override void OnModelCreating(ModelBuilder modelBuilder)

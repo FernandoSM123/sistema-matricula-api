@@ -4,13 +4,18 @@ Módulo `auditoria` del [mapa de módulos](mapa-modulos.md). Depende de `acceso`
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/auditoria/plan.md) | [Aprobadas](../tasks/auditoria/todo.md) | 4/5 |
+| **Aprobada** | [Aprobado](../tasks/auditoria/plan.md) | [Aprobadas](../tasks/auditoria/todo.md) | 5/5 tareas completadas: **módulo completado** (2026-11-11) |
 
 **Historial:**
 - 2026-11-10: v1 en revisión, con doce supuestos y una pregunta abierta (cómo hacer inmutable la tabla, porque `REVOKE` no aplica al superusuario `postgres`).
 - 2026-11-10: resuelta la pregunta 1 con la opción (c): la inmutabilidad (RN-43) se garantiza solo en la aplicación, sin `REVOKE` ni triggers en la BD. Se corrigieron el punto 1, los criterios de éxito, las verificaciones manuales y `docs/arquitectura.md` §5.1. v1 aprobada con sus doce supuestos.
 - 2026-11-10: aclaración al redactar el plan, sin cambio de alcance: los registros de creación se arman después del primer guardado, porque antes las FK hacia entidades nuevas del mismo guardado tienen ids temporales (punto 2). Plan y lista de 5 tareas en revisión.
 - 2026-11-10: plan y lista de tareas aprobados; la implementación empezará por T1.
+- 2026-11-11: módulo completado (5/5 tareas), sin cambios de alcance. Detalles de implementación que la spec no fijaba:
+  - Las reglas puras viven en `ReglasAuditoria`. `Valores` recibe pares nombre-valor y nunca devuelve `null`; solo `Diferencias` devuelve `null` (RN-46). `BuscarEntidad` resuelve el filtro `entidad` sin distinguir mayúsculas.
+  - La captura usa, además de `CapturaAuditoria`, los tipos de apoyo `CambiosPendientes`, `CambioCapturado` y `AutorCambio`. Solo se sobrescribe `SaveChanges(bool)` para el guardado síncrono.
+  - `search` usa `ToLower().Contains()` como los demás listados, y `jsonb` reordena las claves de `cambios`.
+  - El usuario dio por suficiente la cobertura de las pruebas unitarias de `FechaInstituto.RangoUtc` para el filtro de un día con un cambio hecho después de las 18:00 de Costa Rica. Ese caso no se reprodujo de punta a punta, porque la verificación se hizo antes de esa hora.
 
 ## Objetivo
 

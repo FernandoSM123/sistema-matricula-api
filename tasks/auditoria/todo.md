@@ -10,7 +10,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 
 | Tarea | Estado | Código | Pruebas unitarias | Verificación manual | Commit |
 |---|---|:---:|:---:|:---:|:---:|
-| T1. Dominio de la auditoría | Pendiente | ⬜ | ⬜ | ➖ | ⬜ |
+| T1. Dominio de la auditoría | Completada | ✅ | ✅ | ➖ | ✅ |
 | T2. Persistencia, migración `AgregaRegistroAuditoria` y `FechasInterceptor` | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T3. Captura en `SaveChangesAsync` | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T4. Consulta `GET /api/v1/auditoria` | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -60,7 +60,15 @@ Ninguna.
     - El rango de un día en `America/Costa_Rica` va de 06:00 UTC a 06:00 UTC del día siguiente.
     - Un instante a las 23:30 locales (05:30 UTC del día siguiente) queda dentro.
     - Con solo `desde` o solo `hasta`, el otro límite es `null`.
-- Files: `src/Matricula.Domain/Enums/AccionAuditoria.cs`, `src/Matricula.Domain/Entities/RegistroAuditoria.cs`, `src/Matricula.Domain/Reglas/{ReglasAuditoria,FechaInstituto}.cs`, `tests/Matricula.UnitTests/Domain/{ReglasAuditoriaTests,FechaInstitutoTests}.cs`
+  - Resultado (2026-11-11): `dotnet build` sin warnings; 293/293 pruebas unitarias en verde (40 nuevas: 32 de `ReglasAuditoria` y 8 de `FechaInstituto.RangoUtc`, incluidas las fronteras de la medianoche local). `RegistroAuditoria` todavía no está en el modelo de EF: la registra T2 con su configuración.
+  - Detalles que la tarea no fijaba:
+    - `Valores` recibe pares `(nombre, valor)` (`KeyValuePair<string, object?>`) en lugar de `PropiedadAuditada`: una creación o eliminación tiene un solo valor por propiedad, y así no hay que saber si va en `Antes` o en `Despues`. `PropiedadAuditada` queda solo para `Diferencias`, en su propio archivo (`Reglas/PropiedadAuditada.cs`).
+    - `Valores` nunca devuelve `null`: una creación o eliminación siempre se registra, aunque quede `{}`. Solo `Diferencias` devuelve `null` (RN-46).
+    - Se agregó `ReglasAuditoria.BuscarEntidad(nombre)`, que devuelve el nombre exacto de una entidad auditada sin distinguir mayúsculas, o `null`. La usarán el validador y el servicio de T4 (supuesto 7).
+    - También se exponen `Excluida(entidad, propiedad)` y `Enmascarada(entidad, propiedad)`, que T3 puede usar para no leer propiedades que no se guardan.
+    - Las diferencias comparan el valor real antes de enmascarar: un hash que cambia aparece como `"***" → "***"`, y uno que no cambia no aparece.
+    - El JSON usa el codificador por defecto de `System.Text.Json`, que escapa los caracteres no ASCII (`á`). No importa: `jsonb` guarda el texto ya decodificado.
+- Files: `src/Matricula.Domain/Enums/AccionAuditoria.cs`, `src/Matricula.Domain/Entities/RegistroAuditoria.cs`, `src/Matricula.Domain/Reglas/{ReglasAuditoria,PropiedadAuditada,FechaInstituto}.cs`, `tests/Matricula.UnitTests/Domain/{ReglasAuditoriaTests,FechaInstitutoTests}.cs`
 
 ### T2. Persistencia, migración `AgregaRegistroAuditoria` y `FechasInterceptor`
 - Acceptance:

@@ -4,7 +4,7 @@ Módulo `auditoria` del [mapa de módulos](mapa-modulos.md). Depende de `acceso`
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/auditoria/plan.md) | [Aprobadas](../tasks/auditoria/todo.md) | 3/5 |
+| **Aprobada** | [Aprobado](../tasks/auditoria/plan.md) | [Aprobadas](../tasks/auditoria/todo.md) | 4/5 |
 
 **Historial:**
 - 2026-11-10: v1 en revisión, con doce supuestos y una pregunta abierta (cómo hacer inmutable la tabla, porque `REVOKE` no aplica al superusuario `postgres`).

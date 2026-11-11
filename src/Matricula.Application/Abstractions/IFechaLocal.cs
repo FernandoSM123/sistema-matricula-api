@@ -7,4 +7,10 @@ namespace Matricula.Application.Abstractions;
 public interface IFechaLocal
 {
     DateOnly Hoy();
+
+    /// <summary>
+    /// Rango UTC de un rango de fechas locales con los dos extremos incluidos; el fin devuelto es exclusivo. Un extremo
+    /// nulo queda abierto.
+    /// </summary>
+    (DateTimeOffset? Inicio, DateTimeOffset? Fin) RangoUtc(DateOnly? desde, DateOnly? hasta);
 }

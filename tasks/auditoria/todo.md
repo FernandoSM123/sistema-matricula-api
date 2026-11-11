@@ -13,7 +13,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T1. Dominio de la auditoría | Completada | ✅ | ✅ | ➖ | ✅ |
 | T2. Persistencia, migración `AgregaRegistroAuditoria` y `FechasInterceptor` | Completada | ✅ | ➖ | ✅ | ✅ |
 | T3. Captura en `SaveChangesAsync` | Completada | ✅ | ➖ | ✅ | ✅ |
-| T4. Consulta `GET /api/v1/auditoria` | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T4. Consulta `GET /api/v1/auditoria` | Completada | ✅ | ➖ | ✅ | ✅ |
 | T5. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 
 **Estados de tarea:**
@@ -171,6 +171,30 @@ Ninguna.
   - `cambios` sale como objeto en la respuesta y en Scalar.
   - `entidadId` sin `entidad`, `entidad=Inexistente` y `desde > hasta` → `400` con el campo.
   - Token de estudiante o profesor → `403`; sin token → `401`; con un cambio de contraseña pendiente → `403` (RN-24).
+  - Resultado (2026-11-11): `dotnet build` sin warnings; 293/293 pruebas unitarias en verde. Verificación manual contra la API local, sobre los 49 registros de T3:
+
+    | Escenario | Resultado |
+    |---|---|
+    | Sin filtros, `pageSize=5`, páginas 1 y 2 | `totalCount=49`; ids 49…45 y 44…40, del más reciente al más antiguo |
+    | `entidad=Matricula&entidadId=113` | Sus 2 registros (modificación y creación) |
+    | `entidad=matricula` | Los 4 registros de `Matricula`, igual que con `Matricula` |
+    | `usuarioId=29&accion=Modificacion&desde=2026-11-11&hasta=2026-11-11&pageSize=3` | `totalCount=32`, 3 por página, solo modificaciones del admin |
+    | `operacionId` del cambio de grupo, en minúsculas y en mayúsculas | Los mismos 4 registros |
+    | `search=AUD.T3.A` | El cambio de contraseña del estudiante A (su correo, sin distinguir mayúsculas) |
+    | `desde=2026-11-12` / `hasta=2026-11-10` | 0 registros |
+    | `cambios` | Sale como objeto en la respuesta; en OpenAPI, como `JsonElement` |
+    | `entidadId` sin `entidad` · `entidad=Inexistente` · `entidad=RegistroAuditoria` · `desde > hasta` · `accion=Borrado` · `usuarioId=0` y `entidadId=-1` | `400` con el campo: `EntidadId`, `Entidad` con la lista de las 10 válidas, `Hasta`, `Accion` y los dos ids |
+    | Sin token / estudiante / profesor | `401` / `403` / `403` |
+    | Profesor con la temporal de un olvido (cambio pendiente) | `403` (RN-24) |
+    | Consultar la auditoría | No genera registros |
+
+  - Pendiente para T5: `desde` = `hasta` = hoy con un cambio hecho después de las 18:00 de Costa Rica (00:00 UTC). La verificación se hizo antes de esa hora, así que el caso de punta a punta no se pudo reproducir. La frontera está cubierta por las pruebas unitarias de `FechaInstituto.RangoUtc` (las 23:30 locales quedan dentro del día), y el filtro usa ese mismo rango.
+  - Detalles que la tarea no fijaba:
+    - `search` usa `ToLower().Contains()`, igual que los demás listados, en lugar de `ILike`: Application no depende de Npgsql.
+    - `operacionId` se compara en minúsculas, porque el trace id se guarda así, y el validador limita su largo a 32.
+    - `RegistroAuditoria` no es un nombre válido para el filtro `entidad`: la auditoría no se audita a sí misma (supuesto 1).
+    - Al verificar se cambió la contraseña de la cuenta de prueba de profesor `t10p.955591@correo.local` (usuario 46), por olvido y cambio obligatorio. Esos cambios quedaron en la auditoría: el olvido a nombre del Sistema y el cambio obligatorio a nombre del profesor (supuesto 5).
+    - Para leer la temporal de smtp4dev, el HTML se aplana con `sed 's/<[^>]*>/ /g' | tr -s ' \n'` antes de buscar "temporal es:".
 - Files: `src/Matricula.Application/Auditoria/{AuditoriaService,ListarAuditoriaRequest,ListarAuditoriaRequestValidator,RegistroAuditoriaResponse}.cs`, `src/Matricula.Application/Abstractions/IFechaLocal.cs`, `src/Matricula.Infrastructure/Tiempo/FechaLocal.cs`, `src/Matricula.Application/DependencyInjection.cs`, `src/Matricula.Api/Controllers/AuditoriaController.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T5. Cierre del módulo
@@ -178,7 +202,7 @@ Ninguna.
   - `AGENTS.md`:
     - Rangos RF-01..RF-57 y RN-01..RN-46.
     - En "Nunca": escribir con `ExecuteUpdate`, `ExecuteDelete` o SQL manual, y registrar la auditoría a mano desde un servicio.
-  - Toda la tabla de verificación manual de la spec recorrida, incluida la cancelación de un grupo con matrículas, que T3 no cubre.
+  - Toda la tabla de verificación manual de la spec recorrida, incluida la cancelación de un grupo con matrículas, que T3 no cubre, y el filtro de un día con un cambio hecho después de las 18:00 de Costa Rica, pendiente de T4.
   - Criterios de éxito de la spec cumplidos.
   - Estados al día en la spec, este `todo.md` y `specs/mapa-modulos.md` (módulo **Completado**).
 - Verify: `dotnet build` sin warnings, `dotnet test tests/Matricula.UnitTests` en verde y la tabla de verificación completa.

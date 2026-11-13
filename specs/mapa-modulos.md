@@ -30,7 +30,7 @@
 | `matriculas` | [Aprobada](SPEC-matriculas.md) | [Aprobado](../tasks/matriculas/plan.md) | [Aprobadas](../tasks/matriculas/todo.md) | 13/13 | Completado |
 | `auditoria` | [Aprobada](SPEC-auditoria.md) | [Aprobado](../tasks/auditoria/plan.md) | [Aprobadas](../tasks/auditoria/todo.md) | 5/5 | Completado |
 | `errores` | [Aprobada](SPEC-errores.md) | [Aprobado](../tasks/errores/plan.md) | [Aprobadas](../tasks/errores/todo.md) | 6/6 | Completado |
-| `datos-prueba` | [En revisión](SPEC-datos-prueba.md) | — | — | 0/0 | Planificación |
+| `datos-prueba` | [Aprobada](SPEC-datos-prueba.md) | [En revisión](../tasks/datos-prueba/plan.md) | [En revisión](../tasks/datos-prueba/todo.md) | 0/6 | Planificación |
 
 **Estados de un documento** (spec, plan o lista de tareas):
 - **Borrador:** se está escribiendo.
@@ -89,3 +89,9 @@ Verificaciones que un módulo no pudo hacer por falta de datos o endpoints. Se c
     - **La depuración usa `ExecuteDeleteAsync`**, como única excepción a la prohibición de escribir fuera del change tracker: la tabla no se audita y así no se cargan los registros en memoria. Queda acotada a `registro_error` en la arquitectura (§5) y, al implementar el módulo, en AGENTS.md.
     - **Guardado aparte** en un scope y un `AppDbContext` nuevos, nunca en la transacción de la petición, y sin lanzar excepciones: si el registro falla, queda solo el log (RN-48).
     - Un solo paquete NuGet nuevo, aprobado por el usuario en T4 (2026-11-13): `Microsoft.Extensions.Hosting.Abstractions` 10.0.12 en Infrastructure, para el `BackgroundService` de la depuración. Es de Microsoft y ya forma parte del framework con el que corre la API.
+13. **Datos de prueba** (2026-11-13). Nuevo módulo `datos-prueba`, una herramienta de desarrollo sin RF ni RN nuevos. Se decidió:
+    - **Siembra al arrancar**, después del administrador inicial, solo con `DatosPrueba:Habilitado = true` y en `Development`.
+    - **Solo en una BD sin datos de negocio.** Para volver a sembrar, se borra la BD y se recrea con las migraciones (`dotnet ef database drop` + `update`).
+    - **Datos variados con Bogus** (35.6.5, paquete nuevo aprobado por el usuario) y una semilla opcional para reproducirlos. Las cantidades se configuran en `appsettings`.
+    - **Las entidades se crean con su dominio** y se guardan con el change tracker y `SaveChangesAsync`, en una transacción: la auditoría las registra con autor Sistema. No se usa `HasData` ni SQL.
+    - **Una contraseña común** para las cuentas de prueba, en user-secrets. No se envían correos.

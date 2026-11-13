@@ -4,10 +4,13 @@ Módulo `datos-prueba` del [mapa de módulos](mapa-modulos.md). Siembra datos de
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **En revisión** | Sin empezar | Sin empezar | 0 tareas |
+| **Aprobada** | [En revisión](../tasks/datos-prueba/plan.md) | [En revisión](../tasks/datos-prueba/todo.md) | 0/6 tareas |
 
 **Historial:**
 - 2026-11-13: v1 en revisión. Decisiones del usuario antes de redactarla: módulo aparte con el flujo spec-driven, datos variados con **Bogus**, activación con un flag en la configuración, cantidades configurables en `appsettings` y reinicio de la BD con `drop` + `update`.
+- 2026-11-13: v1 aprobada con sus siete supuestos. Plan y lista de 6 tareas en revisión. Correcciones menores sin cambio de alcance:
+  - El origen de registro se llama `RegistroPublico`, no `Publico`.
+  - La versión de Bogus queda fijada en 35.6.5, la estable más reciente en NuGet.
 
 ## Objetivo
 
@@ -106,7 +109,7 @@ No cubre ningún RF ni RN nuevo. Es una herramienta de desarrollo que **respeta*
    - cédula única;
    - fecha de nacimiento entre 16 y 60 años atrás;
    - fecha de registro anterior al inicio de la matrícula del periodo pasado;
-   - una cuenta con rol `Estudiante` y origen `Publico` o `Administrador`, al azar.
+   - una cuenta con rol `Estudiante` y origen `RegistroPublico` o `Administrador`, al azar.
 
    **Grupos y horarios** (punto 7). Cada grupo tiene:
    - NRC único de 5 dígitos;
@@ -164,7 +167,7 @@ No cubre ningún RF ni RN nuevo. Es una herramienta de desarrollo que **respeta*
 
 ## Tech Stack
 
-.NET 10, EF Core 10 + Npgsql 10.0.3, xUnit 2.9.3. **Un paquete nuevo, aprobado por el usuario en principio:** **Bogus** en Infrastructure. La versión estable se confirma en el plan, antes de agregarlo.
+.NET 10, EF Core 10 + Npgsql 10.0.3, xUnit 2.9.3. **Un paquete nuevo, aprobado por el usuario:** **Bogus 35.6.5** (licencia MIT) en Infrastructure.
 
 ## Commands
 
@@ -299,7 +302,7 @@ Se aplican salvo que se corrijan en la revisión:
 
 ## Decisiones
 
-Se aplican las decisiones 1, 2, 7, 9, 10 y 11 del mapa. Al aprobar la spec se agrega al mapa la decisión 13: módulo `datos-prueba`, con Bogus como paquete nuevo y siembra solo en `Development`.
+Se aplican las decisiones 1, 2, 7, 9, 10, 11 y 13 del mapa.
 
 ## Preguntas abiertas
 

@@ -2,7 +2,7 @@
 
 Módulo `datos-prueba` del [mapa](../../specs/mapa-modulos.md). Spec: [`specs/SPEC-datos-prueba.md`](../../specs/SPEC-datos-prueba.md) · Plan: [`plan.md`](plan.md)
 
-**Estado de la lista:** En revisión (2026-11-13)
+**Estado de la lista:** Aprobada (2026-11-13)
 
 Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula.UnitTests` en verde, la verificación indicada y un commit pequeño. Las verificaciones con datos empiezan con la BD recreada:
 

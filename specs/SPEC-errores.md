@@ -4,11 +4,12 @@ Módulo `errores` del [mapa de módulos](mapa-modulos.md). Depende de `acceso` (
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/errores/plan.md) | [Aprobadas](../tasks/errores/todo.md) | 0/6 tareas completadas; T1 en progreso |
+| **Aprobada** | [Aprobado](../tasks/errores/plan.md) | [Aprobadas](../tasks/errores/todo.md) | 1/6 tareas completadas |
 
 **Historial:**
 - 2026-11-13: v1 en revisión, con diez supuestos y sin preguntas abiertas. Las decisiones de alcance (qué se registra, un registro por ocurrencia, sin estado, 90 días de conservación con `ExecuteDeleteAsync`, sin errores de arranque) se tomaron antes de redactarla (decisión 12 del mapa).
 - 2026-11-13: v1 aprobada con sus diez supuestos. Plan y lista de 6 tareas en revisión. Ajuste menor, sin cambio de alcance: el registro se construye dentro del `try` y no fuera, como muestra el ejemplo de Code Style, para que un fallo al construirlo tampoco afecte la respuesta (RN-48).
+- 2026-11-13: plan y lista de tareas aprobados. T1 (dominio) completada.
 
 ## Objetivo
 

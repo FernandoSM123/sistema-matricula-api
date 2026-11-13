@@ -10,7 +10,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 
 | Tarea | Estado | Código | Pruebas unitarias | Verificación manual | Commit |
 |---|---|:---:|:---:|:---:|:---:|
-| T1. Dominio del registro de errores | En progreso | ⬜ | ⬜ | ➖ | ⬜ |
+| T1. Dominio del registro de errores | Completada | ✅ | ✅ | ➖ | ✅ |
 | T2. Persistencia y migración `AgregaRegistroError` | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T3. Registro desde el manejador global y el envío de correos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T4. Depuración de los errores antiguos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -68,6 +68,12 @@ Ninguna.
     - `Detalle` incluye la excepción interna.
     - Trunca un mensaje y un detalle largos a sus máximos.
     - Una descripción vacía o un trace id vacío lanzan la excepción.
+  - Resultado (2026-11-13): `dotnet build` sin warnings; 332/332 pruebas unitarias en verde (39 nuevas: 29 de `ReglasErrores` y 10 de `RegistroError`). `RegistroError` todavía no está en el modelo de EF: la registra T2 con su configuración.
+  - Detalles que la tarea no fijaba:
+    - `Metodo` y `Ruta` vacíos se guardan como `null`, igual que si no vinieran.
+    - `TraceId` también se recorta a 32 caracteres, aunque quien lo calcula siempre entrega 32.
+    - Una prueba fija la frontera con una fecha concreta: 90 días antes del 13 de noviembre de 2026 es el 15 de agosto.
+    - `RegistroErrorTests` también verifica que `Detalle` incluye el stack trace de una excepción lanzada y que el origen `Correo` funciona sin método, ruta ni usuario.
 - Files: `src/Matricula.Domain/Enums/OrigenError.cs`, `src/Matricula.Domain/Entities/RegistroError.cs`, `src/Matricula.Domain/Reglas/ReglasErrores.cs`, `tests/Matricula.UnitTests/Domain/{ReglasErroresTests,RegistroErrorTests}.cs`
 
 ### T2. Persistencia y migración `AgregaRegistroError`

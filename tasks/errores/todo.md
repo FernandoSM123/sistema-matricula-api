@@ -14,7 +14,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T2. Persistencia y migración `AgregaRegistroError` | Completada | ✅ | ➖ | ✅ | ✅ |
 | T3. Registro desde el manejador global y el envío de correos | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Depuración de los errores antiguos | Completada | ✅ | ➖ | ✅ | ✅ |
-| T5. Consulta `GET /api/v1/errores` y detalle | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T5. Consulta `GET /api/v1/errores` y detalle | Completada | ✅ | ➖ | ✅ | ✅ |
 | T6. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 
 **Estados de tarea:**
@@ -215,6 +215,26 @@ Ninguna.
   - `traceId=abc`, `desde > hasta` y `origen=Otro` → `400` con el campo.
   - Sin token → `401`. Estudiante o profesor → `403`. Con un cambio de contraseña pendiente → `403` (RN-24).
   - Consultar los errores no genera registros en `registro_error` ni en `registro_auditoria`.
+  - Resultado (2026-11-13): `dotnet build` sin warnings; 332/332 pruebas unitarias en verde. Verificación manual contra la API local, sobre 4 registros: 2 y 5 de origen `Peticion` (el 2, de hace 89 días, de T4; el 5, un `500` nuevo con `aula.ubicacion` renombrada), y 3 y 4 de origen `Correo` (de T3):
+
+    | Escenario | Resultado |
+    |---|---|
+    | `pageSize=2`, páginas 1 y 2 | `totalCount=4`; ids 5, 4 y 3, 2, del más reciente al más antiguo |
+    | Campos del listado | `id`, `fecha`, `origen`, `descripcion`, `tipoExcepcion`, `mensaje`, `metodo`, `ruta`, `usuarioId`, `usuarioRol`, `traceId`. Sin `detalle` |
+    | `traceId` W3C de la respuesta `500`, sus 32 caracteres y en mayúsculas | Los tres devuelven solo el registro 5 |
+    | `origen=Correo&desde=2026-11-13&hasta=2026-11-13&search=socket` | 4 y 3 |
+    | `search=postgresexception` / `search=/AULAS` | 5 / 5 y 2. El 2 no aparece en el primero: su tipo es `DbUpdateException`, la `PostgresException` está solo en el detalle, y `search` no busca ahí (supuesto 7) |
+    | `origen=Peticion&hasta=2026-09-01` / `desde=2026-11-14` | 2 / 0 registros |
+    | `GET /errores/5` | `200` con `detalle`: `Npgsql.PostgresException … 42703` y el stack trace hasta `AulasController.Listar` |
+    | `GET /errores/999999` / `GET /errores/1` (depurado en T4) | `404` "No existe el error …" |
+    | `traceId=abc&desde=2026-11-14&hasta=2026-11-13` · `origen=Otro` | `400` con `TraceId` y `Hasta` · `400` con `Origen` |
+    | Sin token / estudiante (289) / profesor (46) / profesor con la temporal de un olvido | `401` / `403` / `403` / `403` con `code: RN-24` |
+    | 5 consultas seguidas como admin | `registro_auditoria` 68 → 68 y `registro_error` 4 → 4 |
+    | OpenAPI | `/api/v1/errores` y `/api/v1/errores/{id}` |
+
+  - Detalles que la tarea no fijaba:
+    - Para los tokens se definieron contraseñas de prueba por olvido y cambio obligatorio en el estudiante `aud.t3.a.32291@correo.local` (289) y el profesor `t10p.955591@correo.local` (46). Esos cambios quedaron en la auditoría, como se espera.
+    - `ObtenerAsync` proyecta directo al DTO con `FirstOrDefaultAsync`, sin cargar la entidad.
 - Files: `src/Matricula.Application/Errores/{ErroresService,ListarErroresRequest,ListarErroresRequestValidator,RegistroErrorResponse,RegistroErrorDetalleResponse}.cs`, `src/Matricula.Application/DependencyInjection.cs`, `src/Matricula.Api/Controllers/ErroresController.cs`, `src/Matricula.Api/Matricula.Api.http`
 
 ### T6. Cierre del módulo

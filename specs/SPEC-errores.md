@@ -4,7 +4,7 @@ Módulo `errores` del [mapa de módulos](mapa-modulos.md). Depende de `acceso` (
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/errores/plan.md) | [Aprobadas](../tasks/errores/todo.md) | 5/6 tareas completadas |
+| **Aprobada** | [Aprobado](../tasks/errores/plan.md) | [Aprobadas](../tasks/errores/todo.md) | 6/6 tareas completadas: **módulo completado** (2026-11-13) |
 
 **Historial:**
 - 2026-11-13: v1 en revisión, con diez supuestos y sin preguntas abiertas. Las decisiones de alcance (qué se registra, un registro por ocurrencia, sin estado, 90 días de conservación con `ExecuteDeleteAsync`, sin errores de arranque) se tomaron antes de redactarla (decisión 12 del mapa).
@@ -15,6 +15,10 @@ Módulo `errores` del [mapa de módulos](mapa-modulos.md). Depende de `acceso` (
   - Se confirmó el supuesto 5: el `ExceptionHandlerMiddleware` ya responde las peticiones canceladas por el cliente sin llamar al handler, y la comprobación del handler queda como defensa.
 - 2026-11-13: T4 (depuración) completada. Cambio en el Tech Stack, aprobado por el usuario: `BackgroundService` no estaba disponible en Infrastructure, así que se agregó `Microsoft.Extensions.Hosting.Abstractions` 10.0.12 en lugar de mover la depuración a Api. El diseño no cambia. Se corrigió también la decisión 12 del mapa.
 - 2026-11-13: T5 (consulta) completada, sin cambios de alcance.
+- 2026-11-13: módulo completado (6/6 tareas). Todos los criterios de éxito se cumplen y la tabla de verificación quedó recorrida en T3 a T6. Detalles de implementación que la spec no fijaba:
+  - El parámetro de `IRegistroErrores.RegistrarAsync` se llama `errorInesperado`, porque el analizador (CA1716) rechaza `error`.
+  - La depuración usa el paquete `Microsoft.Extensions.Hosting.Abstractions` (ver T4).
+  - `search` no busca en `Detalle`: una `PostgresException` envuelta en una `DbUpdateException` se encuentra por su tipo externo o por el `traceId`, no por el tipo interno.
 
 ## Objetivo
 

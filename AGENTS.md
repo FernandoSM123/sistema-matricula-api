@@ -3,7 +3,7 @@
 API REST en .NET 10 + EF Core 10 + PostgreSQL para la matrícula de un instituto de cursos.
 
 ## Fuentes de verdad
-- **Qué construir:** `docs/requerimientos.md` (RF-01..RF-57, reglas RN-01..RN-46).
+- **Qué construir:** `docs/requerimientos.md` (RF-01..RF-59, reglas RN-01..RN-49).
 - **Cómo construirlo:** `docs/arquitectura.md` (stack, capas, convenciones REST, EF Core, seguridad, orden de implementación).
 - **Mapa de módulos:** `specs/mapa-modulos.md` (ids, dependencias, orden y decisiones aprobadas).
 - **Specs por módulo:** `specs/SPEC-<modulo>.md` · **Plan y tareas por módulo:** `tasks/<modulo>/plan.md`, `tasks/<modulo>/todo.md`.
@@ -45,8 +45,9 @@ Entorno: PostgreSQL y smtp4dev instalados localmente; **no se usa Docker** (el `
 - `EnsureCreated`, eliminación en cascada, filtros globales de "Activo", proveedor InMemory o SQLite en tests.
 - Apuntar las pruebas a la BD de desarrollo `matricula`, ni agregar dependencias que requieran Docker (Testcontainers).
 - MediatR, AutoMapper, repositorios genéricos o Clean Architecture/DDD completos.
-- Escribir con `ExecuteUpdate`, `ExecuteDelete`, SQL manual o el `SaveChanges` síncrono: se saltan la auditoría (RN-42). Toda escritura pasa por el change tracker y `SaveChangesAsync`.
+- Escribir con `ExecuteUpdate`, `ExecuteDelete`, SQL manual o el `SaveChanges` síncrono: se saltan la auditoría (RN-42). Toda escritura pasa por el change tracker y `SaveChangesAsync`. **Única excepción:** `ExecuteDeleteAsync` en `DepuracionErrores`, para depurar `registro_error` (RN-49), que no se audita. No se extiende a ninguna otra tabla ni operación.
 - Registrar la auditoría a mano desde un servicio, o modificar o eliminar registros de auditoría (RN-43): la captura es automática en `AppDbContext.SaveChangesAsync`.
+- Guardar en el registro de errores el body, los headers (en especial `Authorization`) o el query string de una petición (RN-47); registrar errores con el `AppDbContext` de la petición, en lugar de uno de un scope aparte; o dejar que una excepción del registro o de la depuración llegue al usuario o detenga la API (RN-48). Los errores se registran solo con `IRegistroErrores`, desde `GlobalExceptionHandler` y `EnvioCorreos`.
 - Guardar o registrar en logs contraseñas o temporales; poner secretos en `appsettings*.json` (usar user-secrets).
 
 ## Flujo de trabajo

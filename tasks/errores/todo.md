@@ -15,7 +15,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T3. Registro desde el manejador global y el envío de correos | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Depuración de los errores antiguos | Completada | ✅ | ➖ | ✅ | ✅ |
 | T5. Consulta `GET /api/v1/errores` y detalle | Completada | ✅ | ➖ | ✅ | ✅ |
-| T6. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T6. Cierre del módulo | Completada | ✅ | ➖ | ✅ | ✅ |
 
 **Estados de tarea:**
 - **Pendiente:** no se ha empezado.
@@ -249,4 +249,26 @@ Ninguna.
   - Criterios de éxito de la spec cumplidos.
   - Estados al día en la spec, este `todo.md` y `specs/mapa-modulos.md` (módulo **Completado**).
 - Verify: `dotnet build` sin warnings, `dotnet test tests/Matricula.UnitTests` en verde y la tabla de verificación completa.
+  - Resultado (2026-11-13):
+    - `AGENTS.md`:
+      - Rangos actualizados a RF-01..RF-59 y RN-01..RN-49.
+      - La regla de "Nunca" sobre `ExecuteDelete` nombra la única excepción: `ExecuteDeleteAsync` en `DepuracionErrores`, solo para `registro_error`.
+      - Nuevo punto en "Nunca": guardar el body, los headers o el query string en el registro de errores; registrar con el `AppDbContext` de la petición; o dejar que una excepción del registro o de la depuración llegue al usuario o detenga la API.
+    - Tabla de verificación de la spec: todas las filas quedaron cubiertas en T3 (registro), T4 (depuración) y T5 (consulta), salvo la última, que se recorrió aquí:
+      - Crear el curso 132 después de todo lo anterior → `201` y su `Creacion` en la auditoría, con el admin como autor.
+      - `registro_auditoria` no tiene filas de `RegistroError`. Solo tiene entidades de negocio: `Curso`, `Estudiante`, `Grupo`, `Horario`, `Matricula` y `Usuario`.
+    - Control final de datos sensibles sobre las 4 filas de `registro_error`:
+      - Ninguna contiene un token (`Bearer ey…`, `eyJhbGci`), el header `Authorization: `, un hash (`AQAAAA`), un query string ni las contraseñas de prueba.
+      - Una búsqueda amplia de "Authorization" coincidió con 2 filas, pero eran nombres de tipos del stack trace (`AuthorizationPolicy`, `PolicyAuthorizationResult`), no el header.
+      - Ninguna `ruta` tiene `?`.
+    - `Include Error Detail` no aparece en la cadena de conexión de los user-secrets ni en `appsettings*.json`.
+    - Criterios de éxito de la spec:
+      - 1 (tabla sin FK, solo lectura): T2.
+      - 2 y 4 (registro y respuesta sin cambios): T3.
+      - 3 (sin `4xx` ni datos sensibles): T3 y este control.
+      - 5 (depuración): T4.
+      - 6 (consulta): T5.
+      - 7 (verificaciones manuales): las tablas de T3 a T6.
+      - 8 (build y pruebas): abajo.
+    - `dotnet build` sin warnings; 332/332 pruebas unitarias en verde; `has-pending-model-changes` sin cambios pendientes.
 - Files: `AGENTS.md`, `specs/SPEC-errores.md`, `specs/mapa-modulos.md`, `tasks/errores/todo.md`

@@ -28,7 +28,7 @@
 | `grupos` | [Aprobada](SPEC-grupos.md) | [Aprobado](../tasks/grupos/plan.md) | [Aprobadas](../tasks/grupos/todo.md) | 13/13 | Completado |
 | `matriculas` | [Aprobada](SPEC-matriculas.md) | [Aprobado](../tasks/matriculas/plan.md) | [Aprobadas](../tasks/matriculas/todo.md) | 13/13 | Completado |
 | `auditoria` | [Aprobada](SPEC-auditoria.md) | [Aprobado](../tasks/auditoria/plan.md) | [Aprobadas](../tasks/auditoria/todo.md) | 5/5 | Completado |
-| `errores` | [En revisión](SPEC-errores.md) | — | — | 0/0 | Planificación |
+| `errores` | [Aprobada](SPEC-errores.md) | [En revisión](../tasks/errores/plan.md) | [En revisión](../tasks/errores/todo.md) | 0/6 | Planificación |
 
 **Estados de un documento** (spec, plan o lista de tareas):
 - **Borrador:** se está escribiendo.

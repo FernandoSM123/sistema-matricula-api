@@ -41,6 +41,11 @@ public static class DependencyInjection
             .AddInterceptors(sp.GetRequiredService<FechasInterceptor>()));
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddScoped<IRegistroErrores, RegistroErroresEnBd>();
+        services.AddOptions<ErroresOptions>()
+            .Bind(configuration.GetSection(ErroresOptions.SectionName))
+            .Validate(options => options.DiasRetencion >= 1, "La opción 'Errores:DiasRetencion' debe ser 1 o mayor.")
+            .ValidateOnStart();
+        services.AddHostedService<DepuracionErrores>();
 
         services.AddOptions<SmtpOptions>()
             .Bind(configuration.GetSection(SmtpOptions.SectionName))

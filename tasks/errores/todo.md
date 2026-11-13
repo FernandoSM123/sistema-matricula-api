@@ -13,7 +13,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T1. Dominio del registro de errores | Completada | ✅ | ✅ | ➖ | ✅ |
 | T2. Persistencia y migración `AgregaRegistroError` | Completada | ✅ | ➖ | ✅ | ✅ |
 | T3. Registro desde el manejador global y el envío de correos | Completada | ✅ | ➖ | ✅ | ✅ |
-| T4. Depuración de los errores antiguos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T4. Depuración de los errores antiguos | Completada | ✅ | ➖ | ✅ | ✅ |
 | T5. Consulta `GET /api/v1/errores` y detalle | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T6. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 
@@ -182,7 +182,20 @@ Ninguna.
   - `Errores__DiasRetencion=0` como variable de entorno: la API no arranca y muestra el mensaje de la opción.
   - Con `registro_error` renombrada en `psql`, arrancar la API: el log muestra el `LogError` de la depuración y la API sigue respondiendo (`GET /health` → `200`). Revertir el `ALTER`.
   - `registro_auditoria` no gana filas por la depuración.
-- Files: `src/Matricula.Infrastructure/Persistence/Errores/{ErroresOptions,DepuracionErrores}.cs`, `src/Matricula.Infrastructure/DependencyInjection.cs`, `src/Matricula.Api/appsettings.json`
+  - Resultado (2026-11-13): `dotnet build` sin warnings; 332/332 pruebas unitarias en verde. Verificación manual contra la BD de desarrollo:
+
+    | Escenario | Resultado |
+    |---|---|
+    | Registro 1 con `fecha` de hace 91 días y registro 2 de hace 89, y arrancar la API | Al arrancar, el log muestra "Depuración de errores: 1 registros anteriores a 08/15/2026 17:24:11 +00:00 eliminados". Queda el registro 2 (89 días), y también el 3 y el 4 |
+    | `Errores__DiasRetencion=0` | La API no arranca: `OptionsValidationException: La opción 'Errores:DiasRetencion' debe ser 1 o mayor.` |
+    | `registro_error` renombrada y arrancar la API | El log muestra el `LogError` "No se pudo depurar los registros de error" con el `42P01`. La API sigue respondiendo: `/health` y `GET /api/v1/cursos` → `200`. Después se revirtió el `ALTER` |
+    | `registro_auditoria` | 63 filas antes y después: la depuración no genera auditoría |
+
+  - Detalles que la tarea no fijaba:
+    - **Paquete nuevo, aprobado por el usuario:** `BackgroundService` está en `Microsoft.Extensions.Hosting.Abstractions`, que Infrastructure no tenía, porque solo la API lo recibe con ASP.NET Core. Se agregó en la versión 10.0.12, la misma de los demás paquetes de Microsoft del proyecto, en lugar de mover la depuración a Api. Se corrigieron el Tech Stack de la spec y la decisión 12 del mapa.
+    - La cancelación al detener la API se ignora en dos lugares: dentro de cada depuración y alrededor del `PeriodicTimer`.
+    - `TaskStop` cierra la terminal pero no el `.exe` de la API, que sigue bloqueando los binarios en el siguiente `dotnet build`. Después de cada verificación hay que detenerlo también con `Stop-Process -Name Matricula.Api`.
+- Files: `src/Matricula.Infrastructure/Persistence/Errores/{ErroresOptions,DepuracionErrores}.cs`, `src/Matricula.Infrastructure/DependencyInjection.cs`, `src/Matricula.Infrastructure/Matricula.Infrastructure.csproj`, `src/Matricula.Api/appsettings.json`
 
 ### T5. Consulta `GET /api/v1/errores` y detalle
 - Acceptance:

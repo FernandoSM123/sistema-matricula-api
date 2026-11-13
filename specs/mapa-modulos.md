@@ -28,7 +28,7 @@
 | `grupos` | [Aprobada](SPEC-grupos.md) | [Aprobado](../tasks/grupos/plan.md) | [Aprobadas](../tasks/grupos/todo.md) | 13/13 | Completado |
 | `matriculas` | [Aprobada](SPEC-matriculas.md) | [Aprobado](../tasks/matriculas/plan.md) | [Aprobadas](../tasks/matriculas/todo.md) | 13/13 | Completado |
 | `auditoria` | [Aprobada](SPEC-auditoria.md) | [Aprobado](../tasks/auditoria/plan.md) | [Aprobadas](../tasks/auditoria/todo.md) | 5/5 | Completado |
-| `errores` | [Aprobada](SPEC-errores.md) | [Aprobado](../tasks/errores/plan.md) | [Aprobadas](../tasks/errores/todo.md) | 3/6 | En implementación |
+| `errores` | [Aprobada](SPEC-errores.md) | [Aprobado](../tasks/errores/plan.md) | [Aprobadas](../tasks/errores/todo.md) | 4/6 | En implementación |
 
 **Estados de un documento** (spec, plan o lista de tareas):
 - **Borrador:** se está escribiendo.
@@ -86,4 +86,4 @@ Verificaciones que un módulo no pudo hacer por falta de datos o endpoints. Se c
     - **Conservación de 90 días**, configurable con `Errores:DiasRetencion`. Un `BackgroundService` depura al arrancar y cada 24 horas. A diferencia de la auditoría, estos registros sí se eliminan.
     - **La depuración usa `ExecuteDeleteAsync`**, como única excepción a la prohibición de escribir fuera del change tracker: la tabla no se audita y así no se cargan los registros en memoria. Queda acotada a `registro_error` en la arquitectura (§5) y, al implementar el módulo, en AGENTS.md.
     - **Guardado aparte** en un scope y un `AppDbContext` nuevos, nunca en la transacción de la petición, y sin lanzar excepciones: si el registro falla, queda solo el log (RN-48).
-    - No requiere paquetes NuGet nuevos.
+    - Un solo paquete NuGet nuevo, aprobado por el usuario en T4 (2026-11-13): `Microsoft.Extensions.Hosting.Abstractions` 10.0.12 en Infrastructure, para el `BackgroundService` de la depuración. Es de Microsoft y ya forma parte del framework con el que corre la API.

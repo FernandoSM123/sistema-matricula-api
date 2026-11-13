@@ -4,7 +4,7 @@ Módulo `errores` del [mapa de módulos](mapa-modulos.md). Depende de `acceso` (
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/errores/plan.md) | [Aprobadas](../tasks/errores/todo.md) | 3/6 tareas completadas |
+| **Aprobada** | [Aprobado](../tasks/errores/plan.md) | [Aprobadas](../tasks/errores/todo.md) | 4/6 tareas completadas |
 
 **Historial:**
 - 2026-11-13: v1 en revisión, con diez supuestos y sin preguntas abiertas. Las decisiones de alcance (qué se registra, un registro por ocurrencia, sin estado, 90 días de conservación con `ExecuteDeleteAsync`, sin errores de arranque) se tomaron antes de redactarla (decisión 12 del mapa).
@@ -13,6 +13,7 @@ Módulo `errores` del [mapa de módulos](mapa-modulos.md). Depende de `acceso` (
 - 2026-11-13: T3 (registro) completada, sin cambio de alcance. Dos correcciones a la verificación:
   - El registro público no envía correos, así que la fila "Registro público con smtp4dev detenido" se reemplazó por el olvido de contraseña, que también ocurre sin sesión.
   - Se confirmó el supuesto 5: el `ExceptionHandlerMiddleware` ya responde las peticiones canceladas por el cliente sin llamar al handler, y la comprobación del handler queda como defensa.
+- 2026-11-13: T4 (depuración) completada. Cambio en el Tech Stack, aprobado por el usuario: `BackgroundService` no estaba disponible en Infrastructure, así que se agregó `Microsoft.Extensions.Hosting.Abstractions` 10.0.12 en lugar de mover la depuración a Api. El diseño no cambia. Se corrigió también la decisión 12 del mapa.
 
 ## Objetivo
 
@@ -161,7 +162,7 @@ Cubre RF-58 y RF-59, las reglas RN-47 a RN-49, la consulta 12 de la sección 6 y
 
 ## Tech Stack
 
-.NET 10, ASP.NET Core Controllers, EF Core 10 + Npgsql 10.0.3, `BackgroundService` y `PeriodicTimer` del framework, FluentValidation 12.2, xUnit 2.9.3. **No se añaden paquetes.**
+.NET 10, ASP.NET Core Controllers, EF Core 10 + Npgsql 10.0.3, FluentValidation 12.2, xUnit 2.9.3, `PeriodicTimer` del framework. **Un paquete nuevo:** `Microsoft.Extensions.Hosting.Abstractions` 10.0.12 en Infrastructure, para `BackgroundService`, que Infrastructure no tenía (aprobado en T4).
 
 ## Commands
 

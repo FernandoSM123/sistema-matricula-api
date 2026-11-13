@@ -13,8 +13,9 @@
 | `matriculas` | Matricular, retirar, cambiar de grupo, concurrencia del cupo (`xmin`) y consultas que requieren matrículas | RF-20, 21, 49, 51…54 | RN-01…06, 10…12, 18, 36 | grupos, estudiantes |
 | `auditoria` | Registro automático de cada creación, modificación y eliminación de datos (`registro_auditoria`) en el mismo guardado, con autor, fecha, cambios antes/después e identificador de operación; exclusión de secretos y datos técnicos; consulta paginada solo para el administrador, con filtros por entidad, registro, usuario, acción y rango de fechas (`GET /api/v1/auditoria`) | RF-56, RF-57 | RN-42…RN-46 | acceso (y audita las entidades de todos los módulos) |
 | `errores` | Registro automático de los errores inesperados (`registro_error`): los `500` del manejador global y los envíos de correo fallidos, en un guardado aparte que nunca afecta la respuesta; sin datos secretos ni contenido de las peticiones; depuración automática a los 90 días (configurable); consulta paginada y detalle solo para el administrador (`GET /api/v1/errores`, `GET /api/v1/errores/{id}`) | RF-58, RF-59 | RN-47…RN-49 | acceso, auditoria (comparte el identificador de operación) |
+| `datos-prueba` | Herramienta de desarrollo: al arrancar en `Development` con `DatosPrueba:Habilitado`, siembra en una BD vacía cursos, aulas, 3 periodos (pasado, vigente, futuro), profesores, estudiantes con sus cuentas, grupos con horarios y matrículas, con Bogus, cantidades configurables y una semilla opcional; respeta las reglas del dominio y pasa por la auditoría | — | Respeta RN-03…RN-16, RN-26, RN-42 | acceso, estudiantes, profesores, catalogos, grupos, matriculas |
 
-**Orden de construcción:** `fundacion` → `acceso` → (`estudiantes`, `profesores`, `catalogos` en cualquier orden) → `grupos` → `matriculas` → `auditoria` → `errores`
+**Orden de construcción:** `fundacion` → `acceso` → (`estudiantes`, `profesores`, `catalogos` en cualquier orden) → `grupos` → `matriculas` → `auditoria` → `errores` → `datos-prueba`
 
 ## Estado de los módulos
 
@@ -29,6 +30,7 @@
 | `matriculas` | [Aprobada](SPEC-matriculas.md) | [Aprobado](../tasks/matriculas/plan.md) | [Aprobadas](../tasks/matriculas/todo.md) | 13/13 | Completado |
 | `auditoria` | [Aprobada](SPEC-auditoria.md) | [Aprobado](../tasks/auditoria/plan.md) | [Aprobadas](../tasks/auditoria/todo.md) | 5/5 | Completado |
 | `errores` | [Aprobada](SPEC-errores.md) | [Aprobado](../tasks/errores/plan.md) | [Aprobadas](../tasks/errores/todo.md) | 6/6 | Completado |
+| `datos-prueba` | [En revisión](SPEC-datos-prueba.md) | — | — | 0/0 | Planificación |
 
 **Estados de un documento** (spec, plan o lista de tareas):
 - **Borrador:** se está escribiendo.

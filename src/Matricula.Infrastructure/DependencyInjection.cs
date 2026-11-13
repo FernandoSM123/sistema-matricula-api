@@ -1,6 +1,7 @@
 using Matricula.Application.Abstractions;
 using Matricula.Infrastructure.Email;
 using Matricula.Infrastructure.Persistence;
+using Matricula.Infrastructure.Persistence.Auditoria;
 using Matricula.Infrastructure.Persistence.Interceptors;
 using Matricula.Infrastructure.Seed;
 using Matricula.Infrastructure.Seguridad;
@@ -28,14 +29,15 @@ public static class DependencyInjection
         services.AddSingleton<IFechaLocal, FechaLocal>();
         services.AddSingleton<IHasherContrasenas, HasherContrasenas>();
         services.AddSingleton<IGeneradorContrasenas, GeneradorContrasenas>();
-        services.AddScoped<AuditoriaInterceptor>();
+        services.AddScoped<FechasInterceptor>();
+        services.AddScoped<CapturaAuditoria>();
 
         services.AddDbContext<AppDbContext>((sp, options) => options
             .UseNpgsql(connectionString)
             // Tablas y columnas en snake_case (estudiante, fecha_creacion), la convención de PostgreSQL:
             // evita tener que poner comillas en los nombres al escribir SQL a mano.
             .UseSnakeCaseNamingConvention()
-            .AddInterceptors(sp.GetRequiredService<AuditoriaInterceptor>()));
+            .AddInterceptors(sp.GetRequiredService<FechasInterceptor>()));
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
 
         services.AddOptions<SmtpOptions>()

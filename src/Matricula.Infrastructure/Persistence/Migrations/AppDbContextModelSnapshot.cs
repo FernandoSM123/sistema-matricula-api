@@ -575,6 +575,75 @@ namespace Matricula.Infrastructure.Persistence.Migrations
                     b.ToTable("profesor", (string)null);
                 });
 
+            modelBuilder.Entity("Matricula.Domain.Entities.RegistroAuditoria", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Accion")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("accion");
+
+                    b.Property<string>("Cambios")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("cambios");
+
+                    b.Property<string>("Entidad")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("entidad");
+
+                    b.Property<int>("EntidadId")
+                        .HasColumnType("integer")
+                        .HasColumnName("entidad_id");
+
+                    b.Property<DateTimeOffset>("Fecha")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha");
+
+                    b.Property<string>("OperacionId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("operacion_id");
+
+                    b.Property<string>("UsuarioCorreo")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("usuario_correo");
+
+                    b.Property<int?>("UsuarioId")
+                        .HasColumnType("integer")
+                        .HasColumnName("usuario_id");
+
+                    b.Property<string>("UsuarioRol")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("usuario_rol");
+
+                    b.HasKey("Id")
+                        .HasName("pk_registro_auditoria");
+
+                    b.HasIndex("Fecha")
+                        .HasDatabaseName("ix_registro_auditoria_fecha");
+
+                    b.HasIndex("UsuarioId")
+                        .HasDatabaseName("ix_registro_auditoria_usuario_id");
+
+                    b.HasIndex("Entidad", "EntidadId")
+                        .HasDatabaseName("ix_registro_auditoria_entidad_entidad_id");
+
+                    b.ToTable("registro_auditoria", (string)null);
+                });
+
             modelBuilder.Entity("Matricula.Domain.Entities.Usuario", b =>
                 {
                     b.Property<int>("Id")

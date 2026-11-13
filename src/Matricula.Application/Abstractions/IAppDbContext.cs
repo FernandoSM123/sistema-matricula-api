@@ -20,5 +20,10 @@ public interface IAppDbContext
     DbSet<Horario> Horarios { get; }
     DbSet<MatriculaEntidad> Matriculas { get; }
 
+    /// <summary>
+    /// Auditoría de cambios, solo para leer (RN-43): los registros los agrega AppDbContext al guardar, nunca un servicio.
+    /// </summary>
+    IQueryable<RegistroAuditoria> RegistrosAuditoria { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

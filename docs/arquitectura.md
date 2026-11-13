@@ -35,7 +35,7 @@ Este documento fija las pautas de arquitectura y las buenas prácticas para la A
 ### 2.2 Detalle por capa
 
 **Matricula.Domain**: no depende de nada, ni siquiera de EF Core.
-- `Entities/`: las clases modelo, mapeadas a tablas: `Estudiante`, `Profesor`, `Administrador`, `Curso`, `Periodo`, `Aula`, `Grupo`, `Horario`, `Matricula`, `Usuario`. Heredan de `EntidadBase`.
+- `Entities/`: las clases modelo, mapeadas a tablas: `Estudiante`, `Profesor`, `Administrador`, `Curso`, `Periodo`, `Aula`, `Grupo`, `Horario`, `Matricula`, `Usuario`. Heredan de `EntidadBase`. `RegistroAuditoria` es la excepción: no hereda de `EntidadBase` porque nunca se modifica (RN-43).
 - `Enums/`: `EstadoGrupo`, `Modalidad`, `EstadoMatricula`, `Rol`, `NivelCurso`…
 - `Exceptions/`: `BusinessRuleException(code, mensaje)`.
 - Métodos con reglas que solo dependen del propio objeto, por ejemplo:
@@ -60,7 +60,8 @@ Este documento fija las pautas de arquitectura y las buenas prácticas para la A
 **Matricula.Infrastructure**: los detalles técnicos. Depende de Application y de Domain.
 - `Persistence/AppDbContext.cs`: el `DbContext` de EF Core. Implementa `IAppDbContext`.
 - `Persistence/Configurations/`: un `IEntityTypeConfiguration<T>` por entidad, con el mapeo (tablas, longitudes, índices únicos, relaciones, token de concurrencia `xmin`).
-- `Persistence/Migrations/` e `Interceptors/` (auditoría de fechas).
+- `Persistence/Migrations/` e `Interceptors/` (fechas de creación y modificación).
+- `Persistence/Auditoria/`: la captura de los cambios para la auditoría (RF-56), que usa `AppDbContext.SaveChangesAsync` (ver §5.1).
 - `Email/`: `SmtpEmailSender` (MailKit), que implementa `IEmailSender`.
 - Generador de contraseñas temporales y seed del administrador inicial.
 - `DependencyInjection.cs`: `AddInfrastructure()` registra el `DbContext`, el correo y las opciones.
@@ -99,6 +100,7 @@ Infrastructure implementa las interfaces definidas en Application (inversión de
   - `POST /api/matriculas` (matricular), `POST /api/matriculas/{id}/retiro`, `POST /api/matriculas/{id}/cambio-grupo`
   - `POST /api/auth/login`, `/api/auth/olvido-contrasena`, `/api/auth/cambio-obligatorio` (RF-07), `/api/auth/cambiar-contrasena` (RF-09), `/api/auth/logout`, `GET /api/auth/perfil` (o `/api/me`)
   - `POST /api/usuarios/{id}/reenviar-temporal`
+- **Auditoría (RF-57):** un único endpoint de solo lectura, `GET /api/auditoria?entidad=&entidadId=&usuarioId=&accion=&desde=&hasta=`, con la paginación estándar. No existen endpoints para crear, modificar ni eliminar registros de auditoría (RN-43).
 - **"Lo mío":** usa `/api/me/matriculas`, `/api/me/horario` y `/api/me/grupos`, en lugar de que el cliente envíe su propio id.
 - **Códigos HTTP coherentes:** `200` · `201` + `Location` al crear · `204` sin contenido · `400` validación · `401` sin sesión · `403` sin permiso o con cambio de contraseña pendiente · `404` · `409` choque con una regla de negocio, un dato duplicado o concurrencia.
 - **Errores con `ProblemDetails` (RFC 9457)** en todas las respuestas, con una extensión `code` que referencie la regla, por ejemplo `"code": "RN-05"`, más un mensaje legible. Esto cubre el requisito de "mensajes claros".
@@ -156,8 +158,47 @@ Son dos piezas distintas que trabajan juntas.
 - **Atomicidad:** un solo `SaveChangesAsync` ya es transaccional. Con eso alcanza para el cambio de grupo (RF-53) y para cancelar un grupo y retirar sus matrículas (RN-12). Usa `BeginTransactionAsync` solo si necesitas varios `SaveChanges`.
 - **Concurrencia del último cupo:** usa la columna de sistema `xmin` de PostgreSQL como token de concurrencia en `Grupo` (propiedad `uint Version` con `.IsRowVersion()`; Npgsql la mapea a `xmin`) y un contador `CuposOcupados` que se actualiza al matricular o retirar. Si dos estudiantes compiten, uno recibe `DbUpdateConcurrencyException`, que se convierte en `409` con el mensaje "El grupo ya no tiene cupo, intenta de nuevo".
 - **Unicidad de matrícula activa:** un índice único filtrado `(EstudianteId, GrupoId) WHERE estado = 'Activa'` (en EF: `.HasFilter("estado = 'Activa'")`; el filtro usa SQL de PostgreSQL y los nombres en snake_case). RN-05 (mismo curso y periodo) se valida en el servicio.
-- **Auditoría ligera:** `FechaCreacion` y `FechaModificacion` asignadas en un `SaveChangesInterceptor`.
+- **Fechas de creación y modificación:** `FechaCreacion` y `FechaModificacion` se asignan en un `SaveChangesInterceptor`. No es la auditoría: solo indica cuándo cambió un registro por última vez (ver §5.1).
+- **Todas las escrituras pasan por el change tracker** (`Add`, modificar entidades rastreadas, `Remove`) y `SaveChangesAsync`. **No uses `ExecuteUpdate`, `ExecuteDelete` ni SQL manual para escribir**: se saltan la auditoría (RN-42).
 - **Seed del primer administrador** al arrancar (`IHostedService` o al inicio de `Program`), leyendo `AdminSeedOptions`. No uses `HasData`, porque la contraseña viene de la configuración.
+
+### 5.1 Auditoría de cambios (RF-56, RN-42 a RN-46)
+La auditoría es **genérica**: se captura en un solo punto, al guardar, y no en cada servicio. Como todas las escrituras pasan por `SaveChangesAsync`, ningún cambio se escapa y ningún servicio tiene que acordarse de registrar nada.
+
+**Por qué así y no de otra forma:**
+| Alternativa | Por qué no |
+|---|---|
+| Triggers de PostgreSQL | No conocen al usuario de la aplicación y dejan lógica fuera del código y de las migraciones |
+| Llamadas explícitas en cada servicio | Hay que tocar todos los servicios, es fácil olvidar un caso y repite lo que EF ya sabe |
+| Librerías como Audit.NET | Es un paquete más para algo que se resuelve con poco código propio |
+| Tablas temporales | EF Core solo las soporta en SQL Server |
+| Logs | No se consultan desde la API ni son un registro confiable |
+
+**Cómo funciona:** `AppDbContext` sobrescribe `SaveChangesAsync`:
+1. Recorre el `ChangeTracker` y arma un `RegistroAuditoria` por cada entidad `Added`, `Modified` o `Deleted`.
+2. Abre una transacción si no hay una en curso.
+3. Llama a `base.SaveChangesAsync()`. Las entidades nuevas reciben aquí su `Id`, que genera PostgreSQL.
+4. Completa el `EntidadId` de los registros de creación, inserta los registros de auditoría con un segundo `base.SaveChangesAsync()` y confirma la transacción.
+
+Así la auditoría y el cambio se guardan juntos o no se guarda ninguno (RN-42). Si el primer guardado falla, por ejemplo por la concurrencia de `xmin`, se revierte todo. Se hace en `SaveChangesAsync` y no en un interceptor porque la transacción abarca los dos guardados, y repartirla entre dos eventos del interceptor es más frágil.
+
+**Qué se guarda** (tabla `registro_auditoria`, §5.12 de los requerimientos):
+- `Id` (`long`), `Fecha` (UTC, de `TimeProvider`), `Accion` (enum `AccionAuditoria`: `Creacion`, `Modificacion`, `Eliminacion`), `Entidad` (nombre de la clase, por ejemplo `Matricula`) y `EntidadId`.
+- `Cambios`: JSON en una columna `jsonb`, serializado con `System.Text.Json`, sin paquetes nuevos. En una modificación guarda solo las propiedades que cambiaron, como `{ "Estado": { "antes": "Activa", "despues": "Retirada" } }`. En una creación o eliminación guarda todos los valores.
+- `UsuarioId`, `UsuarioCorreo` y `UsuarioRol`: se leen de `ICurrentUser` y se guarda una copia del momento (RN-45). Hoy `ICurrentUser` no expone el correo; la spec del módulo decide si se agrega como claim del token o si se lee de la cuenta al guardar. Si no hay usuario, el autor es el Sistema.
+- `OperacionId`: el `TraceId` de `Activity.Current`, el mismo que aparece en el `traceId` de los `ProblemDetails`. Agrupa los registros de una operación compuesta.
+
+**Reglas de implementación:**
+- **Sin FK** hacia ninguna tabla. Como todas las FK son `Restrict`, una FK a `usuario` o a la entidad auditada impediría eliminar estudiantes o profesores (RN-35). Por eso los registros quedan después de eliminar el dato (RN-43).
+- **Propiedades excluidas** en una lista de Infrastructure, no con atributos en el dominio:
+  - Secretos (RN-44): `PasswordHash` y `TempPasswordHash` se registran como `"***"`, solo para dejar constancia del cambio. `SecurityStamp` no se registra.
+  - Ruido (RN-46): `FechaModificacion`, `UltimoIngreso` y `Version` (`xmin`).
+  - Si después de excluirlas una modificación queda sin cambios, no se escribe ningún registro. Así un login normal o un logout no generan auditoría.
+- `RegistroAuditoria` no se audita a sí mismo.
+- **Inmutable (RN-43) a nivel de aplicación:** `IAppDbContext` expone los registros solo como `IQueryable` y no hay endpoints que los modifiquen o eliminen. La base de datos no los protege (ni `REVOKE` ni triggers): en desarrollo la API se conecta como superusuario, que ignora los permisos, y por ahora se acepta que alguien con acceso directo a la BD pueda alterarlos (decisión 11 del mapa).
+- **Índices** para los filtros de RF-57: `(entidad, entidad_id)`, `(usuario_id)` y `(fecha)`.
+- **Consulta:** `AuditoriaService` en Application lee la tabla con `IAppDbContext`, proyecta a un DTO y pagina como los demás listados. El JSON de `Cambios` se devuelve como un objeto, no como texto.
+- **Fechas del filtro:** `desde` y `hasta` son `DateOnly` en la fecha local del instituto (decisión 9 del mapa). El servicio las convierte a un rango UTC `[desde 00:00, hasta + 1 día 00:00)` en la zona de `Instituto:ZonaHoraria`.
 
 ## 6. Modelo de dominio (nivel de "inteligencia")
 Entidades mayormente simples, con **un poco de comportamiento donde aporta**:
@@ -199,4 +240,5 @@ Así las reglas puras se prueban con tests unitarios sin BD, y los servicios orq
 6. Grupos + horarios + validación de traslapes (RN-07/08/09).
 7. Matrícula, retiro y cambio de grupo + concurrencia.
 8. Consultas y listados de la sección 6.
+9. Auditoría de cambios (§5.1): captura en `SaveChangesAsync` y consulta para el administrador.
 

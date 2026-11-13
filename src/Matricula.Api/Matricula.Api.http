@@ -1,6 +1,6 @@
 @host = http://localhost:5022
 
-# Recorrido de los módulos acceso, estudiantes, profesores, catalogos, grupos y matriculas. Ejecuta primero el login con tus credenciales: las demás peticiones usan
+# Recorrido de los módulos acceso, estudiantes, profesores, catalogos, grupos, matriculas y auditoria. Ejecuta primero el login con tus credenciales: las demás peticiones usan
 # {{token}}. Primer ingreso: login con la temporal de AdminSeed → cambio-obligatorio → login con la nueva.
 
 GET {{host}}/health
@@ -763,6 +763,40 @@ Authorization: Bearer {{token}}
 # Por defecto estado=Activa; estado=Retirada para los retirados. search busca en nombre, apellidos y cédula. Sin
 # teléfono ni dirección. Grupo inexistente → 404.
 GET {{host}}/api/v1/grupos/1/estudiantes?estado=Activa&search=&page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+###
+
+# --- Módulo auditoria ---
+# Auditoría de cambios (RF-57), solo administrador. Del cambio más reciente al más antiguo; filtros combinables:
+# entidad (sin distinguir mayúsculas), entidadId (exige entidad), usuarioId, accion (Creacion, Modificacion,
+# Eliminacion), desde y hasta (fechas locales del instituto, ambas incluidas) y operacionId; search busca en el correo
+# del autor. usuarioId null = Sistema. cambios es un objeto: en una modificación { "campo": { "antes", "despues" } }.
+GET {{host}}/api/v1/auditoria?page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+###
+
+# Historial de un registro concreto.
+GET {{host}}/api/v1/auditoria?entidad=Matricula&entidadId=1
+Authorization: Bearer {{token}}
+
+###
+
+# Cambios de un usuario en un día, solo modificaciones.
+GET {{host}}/api/v1/auditoria?usuarioId=1&accion=Modificacion&desde=2026-11-11&hasta=2026-11-11
+Authorization: Bearer {{token}}
+
+###
+
+# Todos los registros de una operación (por ejemplo, un cambio de grupo) y búsqueda por el correo del autor.
+GET {{host}}/api/v1/auditoria?operacionId=00000000000000000000000000000000&search=correo.local
+Authorization: Bearer {{token}}
+
+###
+
+# entidadId sin entidad, entidad inexistente o desde > hasta → 400 con el campo. Estudiante o profesor → 403.
+GET {{host}}/api/v1/auditoria?entidadId=1&entidad=&desde=2026-11-12&hasta=2026-11-11
 Authorization: Bearer {{token}}
 
 ###

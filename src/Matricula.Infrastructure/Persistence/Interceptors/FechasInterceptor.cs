@@ -5,9 +5,10 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 namespace Matricula.Infrastructure.Persistence.Interceptors;
 
 /// <summary>
-/// Asigna FechaCreacion y FechaModificacion automáticamente al guardar o actualizar un registro
+/// Asigna FechaCreacion y FechaModificacion automáticamente al guardar o actualizar un registro. No es la auditoría
+/// de cambios (RF-56): esa la arma AppDbContext.SaveChangesAsync.
 /// </summary>
-public class AuditoriaInterceptor(TimeProvider timeProvider) : SaveChangesInterceptor
+public class FechasInterceptor(TimeProvider timeProvider) : SaveChangesInterceptor
 {
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)

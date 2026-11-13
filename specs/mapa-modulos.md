@@ -11,8 +11,9 @@
 | `catalogos` | Cursos, periodos académicos (incluido el vigente) y aulas | RF-29…33, 35…40 | RN-13, 16, 39, 41 | acceso |
 | `grupos` | Grupos, horarios, estados, oferta académica y consultas propias de grupos | RF-27, 28, 34, 41…48, 50 | RN-07…09, 14, 15, 17, 37 | catalogos, profesores |
 | `matriculas` | Matricular, retirar, cambiar de grupo, concurrencia del cupo (`xmin`) y consultas que requieren matrículas | RF-20, 21, 49, 51…54 | RN-01…06, 10…12, 18, 36 | grupos, estudiantes |
+| `auditoria` | Registro automático de cada creación, modificación y eliminación de datos (`registro_auditoria`) en el mismo guardado, con autor, fecha, cambios antes/después e identificador de operación; exclusión de secretos y datos técnicos; consulta paginada solo para el administrador, con filtros por entidad, registro, usuario, acción y rango de fechas (`GET /api/v1/auditoria`) | RF-56, RF-57 | RN-42…RN-46 | acceso (y audita las entidades de todos los módulos) |
 
-**Orden de construcción:** `fundacion` → `acceso` → (`estudiantes`, `profesores`, `catalogos` en cualquier orden) → `grupos` → `matriculas`
+**Orden de construcción:** `fundacion` → `acceso` → (`estudiantes`, `profesores`, `catalogos` en cualquier orden) → `grupos` → `matriculas` → `auditoria`
 
 ## Estado de los módulos
 
@@ -25,6 +26,7 @@
 | `catalogos` | [Aprobada](SPEC-catalogos.md) | [Aprobado](../tasks/catalogos/plan.md) | [Aprobadas](../tasks/catalogos/todo.md) | 10/10 | Completado |
 | `grupos` | [Aprobada](SPEC-grupos.md) | [Aprobado](../tasks/grupos/plan.md) | [Aprobadas](../tasks/grupos/todo.md) | 13/13 | Completado |
 | `matriculas` | [Aprobada](SPEC-matriculas.md) | [Aprobado](../tasks/matriculas/plan.md) | [Aprobadas](../tasks/matriculas/todo.md) | 13/13 | Completado |
+| `auditoria` | [Aprobada](SPEC-auditoria.md) | [Aprobado](../tasks/auditoria/plan.md) | [Aprobadas](../tasks/auditoria/todo.md) | 5/5 | Completado |
 
 **Estados de un documento** (spec, plan o lista de tareas):
 - **Borrador:** se está escribiendo.
@@ -67,3 +69,11 @@ Verificaciones que un módulo no pudo hacer por falta de datos o endpoints. Se c
 8. **El rol de una cuenta no cambia** (2026-10-19, RN-31). No hay cambio de rol en ningún módulo. Si una persona pasa a cumplir otro rol, se le crea una cuenta nueva (con otro correo) y el registro de persona de ese rol; la cuenta anterior se desactiva si deja de cumplirlo. RN-20 y RN-30 ya no mencionan el cambio de rol.
 9. **"Hoy" es la fecha local del instituto** (2026-11-02). Las comparaciones con fechas sin hora (periodo vigente, RN-04, RN-10, fecha de registro, fecha de nacimiento) usan `IFechaLocal.Hoy()`, que aplica la zona de `Instituto:ZonaHoraria` (`America/Costa_Rica`). Ningún módulo calcula la fecha de hoy desde UTC. Las marcas de tiempo siguen en UTC. Se implementa en `catalogos`.
 10. **Eliminar un estudiante o profesor elimina también su cuenta** (2026-11-05, RN-35). Solo cuando la persona se puede eliminar por no tener datos relacionados (sin matrículas o sin grupos), y en el mismo guardado, sin cascada. Una cuenta nunca se elimina por sí sola, y la de un administrador nunca. Así no quedan cuentas sin persona (RN-31) y el correo se puede volver a registrar. Se corrigieron RF-14, RF-19, RF-26, RN-35 y la tabla de §4.2. Lo implementa `grupos` para profesores y `matriculas` para estudiantes.
+11. **Auditoría de cambios de datos** (2026-11-10, RF-56, RF-57, RN-42 a RN-46). El punto "Auditoría detallada de cambios" sale de "Fuera del alcance" y pasa a ser el módulo `auditoria`, con estas decisiones:
+    - **Solo cambios de datos.** Los eventos que no cambian datos (logins fallidos, logout, envío de correos) quedan fuera del alcance.
+    - **Captura genérica** en `AppDbContext.SaveChangesAsync`, con la auditoría y el cambio en la misma transacción (`docs/arquitectura.md` §5.1). Ningún servicio registra la auditoría a mano, y queda prohibido escribir con `ExecuteUpdate`, `ExecuteDelete` o SQL manual.
+    - **Sin FK** desde `registro_auditoria`, para no bloquear las eliminaciones de RN-35. Los registros se conservan después de eliminar el dato y nunca se depuran.
+    - **Un único endpoint de consulta** para el administrador, con filtros combinables por entidad, registro, usuario, acción y rango de fechas.
+    - El interceptor actual `AuditoriaInterceptor`, que solo asigna fechas, se renombra (por ejemplo, a `FechasInterceptor`) para no confundirlo con la auditoría.
+    - No requiere paquetes NuGet nuevos.
+    - **Inmutable solo en la aplicación** (RN-43): Application lee los registros como `IQueryable` y no hay endpoints que los modifiquen. La BD no los protege; se acepta que alguien con acceso directo pueda alterarlos.

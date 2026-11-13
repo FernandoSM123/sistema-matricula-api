@@ -2,7 +2,7 @@
 
 Módulo `errores` del [mapa](../../specs/mapa-modulos.md). Spec: [`specs/SPEC-errores.md`](../../specs/SPEC-errores.md) · Tareas: [`todo.md`](todo.md)
 
-**Estado del plan:** En revisión (2026-11-13)
+**Estado del plan:** Aprobado (2026-11-13)
 
 ## Enfoque
 

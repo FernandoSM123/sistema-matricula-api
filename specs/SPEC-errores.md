@@ -4,7 +4,7 @@ Módulo `errores` del [mapa de módulos](mapa-modulos.md). Depende de `acceso` (
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [En revisión](../tasks/errores/plan.md) | [En revisión](../tasks/errores/todo.md) | 0/6 tareas completadas |
+| **Aprobada** | [Aprobado](../tasks/errores/plan.md) | [Aprobadas](../tasks/errores/todo.md) | 0/6 tareas completadas; T1 en progreso |
 
 **Historial:**
 - 2026-11-13: v1 en revisión, con diez supuestos y sin preguntas abiertas. Las decisiones de alcance (qué se registra, un registro por ocurrencia, sin estado, 90 días de conservación con `ExecuteDeleteAsync`, sin errores de arranque) se tomaron antes de redactarla (decisión 12 del mapa).

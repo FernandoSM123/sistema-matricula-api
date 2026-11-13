@@ -2,7 +2,7 @@
 
 Módulo `errores` del [mapa](../../specs/mapa-modulos.md). Spec: [`specs/SPEC-errores.md`](../../specs/SPEC-errores.md) · Plan: [`plan.md`](plan.md)
 
-**Estado de la lista:** En revisión (2026-11-13)
+**Estado de la lista:** Aprobada (2026-11-13)
 
 Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula.UnitTests` en verde, la verificación indicada y un commit pequeño que cite los RF/RN. Las peticiones nuevas se agregan a `src/Matricula.Api/Matricula.Api.http` en la misma tarea.
 
@@ -10,7 +10,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 
 | Tarea | Estado | Código | Pruebas unitarias | Verificación manual | Commit |
 |---|---|:---:|:---:|:---:|:---:|
-| T1. Dominio del registro de errores | Pendiente | ⬜ | ⬜ | ➖ | ⬜ |
+| T1. Dominio del registro de errores | En progreso | ⬜ | ⬜ | ➖ | ⬜ |
 | T2. Persistencia y migración `AgregaRegistroError` | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T3. Registro desde el manejador global y el envío de correos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T4. Depuración de los errores antiguos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |

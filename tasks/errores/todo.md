@@ -12,7 +12,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 |---|---|:---:|:---:|:---:|:---:|
 | T1. Dominio del registro de errores | Completada | ✅ | ✅ | ➖ | ✅ |
 | T2. Persistencia y migración `AgregaRegistroError` | Completada | ✅ | ➖ | ✅ | ✅ |
-| T3. Registro desde el manejador global y el envío de correos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T3. Registro desde el manejador global y el envío de correos | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Depuración de los errores antiguos | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T5. Consulta `GET /api/v1/errores` y detalle | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T6. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -146,6 +146,26 @@ Ninguna.
     - Revertir el `ALTER`.
   - Cancelación: abortar una petición lenta del cliente (por ejemplo, `curl --max-time` muy corto sobre un listado grande) y anotar si llega al handler. Si no llega, queda anotado que la comprobación es solo defensiva.
   - `registro_auditoria` no tiene filas de `RegistroError`.
+  - Resultado (2026-11-13): `dotnet build` sin warnings; 332/332 pruebas unitarias en verde. Verificación manual contra la API local, con la cuenta de prueba `humo.adm.742345@correo.local` (usuario 29):
+
+    | Escenario | Resultado |
+    |---|---|
+    | `500` en una lectura: `aula.ubicacion` renombrada y `GET /api/v1/aulas?search=QS-DISTINTIVO` | `500` genérico, igual que antes. Registro 1: `Peticion`, `Error no controlado en GET /api/v1/aulas`, `Npgsql.PostgresException`, `42703: no existe la columna a.ubicacion`, `GET`, `/api/v1/aulas`, usuario 29 `Administrador` y trace id `55e6e3b6…`, el mismo del `traceId` de la respuesta. `detalle` de 5623 caracteres. `QS-DISTINTIVO` no aparece en la tabla |
+    | `500` en una escritura: `POST /api/v1/aulas` con la columna renombrada | `500`. Registro 2 con `DbUpdateException`. Ni el aula `ERR-T3-W` ni filas nuevas en `registro_auditoria` (61 antes y después): el registro usó su propio contexto y no reintentó el insert |
+    | smtp4dev detenido, admin reenvía la temporal del usuario 289 | `200 {"correoEnviado":false}`, igual que antes. Registro 3: `Correo`, `No se pudo enviar el correo de temporal a aud.t3.a.32291@correo.local`, `SocketException`, usuario 29, sin método ni ruta. `GET /auditoria?operacionId=<trace id>` devuelve la `Modificacion` de `Usuario` 289 de la misma operación |
+    | smtp4dev detenido, olvido de contraseña del usuario 290, sin sesión | `200` con el mensaje de RN-28. Registro 4: `Correo` sin usuario; su trace id lleva a la `Modificacion` de `Usuario` 290 con autor `null` |
+    | Login con la contraseña `ClaveDistintivaZ9q` (`401`), curso duplicado (`409`), curso inválido (`400`), curso inexistente (`404`), sin token (`401`) | Ningún registro nuevo (4 antes y después) |
+    | Buscar en `registro_error` la contraseña distintiva, `Bearer` y el prefijo de los hashes (`AQAAAA`) | 0 filas |
+    | `registro_error` renombrada y el mismo `500` | La respuesta es el mismo `500`, y `/health` → `200`. El log tiene el `LogError` "Error no controlado procesando /api/v1/aulas" y el `LogWarning` "No se pudo registrar el error c0894250…" con la excepción `42P01` |
+    | Cancelación: `aula` bloqueada 8 s en `psql` y `curl --max-time 2` | Ningún registro. Con `Microsoft.AspNetCore.Diagnostics` en `Debug`, el log muestra `ExceptionHandlerMiddleware[4] The request was aborted by the client.`: el middleware ya filtra la cancelación, y la comprobación del handler queda solo como defensa (supuesto 5) |
+    | `registro_auditoria` | 0 filas de `RegistroError` |
+
+    Al terminar, el esquema quedó restaurado (`aula.ubicacion` y `registro_error`).
+  - Detalles que la tarea no fijaba:
+    - `aula` no tiene columna `nombre`: para el `500` se renombró `ubicacion`.
+    - El parámetro de `IRegistroErrores.RegistrarAsync` se llama `errorInesperado`: el analizador (CA1716) rechaza `error` porque es palabra reservada en VB. El `ArgumentNullException.ThrowIfNull` va dentro del `try`, así ni un argumento nulo afecta la respuesta.
+    - **El registro público no envía correos**, así que la fila de la spec "Registro público con smtp4dev detenido" no se puede reproducir. Se reemplazó por el olvido de contraseña, que también ocurre sin sesión. Se corrigió la tabla de verificación de la spec.
+    - Desde Git Bash, `dotnet run` se quedó en "Compilando…" sin escribir nada, quizás por los nodos de MSBuild que deja abiertos el C# Dev Kit de VS Code. Para verificar se ejecuta directamente `bin/Debug/net10.0/Matricula.Api.exe` con `ASPNETCORE_ENVIRONMENT=Development` y `ASPNETCORE_URLS=http://localhost:5022`, después de `dotnet build`.
 - Files: `src/Matricula.Application/Abstractions/IRegistroErrores.cs`, `src/Matricula.Application/Errores/ErrorInesperado.cs`, `src/Matricula.Application/Correos/EnvioCorreos.cs`, `src/Matricula.Infrastructure/Persistence/Errores/RegistroErroresEnBd.cs`, `src/Matricula.Infrastructure/DependencyInjection.cs`, `src/Matricula.Api/Common/GlobalExceptionHandler.cs`
 
 ### T4. Depuración de los errores antiguos

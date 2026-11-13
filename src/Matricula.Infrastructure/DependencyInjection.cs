@@ -2,6 +2,7 @@ using Matricula.Application.Abstractions;
 using Matricula.Infrastructure.Email;
 using Matricula.Infrastructure.Persistence;
 using Matricula.Infrastructure.Persistence.Auditoria;
+using Matricula.Infrastructure.Persistence.Errores;
 using Matricula.Infrastructure.Persistence.Interceptors;
 using Matricula.Infrastructure.Seed;
 using Matricula.Infrastructure.Seguridad;
@@ -39,6 +40,7 @@ public static class DependencyInjection
             .UseSnakeCaseNamingConvention()
             .AddInterceptors(sp.GetRequiredService<FechasInterceptor>()));
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+        services.AddScoped<IRegistroErrores, RegistroErroresEnBd>();
 
         services.AddOptions<SmtpOptions>()
             .Bind(configuration.GetSection(SmtpOptions.SectionName))

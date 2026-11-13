@@ -4,12 +4,15 @@ Módulo `errores` del [mapa de módulos](mapa-modulos.md). Depende de `acceso` (
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/errores/plan.md) | [Aprobadas](../tasks/errores/todo.md) | 2/6 tareas completadas |
+| **Aprobada** | [Aprobado](../tasks/errores/plan.md) | [Aprobadas](../tasks/errores/todo.md) | 3/6 tareas completadas |
 
 **Historial:**
 - 2026-11-13: v1 en revisión, con diez supuestos y sin preguntas abiertas. Las decisiones de alcance (qué se registra, un registro por ocurrencia, sin estado, 90 días de conservación con `ExecuteDeleteAsync`, sin errores de arranque) se tomaron antes de redactarla (decisión 12 del mapa).
 - 2026-11-13: v1 aprobada con sus diez supuestos. Plan y lista de 6 tareas en revisión. Ajuste menor, sin cambio de alcance: el registro se construye dentro del `try` y no fuera, como muestra el ejemplo de Code Style, para que un fallo al construirlo tampoco afecte la respuesta (RN-48).
 - 2026-11-13: plan y lista de tareas aprobados. T1 (dominio) y T2 (persistencia y migración) completadas.
+- 2026-11-13: T3 (registro) completada, sin cambio de alcance. Dos correcciones a la verificación:
+  - El registro público no envía correos, así que la fila "Registro público con smtp4dev detenido" se reemplazó por el olvido de contraseña, que también ocurre sin sesión.
+  - Se confirmó el supuesto 5: el `ExceptionHandlerMiddleware` ya responde las peticiones canceladas por el cliente sin llamar al handler, y la comprobación del handler queda como defensa.
 
 ## Objetivo
 
@@ -264,7 +267,7 @@ public void NormalizarTraceId_FormatoValido_DevuelveTraceIdEnMinusculas(string v
 | Provocar un `500`: `ALTER TABLE aula RENAME COLUMN nombre TO nombre_x;` en `psql`, `GET /api/v1/aulas` como admin y revertir el `ALTER` | La respuesta sigue siendo `500` genérica con `traceId`. Aparece un registro `Peticion` con método, ruta, `Npgsql.PostgresException`, el admin como usuario y el trace id de la respuesta |
 | El mismo `500` con un query string (`/api/v1/aulas?search=algo`) | `ruta` sin `?search=algo` |
 | Detener smtp4dev y reenviar una temporal (`POST /api/v1/usuarios/{id}/reenviar-temporal`) | La operación responde igual que hoy. Aparece un registro `Correo` con la descripción del envío. `GET /auditoria?operacionId=<traceId>` muestra el cambio de la temporal de la misma operación |
-| Registro público con smtp4dev detenido | Registro `Correo` sin usuario |
+| Olvido de contraseña con smtp4dev detenido (sin sesión) | Respuesta `200` de RN-28. Registro `Correo` sin usuario |
 | Login con contraseña incorrecta, matrícula rechazada (`409`), validación (`400`), sin token (`401`) | Ningún registro nuevo |
 | Buscar en `registro_error` la contraseña usada, `Bearer`, un hash o un valor del query string | No aparece |
 | Con la tabla `registro_error` renombrada en `psql`, provocar un `500` | La respuesta sigue siendo `500` normal y el log muestra el `LogError` original y el `LogWarning` del registro fallido; la API no se cae |

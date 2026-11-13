@@ -25,5 +25,10 @@ public interface IAppDbContext
     /// </summary>
     IQueryable<RegistroAuditoria> RegistrosAuditoria { get; }
 
+    /// <summary>
+    /// Errores inesperados, solo para leer (RN-49): los registra Infrastructure, nunca un servicio.
+    /// </summary>
+    IQueryable<RegistroError> RegistrosError { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -644,6 +644,85 @@ namespace Matricula.Infrastructure.Persistence.Migrations
                     b.ToTable("registro_auditoria", (string)null);
                 });
 
+            modelBuilder.Entity("Matricula.Domain.Entities.RegistroError", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("descripcion");
+
+                    b.Property<string>("Detalle")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("detalle");
+
+                    b.Property<DateTimeOffset>("Fecha")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha");
+
+                    b.Property<string>("Mensaje")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("mensaje");
+
+                    b.Property<string>("Metodo")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("metodo");
+
+                    b.Property<string>("Origen")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("origen");
+
+                    b.Property<string>("Ruta")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("ruta");
+
+                    b.Property<string>("TipoExcepcion")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("tipo_excepcion");
+
+                    b.Property<string>("TraceId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("trace_id");
+
+                    b.Property<int?>("UsuarioId")
+                        .HasColumnType("integer")
+                        .HasColumnName("usuario_id");
+
+                    b.Property<string>("UsuarioRol")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("usuario_rol");
+
+                    b.HasKey("Id")
+                        .HasName("pk_registro_error");
+
+                    b.HasIndex("Fecha")
+                        .HasDatabaseName("ix_registro_error_fecha");
+
+                    b.HasIndex("TraceId")
+                        .HasDatabaseName("ix_registro_error_trace_id");
+
+                    b.ToTable("registro_error", (string)null);
+                });
+
             modelBuilder.Entity("Matricula.Domain.Entities.Usuario", b =>
                 {
                     b.Property<int>("Id")

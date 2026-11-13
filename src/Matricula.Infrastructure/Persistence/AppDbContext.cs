@@ -25,6 +25,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CapturaAuditor
     // RegistroAuditoriaConfiguration.
     IQueryable<RegistroAuditoria> IAppDbContext.RegistrosAuditoria => Set<RegistroAuditoria>().AsNoTracking();
 
+    // Igual que la auditoría: Application solo lee los errores (RN-49). Los escriben RegistroErroresEnBd y
+    // DepuracionErrores, en Infrastructure. La entidad entra al modelo por RegistroErrorConfiguration.
+    IQueryable<RegistroError> IAppDbContext.RegistrosError => Set<RegistroError>().AsNoTracking();
+
     /// <summary>
     /// Guarda los cambios junto con su auditoría (RF-56, RN-42), en una sola transacción: o quedan los dos o ninguno.
     /// Detalle del flujo en docs/arquitectura.md §5.1.

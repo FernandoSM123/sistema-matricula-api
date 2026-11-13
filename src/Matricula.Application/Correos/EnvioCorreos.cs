@@ -1,4 +1,5 @@
 using Matricula.Application.Abstractions;
+using Matricula.Application.Errores;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +11,11 @@ namespace Matricula.Application.Correos;
 /// Envía los correos de cuentas después de guardar. Un fallo de envío no revierte la operación:
 /// se registra (sin el contenido del correo) y se informa con el valor devuelto.
 /// </summary>
-public partial class EnvioCorreos(IEmailSender emailSender, IAppDbContext db, ILogger<EnvioCorreos> logger)
+public partial class EnvioCorreos(
+    IEmailSender emailSender,
+    IAppDbContext db,
+    IRegistroErrores registroErrores,
+    ILogger<EnvioCorreos> logger)
 {
     public async Task<bool> EnviarTemporalAsync(Usuario usuario, string temporal, MotivoTemporal motivo, CancellationToken cancellationToken)
     {
@@ -55,6 +60,9 @@ public partial class EnvioCorreos(IEmailSender emailSender, IAppDbContext db, IL
 #pragma warning restore CA1031
         {
             LogFalloEnvio(logger, e, tipo, destinatario);
+            // RF-58: el destinatario sirve para saber a quién reenviar; el contenido nunca se guarda (RN-47).
+            await registroErrores.RegistrarAsync(new ErrorInesperado(
+                OrigenError.Correo, $"No se pudo enviar el correo de {tipo} a {destinatario}", e));
             return false;
         }
     }

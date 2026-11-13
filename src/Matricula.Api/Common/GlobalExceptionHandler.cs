@@ -1,4 +1,7 @@
+using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
+using Matricula.Application.Errores;
+using Matricula.Domain.Enums;
 using Matricula.Domain.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -16,6 +19,13 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
+
+        // El cliente canceló la petición: no es un error del sistema. Se deja al comportamiento por defecto del
+        // middleware y no se registra (supuesto 5 de la spec de errores).
+        if (exception is OperationCanceledException && httpContext.RequestAborted.IsCancellationRequested)
+        {
+            return false;
+        }
 
         var violacionUnicidad = exception is DbUpdateException
         {
@@ -63,6 +73,13 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
         {
             detail = "Ocurrió un error inesperado.";
             logger.LogError(exception, "Error no controlado procesando {Path}", httpContext.Request.Path);
+
+            // RF-58. El handler es singleton: el registro (scoped) sale de la petición. Solo método y path,
+            // sin query string, headers ni body (RN-47). Nunca lanza excepciones (RN-48).
+            var metodo = httpContext.Request.Method;
+            var ruta = httpContext.Request.Path.Value;
+            await httpContext.RequestServices.GetRequiredService<IRegistroErrores>().RegistrarAsync(
+                new ErrorInesperado(OrigenError.Peticion, $"Error no controlado en {metodo} {ruta}", exception, metodo, ruta));
         }
         else
         {

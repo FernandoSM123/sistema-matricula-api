@@ -6,6 +6,7 @@ using Matricula.Application.Auth;
 using Matricula.Application.Correos;
 using Matricula.Application.Cuentas;
 using Matricula.Application.Cursos;
+using Matricula.Application.Errores;
 using Matricula.Application.Estudiantes;
 using Matricula.Application.Grupos;
 using Matricula.Application.Grupos.Consultas;
@@ -37,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<HorarioSemanalService>();
         services.AddScoped<MatriculaService>();
         services.AddScoped<AuditoriaService>();
+        services.AddScoped<ErroresService>();
 
         return services;
     }

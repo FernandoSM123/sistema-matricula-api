@@ -12,8 +12,9 @@
 | `grupos` | Grupos, horarios, estados, oferta académica y consultas propias de grupos | RF-27, 28, 34, 41…48, 50 | RN-07…09, 14, 15, 17, 37 | catalogos, profesores |
 | `matriculas` | Matricular, retirar, cambiar de grupo, concurrencia del cupo (`xmin`) y consultas que requieren matrículas | RF-20, 21, 49, 51…54 | RN-01…06, 10…12, 18, 36 | grupos, estudiantes |
 | `auditoria` | Registro automático de cada creación, modificación y eliminación de datos (`registro_auditoria`) en el mismo guardado, con autor, fecha, cambios antes/después e identificador de operación; exclusión de secretos y datos técnicos; consulta paginada solo para el administrador, con filtros por entidad, registro, usuario, acción y rango de fechas (`GET /api/v1/auditoria`) | RF-56, RF-57 | RN-42…RN-46 | acceso (y audita las entidades de todos los módulos) |
+| `errores` | Registro automático de los errores inesperados (`registro_error`): los `500` del manejador global y los envíos de correo fallidos, en un guardado aparte que nunca afecta la respuesta; sin datos secretos ni contenido de las peticiones; depuración automática a los 90 días (configurable); consulta paginada y detalle solo para el administrador (`GET /api/v1/errores`, `GET /api/v1/errores/{id}`) | RF-58, RF-59 | RN-47…RN-49 | acceso, auditoria (comparte el identificador de operación) |
 
-**Orden de construcción:** `fundacion` → `acceso` → (`estudiantes`, `profesores`, `catalogos` en cualquier orden) → `grupos` → `matriculas` → `auditoria`
+**Orden de construcción:** `fundacion` → `acceso` → (`estudiantes`, `profesores`, `catalogos` en cualquier orden) → `grupos` → `matriculas` → `auditoria` → `errores`
 
 ## Estado de los módulos
 
@@ -27,6 +28,7 @@
 | `grupos` | [Aprobada](SPEC-grupos.md) | [Aprobado](../tasks/grupos/plan.md) | [Aprobadas](../tasks/grupos/todo.md) | 13/13 | Completado |
 | `matriculas` | [Aprobada](SPEC-matriculas.md) | [Aprobado](../tasks/matriculas/plan.md) | [Aprobadas](../tasks/matriculas/todo.md) | 13/13 | Completado |
 | `auditoria` | [Aprobada](SPEC-auditoria.md) | [Aprobado](../tasks/auditoria/plan.md) | [Aprobadas](../tasks/auditoria/todo.md) | 5/5 | Completado |
+| `errores` | [Aprobada](SPEC-errores.md) | [Aprobado](../tasks/errores/plan.md) | [Aprobadas](../tasks/errores/todo.md) | 6/6 | Completado |
 
 **Estados de un documento** (spec, plan o lista de tareas):
 - **Borrador:** se está escribiendo.
@@ -77,3 +79,11 @@ Verificaciones que un módulo no pudo hacer por falta de datos o endpoints. Se c
     - El interceptor actual `AuditoriaInterceptor`, que solo asigna fechas, se renombra (por ejemplo, a `FechasInterceptor`) para no confundirlo con la auditoría.
     - No requiere paquetes NuGet nuevos.
     - **Inmutable solo en la aplicación** (RN-43): Application lee los registros como `IQueryable` y no hay endpoints que los modifiquen. La BD no los protege; se acepta que alguien con acceso directo pueda alterarlos.
+12. **Registro de errores inesperados** (2026-11-13, RF-58, RF-59, RN-47 a RN-49). Nuevo módulo `errores`, que amplía el alcance de §1.3 de los requerimientos. Diseño en `docs/arquitectura.md` §5.2. Se decidió:
+    - **Qué se registra:** los `500` no controlados (rama final de `GlobalExceptionHandler`) y los fallos de envío de correo (`EnvioCorreos`). No se registran los `4xx` ni los errores al arrancar (seed, migraciones), que quedan solo en el log de consola.
+    - **Un registro por ocurrencia**, sin agrupar errores iguales, para conservar el identificador de operación de cada uno y poder buscar el error que reporta un usuario.
+    - **Sin estado** (`Pendiente`/`Revisado`): el módulo solo permite ver los errores.
+    - **Conservación de 90 días**, configurable con `Errores:DiasRetencion`. Un `BackgroundService` depura al arrancar y cada 24 horas. A diferencia de la auditoría, estos registros sí se eliminan.
+    - **La depuración usa `ExecuteDeleteAsync`**, como única excepción a la prohibición de escribir fuera del change tracker: la tabla no se audita y así no se cargan los registros en memoria. Queda acotada a `registro_error` en la arquitectura (§5) y, al implementar el módulo, en AGENTS.md.
+    - **Guardado aparte** en un scope y un `AppDbContext` nuevos, nunca en la transacción de la petición, y sin lanzar excepciones: si el registro falla, queda solo el log (RN-48).
+    - Un solo paquete NuGet nuevo, aprobado por el usuario en T4 (2026-11-13): `Microsoft.Extensions.Hosting.Abstractions` 10.0.12 en Infrastructure, para el `BackgroundService` de la depuración. Es de Microsoft y ya forma parte del framework con el que corre la API.

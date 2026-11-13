@@ -1,6 +1,6 @@
 @host = http://localhost:5022
 
-# Recorrido de los módulos acceso, estudiantes, profesores, catalogos, grupos, matriculas y auditoria. Ejecuta primero el login con tus credenciales: las demás peticiones usan
+# Recorrido de los módulos acceso, estudiantes, profesores, catalogos, grupos, matriculas, auditoria y errores. Ejecuta primero el login con tus credenciales: las demás peticiones usan
 # {{token}}. Primer ingreso: login con la temporal de AdminSeed → cambio-obligatorio → login con la nueva.
 
 GET {{host}}/health
@@ -797,6 +797,41 @@ Authorization: Bearer {{token}}
 
 # entidadId sin entidad, entidad inexistente o desde > hasta → 400 con el campo. Estudiante o profesor → 403.
 GET {{host}}/api/v1/auditoria?entidadId=1&entidad=&desde=2026-11-12&hasta=2026-11-11
+Authorization: Bearer {{token}}
+
+###
+
+# --- Módulo errores ---
+# Errores inesperados (RF-59), solo administrador: los 500 no controlados (origen Peticion) y los correos que no se
+# pudieron enviar (origen Correo). Del más reciente al más antiguo, sin el detalle técnico. Filtros combinables: desde y
+# hasta (fechas locales del instituto, ambas incluidas), origen y traceId; search busca en el mensaje, el tipo de la
+# excepción y la ruta. usuarioId null = sin sesión. Se eliminan solos a los Errores:DiasRetencion días (90).
+GET {{host}}/api/v1/errores?page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+###
+
+# El error que reporta un usuario: el traceId completo de su respuesta 500 (o solo sus 32 caracteres). Con el mismo
+# valor, GET /api/v1/auditoria?operacionId=<32 caracteres> muestra los cambios que sí se guardaron en esa operación.
+GET {{host}}/api/v1/errores?traceId=00-00000000000000000000000000000001-0000000000000001-00
+Authorization: Bearer {{token}}
+
+###
+
+# Correos fallidos de un día que mencionan una excepción de red.
+GET {{host}}/api/v1/errores?origen=Correo&desde=2026-11-13&hasta=2026-11-13&search=socket
+Authorization: Bearer {{token}}
+
+###
+
+# Detalle de un error, con la excepción completa y el stack trace. Inexistente o ya depurado → 404.
+GET {{host}}/api/v1/errores/1
+Authorization: Bearer {{token}}
+
+###
+
+# traceId inválido, desde > hasta u origen desconocido → 400 con el campo. Estudiante o profesor → 403.
+GET {{host}}/api/v1/errores?traceId=abc&desde=2026-11-14&hasta=2026-11-13
 Authorization: Bearer {{token}}
 
 ###

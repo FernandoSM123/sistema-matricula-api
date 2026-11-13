@@ -26,6 +26,7 @@ Para que un estudiante se pueda matricular en un grupo, se deben cumplir dos con
 - Proceso de matrícula, retiro y cambio de grupo.
 - Consultas y listados académicos.
 - Auditoría de los cambios de datos: registro automático de cada creación, modificación y eliminación, consultable por el administrador.
+- Registro de errores inesperados: fallos internos del sistema y envíos de correo fallidos, consultables por el administrador durante un tiempo limitado.
 
 **Fuera del alcance de esta versión** (posibles mejoras futuras):
 - Calificaciones e historial académico.
@@ -35,8 +36,10 @@ Para que un estudiante se pueda matricular en un grupo, se deben cumplir dos con
 - Control de asistencia.
 - Emisión de certificados.
 - Reportes estadísticos (ocupación, demanda, ingresos).
-- Auditoría de eventos que no cambian datos, como inicios de sesión fallidos, cierres de sesión o envíos de correo.
+- Auditoría de eventos que no cambian datos, como inicios de sesión fallidos, cierres de sesión o envíos de correo exitosos. Los envíos fallidos sí quedan en el registro de errores (RF-58).
 - Depuración o archivado de los registros de auditoría antiguos.
+- Seguimiento de los errores: marcarlos como revisados o resueltos, asignarlos o enviar alertas cuando ocurren.
+- Registro de los errores que impiden arrancar el sistema, por ejemplo una base de datos sin migraciones; solo quedan en el log de la aplicación.
 - Uso de enlaces de un solo uso enviados por correo, en lugar de contraseñas temporales, tanto para activar cuentas nuevas como para el olvido de contraseña.
 
 ---
@@ -254,6 +257,24 @@ Perfil ─► Cambiar contraseña ─► Contraseña actual + nueva + confirmaci
     - Rango de fechas: desde y hasta, ambas opcionales. Para un solo día se indica la misma fecha en ambas.
   - Los registros no se pueden modificar ni eliminar (RN-43).
 
+### 3.12 Registro de errores
+- **RF-58 Registrar los errores inesperados:**
+  - El sistema registra automáticamente:
+    - Cada fallo interno que impide completar una solicitud, es decir, los que el usuario ve como "Ocurrió un error inesperado".
+    - Cada correo que no se pudo enviar, por ejemplo una contraseña temporal o un aviso de cambio de contraseña.
+  - No se registran las respuestas esperadas: datos inválidos, reglas de negocio incumplidas, falta de sesión o de permisos, ni registros inexistentes.
+  - Cada registro indica cuándo ocurrió, dónde (la solicitud o el correo afectado), el tipo de error con su detalle técnico, quién estaba usando el sistema y el identificador de la operación (§5.13).
+  - Registrar el error nunca cambia lo que recibe el usuario ni revierte lo ya guardado (RN-48).
+- **RF-59 Consultar los errores:**
+  - Solo un administrador puede hacerlo.
+  - Es un listado paginado, ordenado del error más reciente al más antiguo, más el detalle técnico de cada error.
+  - Permite filtrar, combinando los filtros, por:
+    - Rango de fechas: desde y hasta, ambas opcionales.
+    - Origen: solicitud o correo.
+    - Identificador de la operación: el código que el usuario ve en el mensaje de error, para encontrar el error que reporta.
+    - Texto contenido en el mensaje, el tipo de error o la ruta de la solicitud.
+  - Los registros no se pueden modificar desde el sistema y se eliminan solos al cumplir su tiempo de conservación (RN-49).
+
 ---
 
 ## 4. Reglas de negocio
@@ -343,6 +364,14 @@ Los registros de auditoría **no cuentan como datos relacionados**: no impiden e
 | RN-44 | La auditoría nunca guarda contraseñas, contraseñas temporales ni otros datos secretos de la cuenta. De un cambio de contraseña o de temporal solo queda constancia de que ocurrió, sin el valor. |
 | RN-45 | Cada registro identifica a quien hizo el cambio con una copia de su correo y su rol en ese momento, que se conserva aunque la cuenta cambie o se elimine. Si no hay una sesión iniciada (registro público, olvido de contraseña, datos iniciales), se registra como **Sistema**. |
 | RN-46 | Los datos técnicos que se actualizan solos y no aportan a la auditoría (la fecha de modificación, la fecha del último ingreso y los datos internos de sesión y concurrencia) no se registran como cambios. Si una operación solo modifica esos datos, como un inicio de sesión normal o un cierre de sesión, no genera ningún registro. |
+
+### 4.4 Reglas del registro de errores
+
+| Código | Regla |
+|---|---|
+| RN-47 | El registro de errores nunca guarda el contenido de las solicitudes, contraseñas, contraseñas temporales, tokens de sesión ni otros datos secretos. De una solicitud solo guarda el método y la ruta, sin parámetros. |
+| RN-48 | Registrar un error no puede afectar la operación: no cambia la respuesta que recibe el usuario, no revierte lo que ya se guardó y, si el registro mismo falla (por ejemplo, porque la base de datos no está disponible), el error queda solo en el log de la aplicación. |
+| RN-49 | Los registros de errores se conservan durante un tiempo configurable, de 90 días por defecto, y después el sistema los elimina automáticamente. Desde el sistema nadie los puede modificar ni eliminar antes de tiempo. |
 
 ---
 
@@ -497,6 +526,20 @@ Los **registros de auditoría** (§5.12) describen cambios de cualquiera de esto
 | Correo y rol del usuario | Copia del momento del cambio (RN-45) | Condicional |
 | Identificador de la operación | Agrupa los registros producidos por una misma operación (RN-42) | Sí |
 
+### 5.13 Registro de error
+| Dato | Descripción | Obligatorio |
+|---|---|:---:|
+| Fecha y hora | Momento en que ocurrió el error | Sí |
+| Origen | Solicitud o correo | Sí |
+| Descripción | Resumen legible, por ejemplo "No se pudo enviar el correo de temporal a ana@correo.com" | Sí |
+| Tipo de error y mensaje | Clase técnica del error y su mensaje | Sí |
+| Detalle técnico | Información para diagnosticar el error, incluida la secuencia de llamadas. Nunca incluye datos secretos (RN-47) | Sí |
+| Método y ruta | De la solicitud que falló, sin parámetros (RN-47) | Condicional |
+| Usuario y rol | Cuenta con sesión iniciada cuando ocurrió el error; vacío si no había sesión | Condicional |
+| Identificador de la operación | El mismo que recibe el usuario en el mensaje de error y que usa la auditoría (RN-42) | Sí |
+
+Los registros de errores no están relacionados con ningún otro dato y se eliminan automáticamente al cumplir su tiempo de conservación (RN-49).
+
 ---
 
 ## 6. Consultas y listados requeridos
@@ -514,6 +557,7 @@ Los **registros de auditoría** (§5.12) describen cambios de cualquiera de esto
 | 9 | Oferta académica del periodo vigente, con los cupos disponibles | Todos |
 | 10 | Historial de matrículas y retiros de un estudiante | Administrador, el propio estudiante |
 | 11 | Auditoría de cambios, filtrable por entidad, registro, usuario, acción y rango de fechas (RF-57) | Administrador |
+| 12 | Errores inesperados, filtrables por rango de fechas, origen, identificador de la operación y texto (RF-59) | Administrador |
 
 Todos los listados deben permitir búsqueda y filtrado, y deben mostrarse por páginas cuando el volumen de datos sea grande.
 
@@ -529,6 +573,7 @@ Todos los listados deben permitir búsqueda y filtrado, y deben mostrarse por p�
     - La consulta de la oferta académica (RF-50).
   - Ni las contraseñas ni las contraseñas temporales se almacenan en texto plano.
   - La auditoría no guarda contraseñas, temporales ni otros datos secretos (RN-44).
+  - El registro de errores no guarda el contenido de las solicitudes ni datos secretos (RN-47). El usuario solo ve un mensaje genérico con el identificador de la operación, nunca el detalle técnico.
 - **Correo electrónico:** el sistema debe poder enviar correos para:
   - Las contraseñas temporales de cuentas nuevas.
   - El olvido de contraseña.
@@ -538,7 +583,7 @@ Todos los listados deben permitir búsqueda y filtrado, y deben mostrarse por p�
   - No se pierde información histórica: las matrículas retiradas y los registros inactivos se conservan.
   - No se eliminan datos en cascada ni quedan datos huérfanos. Un registro con datos relacionados no se puede eliminar (ver la sección 4.2).
   - Las operaciones compuestas, como el cambio de grupo, se completan por completo o no se hacen.
-- **Trazabilidad:** todo cambio de datos queda registrado en la auditoría junto con la operación que lo produce, y esos registros no se modifican ni se eliminan (RN-42, RN-43).
+- **Trazabilidad:** todo cambio de datos queda registrado en la auditoría junto con la operación que lo produce, y esos registros no se modifican ni se eliminan (RN-42, RN-43). Los errores inesperados quedan registrados con el mismo identificador de operación, para relacionar un error con los cambios que sí se guardaron en esa operación, por ejemplo la cuenta creada cuyo correo de bienvenida no se pudo enviar (RF-58).
 - **Validación:** el sistema debe rechazar los datos incompletos o inválidos con mensajes claros que indiquen qué dato o qué regla se incumplió.
 - **Concurrencia:** si dos estudiantes intentan tomar el último cupo de un grupo al mismo tiempo, solo uno debe lograrlo.
 - **Usabilidad:** los mensajes de error y de confirmación deben ser comprensibles para el usuario final.

@@ -2,6 +2,7 @@ using Matricula.Application.Abstractions;
 using Matricula.Infrastructure.Email;
 using Matricula.Infrastructure.Persistence;
 using Matricula.Infrastructure.Persistence.Auditoria;
+using Matricula.Infrastructure.Persistence.Errores;
 using Matricula.Infrastructure.Persistence.Interceptors;
 using Matricula.Infrastructure.Seed;
 using Matricula.Infrastructure.Seguridad;
@@ -39,6 +40,12 @@ public static class DependencyInjection
             .UseSnakeCaseNamingConvention()
             .AddInterceptors(sp.GetRequiredService<FechasInterceptor>()));
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+        services.AddScoped<IRegistroErrores, RegistroErroresEnBd>();
+        services.AddOptions<ErroresOptions>()
+            .Bind(configuration.GetSection(ErroresOptions.SectionName))
+            .Validate(options => options.DiasRetencion >= 1, "La opción 'Errores:DiasRetencion' debe ser 1 o mayor.")
+            .ValidateOnStart();
+        services.AddHostedService<DepuracionErrores>();
 
         services.AddOptions<SmtpOptions>()
             .Bind(configuration.GetSection(SmtpOptions.SectionName))

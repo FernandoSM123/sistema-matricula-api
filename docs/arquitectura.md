@@ -35,7 +35,7 @@ Este documento fija las pautas de arquitectura y las buenas prácticas para la A
 ### 2.2 Detalle por capa
 
 **Matricula.Domain**: no depende de nada, ni siquiera de EF Core.
-- `Entities/`: las clases modelo, mapeadas a tablas: `Estudiante`, `Profesor`, `Administrador`, `Curso`, `Periodo`, `Aula`, `Grupo`, `Horario`, `Matricula`, `Usuario`. Heredan de `EntidadBase`. `RegistroAuditoria` es la excepción: no hereda de `EntidadBase` porque nunca se modifica (RN-43).
+- `Entities/`: las clases modelo, mapeadas a tablas: `Estudiante`, `Profesor`, `Administrador`, `Curso`, `Periodo`, `Aula`, `Grupo`, `Horario`, `Matricula`, `Usuario`. Heredan de `EntidadBase`. `RegistroAuditoria` y `RegistroError` son la excepción: no heredan de `EntidadBase` porque nunca se modifican (RN-43, RN-49).
 - `Enums/`: `EstadoGrupo`, `Modalidad`, `EstadoMatricula`, `Rol`, `NivelCurso`…
 - `Exceptions/`: `BusinessRuleException(code, mensaje)`.
 - Métodos con reglas que solo dependen del propio objeto, por ejemplo:
@@ -62,6 +62,7 @@ Este documento fija las pautas de arquitectura y las buenas prácticas para la A
 - `Persistence/Configurations/`: un `IEntityTypeConfiguration<T>` por entidad, con el mapeo (tablas, longitudes, índices únicos, relaciones, token de concurrencia `xmin`).
 - `Persistence/Migrations/` e `Interceptors/` (fechas de creación y modificación).
 - `Persistence/Auditoria/`: la captura de los cambios para la auditoría (RF-56), que usa `AppDbContext.SaveChangesAsync` (ver §5.1).
+- `Persistence/Errores/`: el registro de los errores inesperados (RF-58), con un `AppDbContext` de un scope aparte, y la depuración de los antiguos (RN-49) (ver §5.2).
 - `Email/`: `SmtpEmailSender` (MailKit), que implementa `IEmailSender`.
 - Generador de contraseñas temporales y seed del administrador inicial.
 - `DependencyInjection.cs`: `AddInfrastructure()` registra el `DbContext`, el correo y las opciones.
@@ -101,6 +102,7 @@ Infrastructure implementa las interfaces definidas en Application (inversión de
   - `POST /api/auth/login`, `/api/auth/olvido-contrasena`, `/api/auth/cambio-obligatorio` (RF-07), `/api/auth/cambiar-contrasena` (RF-09), `/api/auth/logout`, `GET /api/auth/perfil` (o `/api/me`)
   - `POST /api/usuarios/{id}/reenviar-temporal`
 - **Auditoría (RF-57):** un único endpoint de solo lectura, `GET /api/auditoria?entidad=&entidadId=&usuarioId=&accion=&desde=&hasta=`, con la paginación estándar. No existen endpoints para crear, modificar ni eliminar registros de auditoría (RN-43).
+- **Errores (RF-59):** dos endpoints de solo lectura para el administrador, `GET /api/errores?desde=&hasta=&origen=&traceId=&search=` (paginado, sin el detalle técnico) y `GET /api/errores/{id}` (con el detalle). No hay endpoints para crearlos, modificarlos ni eliminarlos (RN-49).
 - **"Lo mío":** usa `/api/me/matriculas`, `/api/me/horario` y `/api/me/grupos`, en lugar de que el cliente envíe su propio id.
 - **Códigos HTTP coherentes:** `200` · `201` + `Location` al crear · `204` sin contenido · `400` validación · `401` sin sesión · `403` sin permiso o con cambio de contraseña pendiente · `404` · `409` choque con una regla de negocio, un dato duplicado o concurrencia.
 - **Errores con `ProblemDetails` (RFC 9457)** en todas las respuestas, con una extensión `code` que referencie la regla, por ejemplo `"code": "RN-05"`, más un mensaje legible. Esto cubre el requisito de "mensajes claros".
@@ -141,7 +143,7 @@ Son dos piezas distintas que trabajan juntas.
   - El **servicio** revisa las reglas que necesitan la BD: cupo, traslapes y duplicados.
 - **Tiempo testeable:** inyecta `TimeProvider` en lugar de usar `DateTime.Now`. Lo necesitan los vencimientos de las temporales y las marcas de tiempo, que van en UTC.
 - **Fecha de hoy:** las comparaciones con fechas sin hora (RN-04, RN-10, periodo vigente) usan `IFechaLocal.Hoy()`, que convierte la hora de `TimeProvider` a la zona de `Instituto:ZonaHoraria` (`America/Costa_Rica`). Nunca calcules la fecha de hoy desde UTC: desde las 18:00 en Costa Rica ya sería el día siguiente.
-- Logging con `ILogger<T>` y mensajes estructurados. Serilog es opcional. **Nunca registres contraseñas ni temporales.**
+- Logging con `ILogger<T>` y mensajes estructurados. Serilog es opcional. **Nunca registres contraseñas ni temporales.** El log sigue siendo el respaldo del registro de errores (§5.2): todo error inesperado se escribe primero en el log y después en la tabla.
 - Ciclos de vida en la inyección de dependencias: el `DbContext` y los servicios son `Scoped`; `TimeProvider` y el generador de contraseñas, `Singleton`.
 - Health check (`/health`), CORS configurado para el front y **rate limiting** integrado en `login` y `olvido-contrasena`.
 
@@ -159,7 +161,7 @@ Son dos piezas distintas que trabajan juntas.
 - **Concurrencia del último cupo:** usa la columna de sistema `xmin` de PostgreSQL como token de concurrencia en `Grupo` (propiedad `uint Version` con `.IsRowVersion()`; Npgsql la mapea a `xmin`) y un contador `CuposOcupados` que se actualiza al matricular o retirar. Si dos estudiantes compiten, uno recibe `DbUpdateConcurrencyException`, que se convierte en `409` con el mensaje "El grupo ya no tiene cupo, intenta de nuevo".
 - **Unicidad de matrícula activa:** un índice único filtrado `(EstudianteId, GrupoId) WHERE estado = 'Activa'` (en EF: `.HasFilter("estado = 'Activa'")`; el filtro usa SQL de PostgreSQL y los nombres en snake_case). RN-05 (mismo curso y periodo) se valida en el servicio.
 - **Fechas de creación y modificación:** `FechaCreacion` y `FechaModificacion` se asignan en un `SaveChangesInterceptor`. No es la auditoría: solo indica cuándo cambió un registro por última vez (ver §5.1).
-- **Todas las escrituras pasan por el change tracker** (`Add`, modificar entidades rastreadas, `Remove`) y `SaveChangesAsync`. **No uses `ExecuteUpdate`, `ExecuteDelete` ni SQL manual para escribir**: se saltan la auditoría (RN-42).
+- **Todas las escrituras pasan por el change tracker** (`Add`, modificar entidades rastreadas, `Remove`) y `SaveChangesAsync`. **No uses `ExecuteUpdate`, `ExecuteDelete` ni SQL manual para escribir**: se saltan la auditoría (RN-42). **Única excepción:** la depuración de `registro_error` (RN-49) usa `ExecuteDeleteAsync`, porque esa tabla no se audita y borrar fila por fila con el change tracker cargaría en memoria cada registro con su detalle técnico (§5.2). La excepción no se extiende a ninguna otra tabla.
 - **Seed del primer administrador** al arrancar (`IHostedService` o al inicio de `Program`), leyendo `AdminSeedOptions`. No uses `HasData`, porque la contraseña viene de la configuración.
 
 ### 5.1 Auditoría de cambios (RF-56, RN-42 a RN-46)
@@ -199,6 +201,41 @@ Así la auditoría y el cambio se guardan juntos o no se guarda ninguno (RN-42).
 - **Índices** para los filtros de RF-57: `(entidad, entidad_id)`, `(usuario_id)` y `(fecha)`.
 - **Consulta:** `AuditoriaService` en Application lee la tabla con `IAppDbContext`, proyecta a un DTO y pagina como los demás listados. El JSON de `Cambios` se devuelve como un objeto, no como texto.
 - **Fechas del filtro:** `desde` y `hasta` son `DateOnly` en la fecha local del instituto (decisión 9 del mapa). El servicio las convierte a un rango UTC `[desde 00:00, hasta + 1 día 00:00)` en la zona de `Instituto:ZonaHoraria`.
+
+### 5.2 Registro de errores (RF-58, RF-59, RN-47 a RN-49)
+Complementa el log, no lo reemplaza: los errores inesperados quedan en una tabla que el administrador consulta desde la API y que se relaciona con la auditoría por el identificador de operación. A diferencia de la auditoría, **no** se guarda en la misma transacción que la operación, porque esa transacción es justamente la que falló.
+
+**Por qué así y no de otra forma:**
+| Alternativa | Por qué no |
+|---|---|
+| Serilog con salida a archivo o a PostgreSQL | Paquetes nuevos y no se consulta desde la API. Se puede sumar en producción sin tocar este diseño |
+| OpenTelemetry + un servicio externo (Sentry, Application Insights) | Lo correcto en producción, pero agrega un servicio externo y los datos salen del servidor. Excesivo para el tamaño actual |
+| Un `ILoggerProvider` propio que guarde en la BD todo lo de nivel `Error` | Frágil: si la BD falla, EF registra un error que vuelve a intentar escribir en la BD. La API de logging además es síncrona |
+| Guardar con el `DbContext` de la petición | Volvería a intentar guardar las entidades que causaron el fallo, y su transacción puede estar revertida |
+| Agrupar errores iguales con un contador | Perdería el identificador de operación de cada ocurrencia, que es lo que permite encontrar el error que reporta un usuario |
+
+**Cómo funciona:**
+1. Dos puntos de captura, explícitos:
+   - `GlobalExceptionHandler`, en la rama `500`, después del `LogError` que ya existe.
+   - `EnvioCorreos`, en el `catch` del envío, después de su `LogError`.
+2. Ambos llaman a `IRegistroErrores.RegistrarAsync(...)`, una interfaz de Application que implementa Infrastructure.
+3. La implementación abre un **scope nuevo** con un `AppDbContext` propio, agrega el `RegistroError` y guarda. Como `RegistroError` no hereda de `EntidadBase`, la auditoría no lo captura.
+4. **Nunca lanza excepciones (RN-48):** usa un timeout corto en lugar del token de la petición, y si algo falla escribe un `LogWarning` y sigue. La respuesta al usuario no cambia.
+
+**Qué se guarda** (tabla `registro_error`, §5.13 de los requerimientos):
+- `Id` (`long`), `Fecha` (UTC, de `TimeProvider`), `Origen` (enum `OrigenError`: `Peticion`, `Correo`), `Descripcion`, `TipoExcepcion`, `Mensaje` y `Detalle` (`exception.ToString()`, truncado).
+- `Metodo` y `Ruta` de la petición, **sin query string ni body** (RN-47).
+- `UsuarioId` y `UsuarioRol` de `ICurrentUser`, sin consultar la BD: puede ser la causa del error.
+- `TraceId`: el mismo valor que `OperacionId` en la auditoría y que forma parte del `traceId` de los `ProblemDetails`.
+
+**Reglas de implementación:**
+- **Sin FK**, como la auditoría.
+- **Nunca** se guardan el body, los headers (en especial `Authorization`) ni el query string (RN-47). La cadena de conexión no activa `Include Error Detail`, para que los mensajes de PostgreSQL no traigan valores de las filas.
+- Solo se registran los `500` y los fallos de correo. Los `4xx` son respuestas esperadas y no se registran. Una petición cancelada por el cliente tampoco.
+- `IAppDbContext` expone los registros solo como `IQueryable` (RN-49): Application no puede agregarlos, modificarlos ni eliminarlos.
+- **Depuración (RN-49):** un `BackgroundService` de Infrastructure se ejecuta al arrancar y luego cada 24 horas. Elimina con `ExecuteDeleteAsync` los registros con `Fecha` anterior a hoy − `Errores:DiasRetencion` (90 por defecto). Captura sus propias excepciones y solo las registra en el log, para no detener la aplicación.
+- **Índices:** `(fecha)` para el orden, el filtro por fechas y la depuración, y `(trace_id)` para la búsqueda por operación.
+- Los errores al arrancar (seed, migraciones sin aplicar) quedan solo en el log.
 
 ## 6. Modelo de dominio (nivel de "inteligencia")
 Entidades mayormente simples, con **un poco de comportamiento donde aporta**:
@@ -241,4 +278,5 @@ Así las reglas puras se prueban con tests unitarios sin BD, y los servicios orq
 7. Matrícula, retiro y cambio de grupo + concurrencia.
 8. Consultas y listados de la sección 6.
 9. Auditoría de cambios (§5.1): captura en `SaveChangesAsync` y consulta para el administrador.
+10. Registro de errores (§5.2): captura en el manejador global y en el envío de correos, depuración y consulta para el administrador.
 

@@ -16,7 +16,7 @@ dotnet ef database update --project src/Matricula.Infrastructure --startup-proje
 | Tarea | Estado | Código | Pruebas unitarias | Verificación manual | Commit |
 |---|---|:---:|:---:|:---:|:---:|
 | T1. Base: paquete, opciones y guardas | Completada | ✅ | ✅ | ✅ | ✅ |
-| T2. `PlanificadorHorarios` y `FechasPrueba` | Pendiente | ⬜ | ⬜ | ➖ | ⬜ |
+| T2. `PlanificadorHorarios` y `FechasPrueba` | Completada | ✅ | ✅ | ➖ | ✅ |
 | T3. Catálogos y personas | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T4. Grupos y horarios | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T5. Matrículas y estados finales | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -87,7 +87,7 @@ Ninguna.
   - `Franja` (`record`) y la lista fija de franjas de la spec: lunes a viernes, seis franjas; sábado, dos.
   - `FechasPrueba.Calcular(DateOnly hoy)`: las fechas y el nombre de los periodos pasado, vigente y futuro, con los desplazamientos de la spec y el formato `<año>-T<trimestre>`.
   - `PlanificadorHorarios(Random random)`:
-    - `IntentarAsignarGrupo(int cantidadBloques, IReadOnlyList<int> profesores, IReadOnlyList<int>? aulas)`: franjas en días distintos y un profesor y un aula libres en todas ellas, o `null` después de 20 intentos.
+    - `IntentarAsignarGrupo(int cantidadBloques, IReadOnlyList<int> profesores, IReadOnlyList<int>? aulas)`: franjas en días distintos y un profesor y un aula libres en todas ellas, o `null` si no queda ninguna combinación.
     - `PuedeMatricular(int estudianteId, int cursoId, IReadOnlyCollection<Franja> franjas)` y `RegistrarMatricula(...)`, con RN-05 y RN-06.
     - `LiberarMatricula(...)`, para el cambio de grupo y los retiros del periodo vigente.
 - Verify: `dotnet test`, con:
@@ -103,7 +103,14 @@ Ninguna.
     - Para cada día de 2028, que es bisiesto: los tres periodos cumplen `ReglasPeriodo.Coherente`, sus clases no se traslapan (`ClasesSeTraslapan`) y sus nombres son distintos.
     - El vigente contiene `hoy` en su matrícula (`EnRangoMatricula`) y permite el retiro (`PermiteRetiro`).
     - Un caso fijo: el nombre para un inicio en mayo de 2027 es `2027-T2`.
-- Files: `src/Matricula.Infrastructure/Seed/DatosPrueba/{Franja,FechasPrueba,PlanificadorHorarios}.cs`, `tests/Matricula.UnitTests/Seed/{PlanificadorHorariosTests,FechasPruebaTests}.cs`
+  - Resultado (2026-11-16): `dotnet build` sin warnings; 1104/1104 pruebas unitarias en verde (752 nuevas: 732 son las dos teorías que recorren los 366 días de 2028, y 20 son de `PlanificadorHorariosTests` y `FechasPruebaTests`). No requiere verificación manual.
+  - Detalles que la tarea no fijaba:
+    - **Sin el límite de 20 intentos.** `IntentarAsignarGrupo` recorre en orden aleatorio **todas** las combinaciones de franjas: 32 con un bloque y 420 con dos en días distintos. Así `null` significa que de verdad no queda espacio. Con 20 intentos al azar, la prueba "hasta agotar las franjas" fallaba cerca del final: con 1 franja libre de 32, 20 intentos la encuentran solo la mitad de las veces. El costo sigue siendo bajo: a lo sumo 420 combinaciones por grupo.
+    - `cantidadBloques` va de 1 a `MaxBloques` (2), como dice la spec. Fuera de ese rango lanza `ArgumentOutOfRangeException`.
+    - `RegistrarMatricula` lanza `InvalidOperationException` si la matrícula no se permite. Así un error del orquestador se detecta en lugar de dejar datos que violan RN-05 o RN-06.
+    - `PeriodoPrueba`, `PeriodosPrueba` y `AsignacionGrupo` son `record` en su propio archivo, por la convención de un archivo por clase.
+    - Pruebas adicionales: la lista de franjas (32, sin domingo y sin repetidas), sin profesores devuelve `null`, una semilla distinta da otra secuencia, el periodo pasado ya terminó y el futuro no ha empezado, y los extremos del nombre por trimestre.
+- Files: `src/Matricula.Infrastructure/Seed/DatosPrueba/{Franja,FechasPrueba,PeriodoPrueba,PeriodosPrueba,AsignacionGrupo,PlanificadorHorarios}.cs`, `tests/Matricula.UnitTests/Seed/{PlanificadorHorariosTests,FechasPruebaTests}.cs`
 
 ### T3. Catálogos y personas
 - Acceptance:

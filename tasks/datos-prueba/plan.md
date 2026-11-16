@@ -84,7 +84,7 @@ Lo delicado de este módulo es que escribe saltándose los servicios, así que l
   - Un planificador por periodo. Guarda, por profesor, aula y estudiante, el conjunto de franjas ocupadas, y por estudiante, los cursos que ya tiene.
   - `IntentarAsignarGrupo(cantidadBloques, profesores, aulas | null)`:
     - Elige al azar `cantidadBloques` franjas en días distintos y, en orden aleatorio, el primer profesor y la primera aula (si no es virtual) libres en todas ellas.
-    - Reintenta hasta 20 combinaciones de franjas antes de devolver "sin espacio".
+    - Recorre en orden aleatorio todas las combinaciones de franjas (32 con un bloque, 420 con dos) y devuelve "sin espacio" solo si ninguna tiene profesor y aula libres. (Ajustado en T2: antes eran 20 intentos al azar.)
     - Al asignar, marca las franjas como ocupadas.
   - `PuedeMatricular(estudiante, curso, franjas)` y `RegistrarMatricula(...)`: RN-05 y RN-06.
   - Trabaja con Ids (`int`) y franjas, no con entidades. Así se prueba sin BD.

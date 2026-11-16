@@ -15,7 +15,7 @@ dotnet ef database update --project src/Matricula.Infrastructure --startup-proje
 
 | Tarea | Estado | Código | Pruebas unitarias | Verificación manual | Commit |
 |---|---|:---:|:---:|:---:|:---:|
-| T1. Base: paquete, opciones y guardas | Pendiente | ⬜ | ⬜ | ⬜ | ⬜ |
+| T1. Base: paquete, opciones y guardas | Completada | ✅ | ✅ | ✅ | ✅ |
 | T2. `PlanificadorHorarios` y `FechasPrueba` | Pendiente | ⬜ | ⬜ | ➖ | ⬜ |
 | T3. Catálogos y personas | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T4. Grupos y horarios | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -65,6 +65,21 @@ Ninguna.
     - El mismo caso con `ASPNETCORE_ENVIRONMENT=Production` (con la cadena de conexión por variable de entorno): `LogWarning` y no hace nada.
     - Con un curso creado desde Scalar: "La BD ya tiene datos".
     - La contraseña no aparece en el log.
+  - Resultado (2026-11-16): `dotnet build` sin warnings; 352/352 pruebas unitarias en verde (20 nuevas de `DatosPruebaOptionsTests`). Verificación manual sobre una BD temporal `matricula_semilla_t1`, creada con `dotnet ef database update` y borrada al terminar, para no tocar la BD de desarrollo. La contraseña de prueba se pasó como variable de entorno del proceso:
+
+    | Escenario | Resultado |
+    |---|---|
+    | Flag apagado (valor por defecto) | Arranca normal: crea el administrador inicial, y el log no menciona los datos de prueba |
+    | `DatosPrueba__Habilitado=true` sin contraseña | No arranca: `InvalidOperationException` "La configuración de los datos de prueba no es válida: - La opción 'DatosPrueba:Contrasena' es obligatoria y debe cumplir RN-26…" |
+    | Con contraseña y `DatosPrueba__Estudiantes=-1` | No arranca: "La opción 'DatosPrueba:Estudiantes' debe estar entre 0 y 5000." |
+    | Todo válido, `Development`, BD sin datos de negocio | Arranca, con "Se sembrarían datos de prueba con la semilla 1630291738". Con `DatosPrueba__Semilla=123`: "…con la semilla 123" |
+    | Todo válido con `ASPNETCORE_ENVIRONMENT=Production` | Arranca, con el `LogWarning` "'DatosPrueba:Habilitado' está activo fuera de Development; no se siembran datos de prueba" |
+    | Un curso insertado con `psql` en la BD temporal | "La BD ya tiene datos; no se siembran datos de prueba" |
+    | La contraseña de prueba en los logs de todos los escenarios | No aparece |
+
+  - Detalles que la tarea no fijaba:
+    - El curso del último escenario se insertó con `psql` en la BD temporal, en lugar de crearlo desde Scalar: solo hacía falta que existiera un dato de negocio.
+    - La API toma `appsettings.json` del directorio actual: el `.exe` se arranca desde `src/Matricula.Api`.
 - Files: `src/Matricula.Infrastructure/Matricula.Infrastructure.csproj`, `src/Matricula.Infrastructure/Seed/DatosPrueba/{DatosPruebaOptions,DatosPruebaSeedService}.cs`, `src/Matricula.Infrastructure/Seed/SeedExtensions.cs`, `src/Matricula.Infrastructure/DependencyInjection.cs`, `src/Matricula.Api/{Program.cs,appsettings.json}`, `tests/Matricula.UnitTests/Matricula.UnitTests.csproj`, `tests/Matricula.UnitTests/Seed/DatosPruebaOptionsTests.cs`
 
 ### T2. `PlanificadorHorarios` y `FechasPrueba`

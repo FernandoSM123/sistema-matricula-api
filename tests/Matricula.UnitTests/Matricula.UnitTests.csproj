@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Matricula.Domain\Matricula.Domain.csproj" />
     <ProjectReference Include="..\..\src\Matricula.Application\Matricula.Application.csproj" />
+    <ProjectReference Include="..\..\src\Matricula.Infrastructure\Matricula.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -5,6 +5,7 @@ using Matricula.Infrastructure.Persistence.Auditoria;
 using Matricula.Infrastructure.Persistence.Errores;
 using Matricula.Infrastructure.Persistence.Interceptors;
 using Matricula.Infrastructure.Seed;
+using Matricula.Infrastructure.Seed.DatosPrueba;
 using Matricula.Infrastructure.Seguridad;
 using Matricula.Infrastructure.Tiempo;
 using Microsoft.EntityFrameworkCore;
@@ -54,6 +55,10 @@ public static class DependencyInjection
 
         services.AddOptions<AdminSeedOptions>().Bind(configuration.GetSection(AdminSeedOptions.SectionName));
         services.AddScoped<AdminSeedService>();
+
+        // Sin ValidateOnStart: las opciones se validan solo cuando la siembra va a ejecutarse (spec datos-prueba).
+        services.AddOptions<DatosPruebaOptions>().Bind(configuration.GetSection(DatosPruebaOptions.SectionName));
+        services.AddScoped<DatosPruebaSeedService>();
 
         return services;
     }

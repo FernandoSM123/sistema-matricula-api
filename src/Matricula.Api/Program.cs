@@ -48,6 +48,7 @@ builder.Services.AddLimitesPeticiones();
 var app = builder.Build();
 
 await app.Services.SembrarAdministradorInicialAsync(app.Lifetime.ApplicationStopping);
+await app.Services.SembrarDatosPruebaAsync(app.Environment.IsDevelopment(), app.Lifetime.ApplicationStopping);
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();

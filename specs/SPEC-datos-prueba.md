@@ -4,7 +4,7 @@ Módulo `datos-prueba` del [mapa de módulos](mapa-modulos.md). Siembra datos de
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/datos-prueba/plan.md) | [Aprobadas](../tasks/datos-prueba/todo.md) | 0/6 tareas |
+| **Aprobada** | [Aprobado](../tasks/datos-prueba/plan.md) | [Aprobadas](../tasks/datos-prueba/todo.md) | 1/6 tareas completadas |
 
 **Historial:**
 - 2026-11-13: v1 en revisión. Decisiones del usuario antes de redactarla: módulo aparte con el flujo spec-driven, datos variados con **Bogus**, activación con un flag en la configuración, cantidades configurables en `appsettings` y reinicio de la BD con `drop` + `update`.
@@ -12,6 +12,7 @@ Módulo `datos-prueba` del [mapa de módulos](mapa-modulos.md). Siembra datos de
   - El origen de registro se llama `RegistroPublico`, no `Publico`.
   - La versión de Bogus queda fijada en 35.6.5, la estable más reciente en NuGet.
 - 2026-11-13: plan y lista de tareas aprobados. Las tareas aún no comienzan.
+- 2026-11-16: T1 (base: paquete, opciones y guardas) completada, sin cambios de alcance.
 
 ## Objetivo
 

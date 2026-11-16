@@ -20,7 +20,7 @@ dotnet ef database update --project src/Matricula.Infrastructure --startup-proje
 | T3. Catálogos y personas | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Grupos y horarios | Completada | ✅ | ➖ | ✅ | ✅ |
 | T5. Matrículas y estados finales | Completada | ✅ | ➖ | ✅ | ✅ |
-| T6. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T6. Cierre del módulo | Completada | ✅ | ➖ | ✅ | ✅ |
 
 **Estados de tarea:**
 - **Pendiente:** no se ha empezado.
@@ -263,3 +263,26 @@ Ninguna.
   - Estados al día en la spec, este `todo.md` y `specs/mapa-modulos.md` (módulo **Completado**).
 - Verify: `dotnet build` sin warnings, `dotnet test tests/Matricula.UnitTests` en verde y la tabla de verificación completa.
 - Files: `README.md`, `AGENTS.md`, `specs/SPEC-datos-prueba.md`, `specs/mapa-modulos.md`, `tasks/datos-prueba/todo.md`
+- Resultado (2026-11-16): `dotnet build` sin warnings; 1104/1104 pruebas unitarias en verde. La BD de desarrollo `matricula` queda sembrada con los valores por defecto: 53 matrículas, 40 activas.
+  - **Tabla de verificación de la spec,** fila por fila:
+
+    | Fila | Dónde se verificó |
+    |---|---|
+    | Drop, update y arranque con el flag | T3–T5. Siembra final en 5,4 s de arranque, la siembra aporta alrededor de 1 s |
+    | Reiniciar sin borrar | T1 y T6: "La BD ya tiene datos" |
+    | Flag apagado | T1 y T5: solo el administrador, con su temporal |
+    | Configuración inválida (sin contraseña, sin RN-26, `Estudiantes = -1`) | T1 |
+    | `Production` | T1 |
+    | Misma semilla y sin semilla | T3 |
+    | Cupos, traslapes y capacidad | T4 y T5: todas las consultas en 0 |
+    | Login de `estudiante1`, `profesor1` y `estudiante2` | T3 y T5 |
+    | Login del administrador, y reinicio sin renovar la temporal | T5 |
+    | Login de un estudiante desactivado | T3 y T6: `403` |
+    | Oferta académica del vigente y operaciones de `estudiante1` | T5 y T6: un grupo abierto con 10 cupos y el lleno con 0; matricular, retirar y cambiar de grupo como en la operación normal |
+    | Abrir el grupo futuro sin horarios | T5: `409 RF-47` |
+    | Auditoría | T6: 170 registros de todas las entidades sembradas, todos con autor Sistema; `GET /auditoria?entidad=Curso` devuelve las creaciones |
+    | Correos | T3 y T6: `registro_error` vacío con smtp4dev apagado, así que ningún envío |
+
+  - **Log:** ninguno de los logs completos de las siembras de T5 y T6 contiene la contraseña.
+  - **Criterios de éxito 1–7:** cumplidos según las filas de arriba.
+  - **Documentación:** `README.md` tiene la sección "Datos de prueba (solo desarrollo)" (activación, guardas, reinicio, cuentas y cantidades). `AGENTS.md` tiene los comandos de reinicio y menciona `Seed/DatosPrueba/` en la estructura.

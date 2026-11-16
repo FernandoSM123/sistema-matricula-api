@@ -4,7 +4,7 @@ Módulo `datos-prueba` del [mapa de módulos](mapa-modulos.md). Siembra datos de
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/datos-prueba/plan.md) | [Aprobadas](../tasks/datos-prueba/todo.md) | 5/6 tareas completadas |
+| **Aprobada** | [Aprobado](../tasks/datos-prueba/plan.md) | [Aprobadas](../tasks/datos-prueba/todo.md) | 6/6 tareas completadas: **módulo completado** (2026-11-16) |
 
 **Historial:**
 - 2026-11-13: v1 en revisión. Decisiones del usuario antes de redactarla: módulo aparte con el flujo spec-driven, datos variados con **Bogus**, activación con un flag en la configuración, cantidades configurables en `appsettings` y reinicio de la BD con `drop` + `update`.
@@ -18,6 +18,7 @@ Módulo `datos-prueba` del [mapa de módulos](mapa-modulos.md). Siembra datos de
 - 2026-11-16: T4 (grupos y horarios) completada, sin cambios de alcance. La verificación por API de RF-47 (abrir el grupo sin horarios) pasa a T6, porque necesita un token de administrador.
 - 2026-11-16: **cambio de alcance aprobado por el usuario.** La siembra también asigna `DatosPrueba:Contrasena` como contraseña definitiva del administrador inicial (punto 6), para usarlo de inmediato en desarrollo. Se descartó cambiar el `AdminSeed` general, porque los requerimientos piden que el administrador inicial nazca con una temporal y eso protege a producción. Se implementa en T5.
 - 2026-11-16: T5 (matrículas y estados finales) completada, con el cambio del administrador inicial. Se cumplió la verificación de RF-47 pendiente de T4. Ajuste menor: `profesor1` da el primer grupo de los periodos pasado y vigente, para garantizar la tabla de cuentas fijas del punto 6.
+- 2026-11-16: T6 (cierre) completada: README y AGENTS.md al día, tabla de verificación y criterios de éxito cumplidos. **Módulo completado.** La BD de desarrollo queda sembrada.
 
 ## Objetivo
 

@@ -17,7 +17,7 @@ dotnet ef database update --project src/Matricula.Infrastructure --startup-proje
 |---|---|:---:|:---:|:---:|:---:|
 | T1. Base: paquete, opciones y guardas | Completada | ✅ | ✅ | ✅ | ✅ |
 | T2. `PlanificadorHorarios` y `FechasPrueba` | Completada | ✅ | ✅ | ➖ | ✅ |
-| T3. Catálogos y personas | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T3. Catálogos y personas | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Grupos y horarios | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T5. Matrículas y estados finales | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T6. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
@@ -128,7 +128,31 @@ Ninguna.
   - Dos siembras con `Semilla = 123`, con drop en medio: las mismas cédulas y correos. Con `Semilla = null`: distintos.
   - `GET /api/v1/auditoria?entidad=Curso` → creaciones con autor Sistema.
   - smtp4dev sin correos nuevos.
-- Files: `src/Matricula.Infrastructure/Seed/DatosPrueba/{CatalogosPrueba,GeneradorPersonas,DatosPruebaSeedService}.cs`
+  - Resultado (2026-11-16): `dotnet build` sin warnings; 1104/1104 pruebas unitarias en verde. Verificación manual sobre la BD de desarrollo `matricula`, borrada y recreada en cada siembra (autorizado por el usuario), con el flag y la contraseña en sus user-secrets:
+
+    | Escenario | Resultado |
+    |---|---|
+    | Drop, update y arranque con los valores por defecto | El log muestra "Datos de prueba sembrados con la semilla 907205199: 8 cursos, 5 aulas, 3 periodos, 6 profesores y 30 estudiantes (3 desactivados)". El arranque completo tardó unos 4 s |
+    | Cantidades en `psql` | 8 cursos, 5 aulas, 3 periodos, 6 profesores, 30 estudiantes y 37 usuarios (36 + el administrador inicial); 0 grupos y 0 matrículas |
+    | Periodos (hoy = 2026-11-16) | `2026-T2` (pasado: clases del 20/05 al 17/09), `2026-T4` (vigente: matrícula del 06/11 al 26/11, retiro hasta el 16/12) y `2027-T2` (futuro) |
+    | Repetidos: cédulas de estudiantes y de profesores, correos, códigos de curso y de aula, nombres de periodo | 0 en todos. Todos los correos de prueba terminan en `@prueba.test` |
+    | Cuentas | `profesor1` y `estudiante1` con definitiva; `profesor2` y `estudiante2` con temporal y sin definitiva; 1 profesor y 3 estudiantes desactivados, ninguno de las cuentas fijas. Los registrados por el administrador tienen `creado_por_id = 1` |
+    | Login de `estudiante1` y `profesor1` | `200`, `debeCambiarContrasena: false` |
+    | Login de `estudiante2` y `profesor2` | `200`, `debeCambiarContrasena: true` (RN-24) |
+    | Login de un estudiante desactivado | `403`, `RN-29` "La cuenta está desactivada…" |
+    | Dos siembras con `DatosPrueba__Semilla=123`, con drop en medio, y una sin semilla | El hash MD5 de cédulas, correos y cursos es igual en las dos primeras (`b1e6e640…`) y distinto en la tercera |
+    | Reiniciar la API sin borrar la BD | "La BD ya tiene datos; no se siembran datos de prueba" |
+    | `registro_auditoria` | Una `Creacion` por cada dato: 8 `Curso`, 5 `Aula`, 3 `Periodo`, 6 `Profesor`, 30 `Estudiante` y 37 `Usuario` (con el administrador), todas sin `usuario_id` (autor Sistema) |
+    | Correos | smtp4dev no estaba corriendo, así que un envío habría fallado y dejado un registro en `registro_error`: 0 registros y ningún "No se pudo enviar" en el log |
+    | La contraseña de prueba en los logs | No aparece |
+
+  - Detalles que la tarea no fijaba:
+    - **Direcciones costarricenses:** la configuración regional `es` de Bogus genera direcciones de España ("Marbella", "Mataró"). `GeneradorPersonas.Direccion` las arma con un cantón y su provincia de una lista fija y señas: "Montes de Oca, San José. 400 m al sur del supermercado".
+    - **Descripciones de curso:** usan el nombre del curso tal cual ("Aprenda Excel básico…"). Pasarlo a minúsculas dañaba nombres propios y siglas ("excel", "sql").
+    - Los correos generados llevan un número de secuencia común a profesores y estudiantes, así no chocan entre roles.
+    - `GeneradorPersonas` recibe el `Faker`; la clase `DatosSembrados` lleva las entidades de una capa a la siguiente.
+    - La auditoría se revisó con `psql`. No se usó `GET /api/v1/auditoria` porque exigía cambiar la contraseña del administrador inicial, que quedó con su temporal.
+- Files: `src/Matricula.Infrastructure/Seed/DatosPrueba/{CatalogosPrueba,GeneradorPersonas,DatosSembrados,DatosPruebaSeedService}.cs`
 
 ### T4. Grupos y horarios
 - Acceptance:

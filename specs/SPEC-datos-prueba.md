@@ -4,7 +4,7 @@ Módulo `datos-prueba` del [mapa de módulos](mapa-modulos.md). Siembra datos de
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/datos-prueba/plan.md) | [Aprobadas](../tasks/datos-prueba/todo.md) | 2/6 tareas completadas |
+| **Aprobada** | [Aprobado](../tasks/datos-prueba/plan.md) | [Aprobadas](../tasks/datos-prueba/todo.md) | 3/6 tareas completadas |
 
 **Historial:**
 - 2026-11-13: v1 en revisión. Decisiones del usuario antes de redactarla: módulo aparte con el flujo spec-driven, datos variados con **Bogus**, activación con un flag en la configuración, cantidades configurables en `appsettings` y reinicio de la BD con `drop` + `update`.
@@ -14,6 +14,7 @@ Módulo `datos-prueba` del [mapa de módulos](mapa-modulos.md). Siembra datos de
 - 2026-11-13: plan y lista de tareas aprobados. Las tareas aún no comienzan.
 - 2026-11-16: T1 (base: paquete, opciones y guardas) completada, sin cambios de alcance.
 - 2026-11-16: T2 (planificador y fechas) completada, sin cambios de alcance. El planificador recorre todas las combinaciones de franjas en lugar de 20 intentos al azar, para que "sin espacio" sea exacto (detalle en `todo.md`).
+- 2026-11-16: T3 (catálogos y personas) completada, sin cambios de alcance. Las direcciones se arman con cantones de Costa Rica y señas, porque las de Bogus en español son de España (detalle en `todo.md`). La BD de desarrollo queda con los datos sembrados.
 
 ## Objetivo
 

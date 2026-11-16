@@ -20,4 +20,15 @@ public sealed class DatosSembrados
 
     /// <summary>Estudiantes desactivados: no reciben matrículas activas en el periodo vigente.</summary>
     public HashSet<Estudiante> EstudiantesDesactivados { get; } = [];
+
+    public List<GrupoSembrado> Grupos { get; } = [];
+
+    /// <summary>
+    /// Un planificador por periodo. Lo que ocupan los grupos queda registrado, y la capa de matrículas lo reutiliza para
+    /// los estudiantes (RN-05, RN-06).
+    /// </summary>
+    public Dictionary<Periodo, PlanificadorHorarios> Planificadores { get; } = [];
+
+    /// <summary>Grupos que no se pudieron crear por falta de franjas libres.</summary>
+    public int GruposSinEspacio { get; set; }
 }

@@ -18,7 +18,7 @@ dotnet ef database update --project src/Matricula.Infrastructure --startup-proje
 | T1. Base: paquete, opciones y guardas | Completada | ✅ | ✅ | ✅ | ✅ |
 | T2. `PlanificadorHorarios` y `FechasPrueba` | Completada | ✅ | ✅ | ➖ | ✅ |
 | T3. Catálogos y personas | Completada | ✅ | ➖ | ✅ | ✅ |
-| T4. Grupos y horarios | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T4. Grupos y horarios | Completada | ✅ | ➖ | ✅ | ✅ |
 | T5. Matrículas y estados finales | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T6. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 
@@ -173,7 +173,25 @@ Ninguna.
   - `GET /api/v1/oferta-academica` del periodo vigente muestra los grupos abiertos.
   - Con `Profesores = 1` y `GruposPorPeriodo = 50`: se crean menos grupos, con un `LogWarning` por cada faltante, y la API arranca.
   - Atomicidad: con `horario` renombrada en `psql`, la siembra falla y no quedan cursos ni personas. Se revierte el `ALTER`.
-- Files: `src/Matricula.Infrastructure/Seed/DatosPrueba/DatosPruebaSeedService.cs`
+  - Resultado (2026-11-16): `dotnet build` sin warnings; 1104/1104 pruebas unitarias en verde. Verificación manual sobre la BD de desarrollo `matricula`, recreada en cada siembra:
+
+    | Escenario | Resultado |
+    |---|---|
+    | Siembra con los valores por defecto | "Grupos de prueba: 15 (2026-T2: 4 Finalizado 1 Cancelado, 2026-T4: 2 Abierto 1 Cancelado 1 Planificado 1 Cerrado, 2027-T2: 5 Planificado); 0 sin crear por falta de franjas". Son los estados **finales**: en la BD, los grupos que recibirán matrículas están `Abierto`, y T5 los lleva a su estado final |
+    | Consultas `psql`: traslapes de profesor (RN-07), de aula (RN-08) y dentro del mismo grupo (RN-14), cupo mayor que la capacidad (RN-09), virtual con aula o presencial sin aula, profesor desactivado en los periodos vigente o futuro | 0 en todas. 5 grupos por periodo. Un solo grupo sin horarios: el primero del periodo futuro |
+    | El grupo lleno del periodo vigente | Cupo 8 (de 5 a 8, para que se pueda llenar) y el mismo curso que el primer grupo abierto |
+    | `GET /api/v1/oferta-academica` | Los 4 grupos `Abierto` del periodo vigente con sus cupos disponibles; no aparece el `Planificado` |
+    | `Profesores = 1` y `GruposPorPeriodo = 50` | La API arranca. 69 grupos creados y 81 sin crear, con un `LogWarning` por cada uno. Las consultas de traslapes siguen en 0 |
+    | Atomicidad: BD recreada, `horario` renombrada con `psql` y arranque | La siembra falla con `42P01` al guardar los grupos, y la API no arranca. No quedan cursos, aulas, periodos, estudiantes ni grupos: solo el administrador inicial y sus 2 registros de auditoría, que se crean antes. Se revirtió el `ALTER` |
+    | `registro_auditoria` | 15 `Grupo` y 19 `Horario` con `Creacion` y autor Sistema |
+    | Abrir el grupo futuro sin horarios por API (`409 RF-47`) | **Pendiente, pasa a T6.** Hace falta un token de administrador, y el administrador inicial tiene su temporal pendiente. El clasificador de permisos de la sesión no permitió hacerle el cambio obligatorio sin consultar al usuario. La regla la cubre la prueba unitaria `GrupoTests.CambiarEstado_AbrirSinHorarios_LanzaRf47` |
+
+  - Detalles que la tarea no fijaba:
+    - **`SembradorGrupos`** arma los grupos en memoria, en su propia clase, para que el servicio quede como orquestador: agrega, guarda y escribe el log. `GrupoSembrado` guarda el grupo con sus franjas y su estado final, y `DatosSembrados.Planificadores` guarda un planificador por periodo, que T5 reutiliza para los estudiantes.
+    - **El estado de cada grupo depende de cuántos se crearon**, no del número de intento, para no perder un rol cuando un grupo no cabe. El cancelado del periodo pasado es el tercero creado; antes era el último intento, y con `GruposPorPeriodo = 50` no se creaba.
+    - **El grupo lleno** tiene un cupo de 5 a 8, sin pasar la capacidad del aula, y el mismo curso que el primer abierto, para que T5 pueda hacer el cambio de grupo.
+    - El profesor desactivado solo puede tener grupos en el periodo pasado, que terminan finalizados o cancelados: RN-37 impide desactivar a un profesor con grupos activos.
+- Files: `src/Matricula.Infrastructure/Seed/DatosPrueba/{SembradorGrupos,GrupoSembrado,DatosSembrados,DatosPruebaSeedService}.cs`
 
 ### T5. Matrículas y estados finales
 - Acceptance:
@@ -205,6 +223,7 @@ Ninguna.
   - `README.md`: cómo activar los datos de prueba (user-secrets), qué cuentas se crean y cómo reiniciar la BD.
   - `AGENTS.md`: los comandos de reinicio de la BD y la mención de los datos de prueba en la estructura.
   - Toda la tabla de verificación manual de la spec recorrida. Lo que no cubran T1 a T5 se cubre aquí.
+  - Pendiente de T4: abrir por API el grupo del periodo futuro sin horarios → `409 RF-47`. Necesita un token de administrador (el usuario decide cómo obtenerlo).
   - Revisión del log completo de una siembra: no contiene la contraseña.
   - Criterios de éxito de la spec cumplidos.
   - Estados al día en la spec, este `todo.md` y `specs/mapa-modulos.md` (módulo **Completado**).

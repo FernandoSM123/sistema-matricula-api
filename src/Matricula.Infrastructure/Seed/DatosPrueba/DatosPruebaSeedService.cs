@@ -60,11 +60,26 @@ public partial class DatosPruebaSeedService(
         await using var transaccion = await db.Database.BeginTransactionAsync(cancellationToken);
 
         var datos = await SembrarCatalogosYPersonasAsync(faker, hoy, cancellationToken);
+        await SembrarGruposAsync(faker, datos, cancellationToken);
 
         await transaccion.CommitAsync(cancellationToken);
 
         LogCatalogosYPersonas(logger, semilla, datos.Cursos.Count, datos.Aulas.Count, datos.Profesores.Count,
             datos.Estudiantes.Count, datos.EstudiantesDesactivados.Count);
+        var gruposPorPeriodo = string.Join(", ", datos.Grupos
+            .GroupBy(g => g.Periodo.Nombre)
+            .Select(p => $"{p.Key}: {string.Join(" ", p.GroupBy(g => g.EstadoFinal).Select(e => $"{e.Count()} {e.Key}"))}"));
+        LogGrupos(logger, datos.Grupos.Count, gruposPorPeriodo, datos.GruposSinEspacio);
+    }
+
+    /// <summary>Segundo guardado: los grupos de los tres periodos con sus horarios.</summary>
+    private async Task SembrarGruposAsync(Faker faker, DatosSembrados datos, CancellationToken cancellationToken)
+    {
+        new SembradorGrupos(faker, datos, periodo => LogGrupoSinEspacio(logger, periodo))
+            .Sembrar(_options.GruposPorPeriodo);
+
+        db.Grupos.AddRange(datos.Grupos.Select(g => g.Grupo));
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     /// <summary>
@@ -280,4 +295,12 @@ public partial class DatosPruebaSeedService(
             + "{Profesores} profesores y {Estudiantes} estudiantes ({Desactivados} desactivados)")]
     private static partial void LogCatalogosYPersonas(
         ILogger logger, int semilla, int cursos, int aulas, int profesores, int estudiantes, int desactivados);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "Grupos de prueba: {Total} ({PorPeriodo}); {SinEspacio} sin crear por falta de franjas")]
+    private static partial void LogGrupos(ILogger logger, int total, string porPeriodo, int sinEspacio);
+
+    [LoggerMessage(Level = LogLevel.Warning,
+        Message = "No quedan franjas con profesor y aula libres en el periodo {Periodo}: un grupo de prueba no se creó")]
+    private static partial void LogGrupoSinEspacio(ILogger logger, string periodo);
 }

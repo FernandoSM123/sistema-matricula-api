@@ -9,7 +9,7 @@ src/
   Matricula.Api             Controllers, middleware, Program.cs, configuración
   Matricula.Application     Servicios (casos de uso), DTOs, validadores, interfaces
   Matricula.Domain          Entidades, enums y reglas de negocio puras
-  Matricula.Infrastructure  EF Core (AppDbContext, configuraciones, migraciones), correo
+  Matricula.Infrastructure  EF Core (AppDbContext, configuraciones, migraciones), correo, seeds (admin y datos de prueba)
 tests/
   Matricula.UnitTests
   Matricula.IntegrationTests
@@ -66,7 +66,7 @@ En Development, los user-secrets se cargan después de los `appsettings*.json`, 
 
    `<UserSecretsId>` es el GUID que aparece en `src/Matricula.Api/Matricula.Api.csproj`. Si la carpeta no existe, créala. En Visual Studio también puedes abrirlo con clic derecho en el proyecto → *Manage User Secrets*.
 
-3. Copia la estructura de `appsettings.Development.json` con tus valores reales:
+3. Copia `secrets.example.json` (en la raíz) como tu `secrets.json` y reemplaza los valores de ejemplo. La plantilla tiene todos los secretos que usa la API, con comentarios. Si solo necesitas la conexión, basta con esto:
 
    ```json
    {
@@ -89,6 +89,29 @@ En Development, los user-secrets se cargan después de los `appsettings*.json`, 
 Para quitar un valor, usa `dotnet user-secrets remove "<clave>" --project src/Matricula.Api`. Para borrarlos todos, usa `dotnet user-secrets clear --project src/Matricula.Api`.
 
 > El `secrets.json` se guarda en texto plano, sin cifrar. Solo sirve para que las credenciales no terminen en el repositorio. No usar en producción.
+
+### Todas las claves
+
+Como variable de entorno, cada clave usa `__` en lugar de `:` (por ejemplo `Jwt__Clave`). Las marcadas como **secreto** van solo en user-secrets o en variables de entorno, nunca en `appsettings*.json`.
+
+| Clave | Secreto | Por defecto | Para qué |
+|---|---|---|---|
+| `ConnectionStrings:Matricula` | **Sí** | En Development, `postgres`/`postgres` en `localhost:5432` | Conexión a PostgreSQL. Sin ella, la API no arranca |
+| `Jwt:Clave` | **Sí** | — | Firma de los tokens. Obligatoria, de 32 caracteres o más |
+| `Jwt:Issuer`, `Jwt:Audience` | No | `matricula-api`, `matricula-app` | Emisor y audiencia de los tokens |
+| `Jwt:MinutosVigencia` | No | `60` | Vigencia del token de acceso |
+| `AdminSeed:ContrasenaTemporal` | **Sí** | — | Temporal del administrador inicial. Obligatoria mientras no haya administradores |
+| `AdminSeed:Correo`, `Cedula`, `Nombre`, `Apellidos`, `Telefono` | No | Datos genéricos (`admin@instituto.local`, John Doe) | Datos del administrador inicial |
+| `Smtp:Host`, `Smtp:Port`, `Smtp:UseSsl` | No | En Development, `localhost:2525` (smtp4dev), sin SSL | Servidor de correo |
+| `Smtp:Usuario`, `Smtp:Contrasena` | **Sí** | Vacíos | Solo si el servidor SMTP pide autenticación |
+| `Smtp:Remitente`, `Smtp:NombreRemitente` | No | `no-responder@instituto.local`, `Sistema de Matrícula` | Remitente de los correos |
+| `Cors:OrigenesPermitidos` | No | En Development, `http://localhost:5173` | Orígenes de los frontends |
+| `Instituto:ZonaHoraria` | No | `America/Costa_Rica` | Zona de la fecha de hoy |
+| `Errores:DiasRetencion` | No | `90` | Días que se guarda el registro de errores |
+| `DatosPrueba:Habilitado` | No | `false` | Activa la siembra de datos de prueba (solo Development) |
+| `DatosPrueba:Contrasena` | **Sí** | — | Contraseña de las cuentas de prueba y del administrador inicial |
+| `DatosPrueba:Semilla`, `Cursos`, `Aulas`, `Profesores`, `Estudiantes`, `GruposPorPeriodo`, `MaxMatriculasPorEstudiante` | No | Ver "Datos de prueba" | Cantidades de la siembra |
+| `ASPNETCORE_ENVIRONMENT` | No | `Development` con `dotnet run` | Entorno. User-secrets y datos de prueba solo funcionan en `Development` |
 
 ### CORS
 
@@ -169,6 +192,58 @@ Al arrancar, si no existe ningún administrador, la API crea uno con los datos g
 4. Con ese token, `PUT /api/v1/administradores/1` reemplaza los datos genéricos por los reales.
 
 En Scalar, pega el `accessToken` en la autenticación Bearer. `src/Matricula.Api/Matricula.Api.http` tiene el recorrido completo.
+
+### Datos de prueba (solo desarrollo)
+
+Para no crear datos a mano, la API puede sembrar al arrancar cursos, aulas, tres periodos (pasado, vigente y futuro), profesores, estudiantes, grupos con horarios y matrículas. Los datos se generan con [Bogus](https://github.com/bchavez/Bogus) y cumplen las reglas del sistema: sin traslapes, con cupos consistentes y con grupos y matrículas en todos sus estados. El detalle está en `specs/SPEC-datos-prueba.md`.
+
+**Activarlo** en user-secrets. La contraseña de las cuentas de prueba debe cumplir la política (8 caracteres, una mayúscula y un número):
+
+```json
+"DatosPrueba": { "Habilitado": true, "Contrasena": "TuPrueba123" }
+```
+
+La siembra solo se ejecuta si se cumplen las tres condiciones:
+
+- `DatosPrueba:Habilitado` es `true`;
+- el entorno es `Development` (en otro entorno escribe una advertencia y no hace nada);
+- la BD no tiene datos de negocio (con datos, escribe "La BD ya tiene datos" y no hace nada).
+
+Si la configuración no es válida, por ejemplo sin `Contrasena` o con una cantidad fuera de rango, la API no arranca y el error nombra la clave. La siembra no envía correos y nunca escribe la contraseña en el log.
+
+**Empezar de cero** (borra todos los datos de la BD de desarrollo):
+
+```bash
+dotnet ef database drop --force --project src/Matricula.Infrastructure --startup-project src/Matricula.Api
+dotnet ef database update --project src/Matricula.Infrastructure --startup-project src/Matricula.Api
+dotnet run --project src/Matricula.Api
+```
+
+Al arrancar, el log muestra un resumen con la semilla usada, los totales y los grupos y matrículas por estado.
+
+**Cuentas** (todas con `DatosPrueba:Contrasena`):
+
+| Correo | Caso |
+|---|---|
+| `admin@instituto.local` | El administrador inicial. La siembra le asigna la contraseña de prueba como definitiva, así que no pide el cambio obligatorio |
+| `profesor1@prueba.test` | Profesor con grupos en los periodos pasado y vigente |
+| `estudiante1@prueba.test` | Estudiante con matrículas en los periodos pasado y vigente |
+| `profesor2@prueba.test`, `estudiante2@prueba.test` | Con cambio obligatorio pendiente: la contraseña es una temporal que vence a las 72 horas. Para renovarla, se vuelve a sembrar |
+| `nombre.apellido.N@prueba.test` | El resto. Alrededor de un 10 % de los estudiantes y un profesor están desactivados |
+
+**Cantidades** (en `appsettings.json`, se cambian en user-secrets o en `appsettings.Development.json`):
+
+| Clave | Por defecto | Rango |
+|---|---|---|
+| `Semilla` | `null` (datos distintos en cada siembra) | Un número reproduce siempre los mismos datos |
+| `Cursos` | 8 | 1–200 |
+| `Aulas` | 5 | 1–100 |
+| `Profesores` | 6 | 1–200 |
+| `Estudiantes` | 30 | 0–5000 |
+| `GruposPorPeriodo` | 5 | 0–200 |
+| `MaxMatriculasPorEstudiante` | 2 | 0–6 |
+
+Si los profesores o las aulas no alcanzan para todos los grupos sin traslapes, se crean menos grupos y el log lo advierte. Con los valores por defecto, la siembra tarda alrededor de 1 segundo.
 
 ## Endpoints sin sesión y límites de peticiones
 

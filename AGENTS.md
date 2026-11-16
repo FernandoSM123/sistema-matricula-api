@@ -17,12 +17,18 @@ dotnet build                         # warnings = errores
 dotnet test tests/Matricula.UnitTests   # por ahora solo pruebas unitarias (sin BD)
 dotnet run --project src/Matricula.Api   # Scalar: http://localhost:5022/scalar
 dotnet ef migrations add <Nombre> --project src/Matricula.Infrastructure --startup-project src/Matricula.Api --output-dir Persistence/Migrations
+
+# Reiniciar la BD de desarrollo `matricula` (borra todo); al arrancar, siembra el admin y, con el flag, los datos de prueba
+dotnet ef database drop --force --project src/Matricula.Infrastructure --startup-project src/Matricula.Api
+dotnet ef database update --project src/Matricula.Infrastructure --startup-project src/Matricula.Api
 ```
+
+Datos de prueba (solo `Development`): `DatosPrueba:Habilitado` y `DatosPrueba:Contrasena` en user-secrets; solo siembran sobre una BD sin datos de negocio. Detalle en `README.md` y `specs/SPEC-datos-prueba.md`.
 
 Entorno: PostgreSQL y smtp4dev instalados localmente; **no se usa Docker** (el `docker-compose.yml` es solo una alternativa opcional).
 
 ## Estructura
-`src/Matricula.Domain` → entidades, enums, reglas puras · `src/Matricula.Application` → servicios por funcionalidad, DTOs, validadores · `src/Matricula.Infrastructure` → EF Core, correo, seed · `src/Matricula.Api` → controllers, middleware. Dependencias: `Api → Application → Domain`, `Infrastructure → Application`.
+`src/Matricula.Domain` → entidades, enums, reglas puras · `src/Matricula.Application` → servicios por funcionalidad, DTOs, validadores · `src/Matricula.Infrastructure` → EF Core, correo, seed (`Seed/`: administrador inicial; `Seed/DatosPrueba/`: datos de prueba con Bogus) · `src/Matricula.Api` → controllers, middleware. Dependencias: `Api → Application → Domain`, `Infrastructure → Application`.
 
 ## Límites
 **Siempre**

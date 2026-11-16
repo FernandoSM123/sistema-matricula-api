@@ -203,6 +203,7 @@ Ninguna.
     - cancelaciones con RN-12;
     - cierre del grupo `Cerrado`;
     - finalización de los grupos del periodo pasado.
+  - Administrador inicial con `DatosPrueba:Contrasena` como contraseña definitiva (`EstablecerContrasena`), dentro de la misma transacción (cambio de alcance del 2026-11-16, punto 6 de la spec).
   - Resumen final en el log, con la semilla, los totales por tabla, los grupos por estado y las matrículas por estado y motivo.
 - Verify: manual, con la BD recreada y los valores por defecto:
   - Estas consultas `psql` devuelven 0 filas:
@@ -216,6 +217,12 @@ Ninguna.
   - `estudiante1`: `GET /api/v1/me/matriculas` con datos de los dos periodos. `profesor1`: `GET /api/v1/me/grupos` con datos.
   - Sobre el periodo vigente, como `estudiante1` o el admin: matricular, retirar y cambiar de grupo responden como en la operación normal.
   - Tiempo de la siembra con los valores por defecto: menos de 10 s. Se anota también el de `Estudiantes = 2000`.
+  - Administrador inicial:
+    - Login de `admin@instituto.local` con `DatosPrueba:Contrasena` → `200`, sin cambio obligatorio.
+    - Al reiniciar la API, el `AdminSeed` ya no renueva la temporal.
+    - Con el flag apagado y la BD recreada, el administrador nace con su temporal, como siempre.
+    - La auditoría registra la modificación de su `Usuario` con autor Sistema.
+  - Con el token del administrador, la verificación pendiente de T4: abrir el grupo futuro sin horarios → `409 RF-47`.
 - Files: `src/Matricula.Infrastructure/Seed/DatosPrueba/DatosPruebaSeedService.cs`
 
 ### T6. Cierre del módulo
@@ -223,7 +230,7 @@ Ninguna.
   - `README.md`: cómo activar los datos de prueba (user-secrets), qué cuentas se crean y cómo reiniciar la BD.
   - `AGENTS.md`: los comandos de reinicio de la BD y la mención de los datos de prueba en la estructura.
   - Toda la tabla de verificación manual de la spec recorrida. Lo que no cubran T1 a T5 se cubre aquí.
-  - Pendiente de T4: abrir por API el grupo del periodo futuro sin horarios → `409 RF-47`. Necesita un token de administrador (el usuario decide cómo obtenerlo).
+  - Pendiente de T4: abrir por API el grupo del periodo futuro sin horarios → `409 RF-47`. Se verifica en T5, con el administrador que deja la siembra; si no, aquí.
   - Revisión del log completo de una siembra: no contiene la contraseña.
   - Criterios de éxito de la spec cumplidos.
   - Estados al día en la spec, este `todo.md` y `specs/mapa-modulos.md` (módulo **Completado**).

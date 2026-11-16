@@ -16,6 +16,7 @@ Módulo `datos-prueba` del [mapa de módulos](mapa-modulos.md). Siembra datos de
 - 2026-11-16: T2 (planificador y fechas) completada, sin cambios de alcance. El planificador recorre todas las combinaciones de franjas en lugar de 20 intentos al azar, para que "sin espacio" sea exacto (detalle en `todo.md`).
 - 2026-11-16: T3 (catálogos y personas) completada, sin cambios de alcance. Las direcciones se arman con cantones de Costa Rica y señas, porque las de Bogus en español son de España (detalle en `todo.md`). La BD de desarrollo queda con los datos sembrados.
 - 2026-11-16: T4 (grupos y horarios) completada, sin cambios de alcance. La verificación por API de RF-47 (abrir el grupo sin horarios) pasa a T6, porque necesita un token de administrador.
+- 2026-11-16: **cambio de alcance aprobado por el usuario.** La siembra también asigna `DatosPrueba:Contrasena` como contraseña definitiva del administrador inicial (punto 6), para usarlo de inmediato en desarrollo. Se descartó cambiar el `AdminSeed` general, porque los requerimientos piden que el administrador inicial nazca con una temporal y eso protege a producción. Se implementa en T5.
 
 ## Objetivo
 
@@ -143,6 +144,10 @@ No cubre ningún RF ni RN nuevo. Es una herramienta de desarrollo que **respeta*
 
    - El resto de los correos se generan a partir del nombre, sin tildes, con un número que garantiza que sean únicos: `nombre.apellido.N@prueba.test`. El dominio `.test` está reservado (RFC 6761) y nunca corresponde a un buzón real.
    - Alrededor de un 10 % de los estudiantes (nunca `estudiante1` ni `estudiante2`) y un profesor sin grupos en los periodos vigente y futuro quedan **desactivados** (`Usuario.Desactivar()`, RN-38). Los estudiantes desactivados no tienen matrículas activas en el periodo vigente.
+   - **Administrador inicial** (cambio del 2026-11-16, aprobado por el usuario): la siembra también le asigna `DatosPrueba:Contrasena` como contraseña definitiva, con `EstablecerContrasena`, que anula su temporal. Así `admin@instituto.local` se usa de inmediato, igual que las cuentas de prueba.
+     - Solo ocurre cuando se siembran datos de prueba, es decir, con las guardas del punto 1 y del punto 3. El `AdminSeed` no cambia: fuera de la siembra, el administrador inicial sigue naciendo con su temporal, como piden los requerimientos (§5.4 y "Datos iniciales").
+     - Como el administrador ya tiene contraseña definitiva, el `AdminSeed` deja de renovarle la temporal en los siguientes arranques.
+     - Va en el mismo guardado y la misma transacción que el resto de la siembra, y la auditoría lo registra como una modificación del `Usuario` con autor Sistema.
 
 7. **Asignación de horarios sin traslapes** (RN-06, RN-07, RN-08, RN-14), con un `PlanificadorHorarios` en memoria por periodo:
    - Usa **franjas fijas** de 2 horas: lunes a viernes de 08:00 a 10:00, 10:00 a 12:00, 13:00 a 15:00, 15:00 a 17:00, 18:00 a 20:00 y 20:00 a 22:00, y el sábado de 08:00 a 10:00 y 10:00 a 12:00. Como las franjas no se cruzan, "traslaparse" equivale a compartir día y franja.
@@ -257,6 +262,8 @@ public async Task EjecutarAsync(CancellationToken cancellationToken)
 | Consultas de traslapes por profesor, aula y estudiante en el mismo periodo (RN-06 a RN-08) y de grupos con cupo mayor que la capacidad del aula (RN-09) | Sin filas |
 | Login como `estudiante1@prueba.test` y `profesor1@prueba.test` | `200` con token. `/api/v1/me/matriculas` y `/api/v1/me/grupos` devuelven datos |
 | Login como `estudiante2@prueba.test` | Token con cambio obligatorio pendiente (RN-24) |
+| Login como `admin@instituto.local` con `DatosPrueba:Contrasena`, y reiniciar la API | `200` sin cambio obligatorio. Después del reinicio, el log del `AdminSeed` ya no dice "Temporal del administrador inicial … renovada" |
+| Arrancar con el flag apagado sobre una BD recreada | El administrador inicial nace con su temporal, como siempre |
 | Login de un estudiante desactivado | Rechazado como cualquier cuenta inactiva |
 | `GET /oferta-academica` del periodo vigente; matricular a `estudiante1`, retirar y cambiar de grupo | Hay grupos abiertos, uno sin cupos; las operaciones responden como en la operación normal |
 | Abrir el grupo del periodo futuro sin horarios | `409 RF-47` |
@@ -288,7 +295,7 @@ public async Task EjecutarAsync(CancellationToken cancellationToken)
 1. Con el flag activo, la BD recién recreada queda poblada al arrancar, con las cantidades de la configuración, sin intervención manual y en menos de 10 segundos con los valores por defecto.
 2. Los datos cumplen las reglas del sistema: cupos consistentes, sin traslapes de profesor, aula ni estudiante, sin cupos mayores que la capacidad del aula y con fechas de periodo coherentes.
 3. Los tres periodos cubren los estados principales: grupos `Finalizado`, `Abierto` (uno lleno), `Cerrado`, `Cancelado` y `Planificado`, y matrículas `Activa` y `Retirada` por los tres motivos cuando la cantidad de grupos lo permite.
-4. Se puede iniciar sesión de inmediato con las cuentas fijas y operar sobre el periodo vigente (matricular, retirar, cambiar de grupo).
+4. Se puede iniciar sesión de inmediato con las cuentas fijas y con el administrador inicial, y operar sobre el periodo vigente (matricular, retirar, cambiar de grupo).
 5. La misma semilla reproduce los mismos datos, y sin semilla cada siembra es distinta.
 6. Con el flag desactivado, con datos existentes o fuera de `Development`, la siembra no hace nada.
 7. Ningún correo enviado y ninguna contraseña en el log ni en `appsettings*.json`.

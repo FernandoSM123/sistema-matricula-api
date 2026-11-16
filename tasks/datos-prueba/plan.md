@@ -67,6 +67,7 @@ Lo delicado de este módulo es que escribe saltándose los servicios, así que l
   - Se hashea **una sola vez** con `IHasherContrasenas` y se reutiliza el mismo hash en todas las cuentas. Es válido: el hash ya incluye su sal, y la verificación funciona igual.
   - Hashear miles de veces costaría segundos o minutos (PBKDF2) y pondría en riesgo el criterio de éxito 1.
   - Las cuentas fijas `profesor2` y `estudiante2` usan `AsignarTemporal(hash, MotivoTemporal.CuentaNueva, ahora)` en lugar de `EstablecerContrasena`.
+  - El administrador inicial también recibe la contraseña como definitiva con `EstablecerContrasena` (cambio de alcance del 2026-11-16, se implementa en T5). Así se usa de inmediato y el `AdminSeed` deja de renovarle la temporal.
 - **Guardados dentro de la transacción** (`BeginTransactionAsync`; `AppDbContext.SaveChangesAsync` reutiliza la transacción en curso para la auditoría):
   1. Catálogos y personas: cursos, aulas, periodos, usuarios, profesores y estudiantes.
   2. Grupos con sus horarios y su estado inicial (necesitan los Ids del paso 1).

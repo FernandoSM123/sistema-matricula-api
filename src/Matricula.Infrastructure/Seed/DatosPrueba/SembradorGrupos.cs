@@ -90,7 +90,14 @@ public sealed class SembradorGrupos(Faker faker, DatosSembrados datos, Action<st
     {
         var esVirtual = faker.Random.Double() < ProporcionVirtuales;
         var aulas = esVirtual ? null : datos.Aulas.Select(a => a.Id).ToList();
-        var asignacion = planificador.IntentarAsignarGrupo(faker.Random.Number(1, PlanificadorHorarios.MaxBloques), profesores, aulas);
+        var bloques = faker.Random.Number(1, PlanificadorHorarios.MaxBloques);
+
+        // profesor1 da el primer grupo de cada periodo, si cabe: así tiene grupos en el pasado y el vigente (punto 6).
+        var profesor1 = datos.Profesores[0].Id;
+        var asignacion = (creados.Count == 0 && profesores.Contains(profesor1)
+                ? planificador.IntentarAsignarGrupo(bloques, [profesor1], aulas)
+                : null)
+            ?? planificador.IntentarAsignarGrupo(bloques, profesores, aulas);
         if (asignacion is null)
         {
             return null;

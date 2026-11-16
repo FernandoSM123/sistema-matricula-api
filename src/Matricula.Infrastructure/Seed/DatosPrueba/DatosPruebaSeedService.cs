@@ -61,15 +61,11 @@ public partial class DatosPruebaSeedService(
 
         var datos = await SembrarCatalogosYPersonasAsync(faker, hoy, cancellationToken);
         await SembrarGruposAsync(faker, datos, cancellationToken);
+        await SembrarMatriculasAsync(faker, datos, hoy, cancellationToken);
 
         await transaccion.CommitAsync(cancellationToken);
 
-        LogCatalogosYPersonas(logger, semilla, datos.Cursos.Count, datos.Aulas.Count, datos.Profesores.Count,
-            datos.Estudiantes.Count, datos.EstudiantesDesactivados.Count);
-        var gruposPorPeriodo = string.Join(", ", datos.Grupos
-            .GroupBy(g => g.Periodo.Nombre)
-            .Select(p => $"{p.Key}: {string.Join(" ", p.GroupBy(g => g.EstadoFinal).Select(e => $"{e.Count()} {e.Key}"))}"));
-        LogGrupos(logger, datos.Grupos.Count, gruposPorPeriodo, datos.GruposSinEspacio);
+        EscribirResumen(semilla, datos);
     }
 
     /// <summary>Segundo guardado: los grupos de los tres periodos con sus horarios.</summary>
@@ -80,6 +76,36 @@ public partial class DatosPruebaSeedService(
 
         db.Grupos.AddRange(datos.Grupos.Select(g => g.Grupo));
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>Tercer guardado: matrículas, retiros y estados finales de los grupos (ya rastreados por EF).</summary>
+    private async Task SembrarMatriculasAsync(
+        Faker faker, DatosSembrados datos, DateOnly hoy, CancellationToken cancellationToken)
+    {
+        new SembradorMatriculas(faker, datos, hoy).Sembrar(_options.MaxMatriculasPorEstudiante);
+
+        db.Matriculas.AddRange(datos.Matriculas.Select(m => m.Matricula));
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private void EscribirResumen(int semilla, DatosSembrados datos)
+    {
+        LogCatalogosYPersonas(logger, semilla, datos.Cursos.Count, datos.Aulas.Count, datos.Profesores.Count,
+            datos.Estudiantes.Count, datos.EstudiantesDesactivados.Count);
+
+        var gruposPorPeriodo = string.Join(", ", datos.Grupos
+            .GroupBy(g => g.Periodo.Nombre)
+            .Select(p => $"{p.Key}: {string.Join(" ", p.GroupBy(g => g.Grupo.Estado).Select(e => $"{e.Count()} {e.Key}"))}"));
+        LogGrupos(logger, datos.Grupos.Count, gruposPorPeriodo, datos.GruposSinEspacio);
+
+        var activas = datos.Matriculas.Count(m => m.Matricula.Estado == EstadoMatricula.Activa);
+        var retiradas = string.Join(", ", datos.Matriculas
+            .Where(m => m.Matricula.MotivoRetiro is not null)
+            .GroupBy(m => m.Matricula.MotivoRetiro)
+            .Select(g => $"{g.Count()} {g.Key}"));
+        var lleno = datos.Grupos.FirstOrDefault(g => g.Lleno)?.Grupo;
+        var ocupacionLleno = lleno is null ? "sin grupo lleno" : $"{lleno.CuposOcupados}/{lleno.Cupo}";
+        LogMatriculas(logger, datos.Matriculas.Count, activas, retiradas, ocupacionLleno, datos.HuboCambioDeGrupo);
     }
 
     /// <summary>
@@ -113,15 +139,17 @@ public partial class DatosPruebaSeedService(
         datos.Aulas.AddRange(Enumerable.Range(0, _options.Aulas).Select(i => CrearAula(faker, i)));
         db.Aulas.AddRange(datos.Aulas);
 
-        var administradorId = await db.Usuarios
-            .Where(u => u.Rol == Rol.Administrador && u.CreadoPorId == null)
-            .Select(u => u.Id)
-            .FirstAsync(cancellationToken);
-
         // Un solo hash para todas las cuentas: incluye su sal y verifica igual, y hashear miles de veces (PBKDF2)
         // tardaría minutos (plan, decisiones de implementación).
         var hash = hasher.Hashear(_options.Contrasena!);
         var ahora = timeProvider.GetUtcNow();
+
+        // El administrador inicial también recibe la contraseña de prueba como definitiva, para usarlo de inmediato
+        // (punto 6 de la spec). Anula su temporal, así que el AdminSeed deja de renovarla.
+        var administrador = await db.Usuarios
+            .FirstAsync(u => u.Rol == Rol.Administrador && u.CreadoPorId == null, cancellationToken);
+        administrador.EstablecerContrasena(hash, ahora);
+        var administradorId = administrador.Id;
         var personas = new GeneradorPersonas(faker);
 
         for (var i = 1; i <= _options.Profesores; i++)
@@ -299,6 +327,12 @@ public partial class DatosPruebaSeedService(
     [LoggerMessage(Level = LogLevel.Information,
         Message = "Grupos de prueba: {Total} ({PorPeriodo}); {SinEspacio} sin crear por falta de franjas")]
     private static partial void LogGrupos(ILogger logger, int total, string porPeriodo, int sinEspacio);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "Matrículas de prueba: {Total} ({Activas} activas; retiradas: {Retiradas}); grupo lleno {Lleno}; "
+            + "cambio de grupo: {CambioDeGrupo}")]
+    private static partial void LogMatriculas(
+        ILogger logger, int total, int activas, string retiradas, string lleno, bool cambioDeGrupo);
 
     [LoggerMessage(Level = LogLevel.Warning,
         Message = "No quedan franjas con profesor y aula libres en el periodo {Periodo}: un grupo de prueba no se creó")]

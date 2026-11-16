@@ -19,7 +19,7 @@ dotnet ef database update --project src/Matricula.Infrastructure --startup-proje
 | T2. `PlanificadorHorarios` y `FechasPrueba` | Completada | ✅ | ✅ | ➖ | ✅ |
 | T3. Catálogos y personas | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Grupos y horarios | Completada | ✅ | ➖ | ✅ | ✅ |
-| T5. Matrículas y estados finales | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T5. Matrículas y estados finales | Completada | ✅ | ➖ | ✅ | ✅ |
 | T6. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 
 **Estados de tarea:**
@@ -223,14 +223,41 @@ Ninguna.
     - Con el flag apagado y la BD recreada, el administrador nace con su temporal, como siempre.
     - La auditoría registra la modificación de su `Usuario` con autor Sistema.
   - Con el token del administrador, la verificación pendiente de T4: abrir el grupo futuro sin horarios → `409 RF-47`.
-- Files: `src/Matricula.Infrastructure/Seed/DatosPrueba/DatosPruebaSeedService.cs`
+  - Resultado (2026-11-16): `dotnet build` sin warnings; 1104/1104 pruebas unitarias en verde. Verificación manual sobre la BD de desarrollo `matricula`, recreada en cada siembra. Al terminar quedó sembrada con los valores por defecto:
+
+    | Escenario | Resultado |
+    |---|---|
+    | Siembra con los valores por defecto | "Grupos de prueba: 15 (2026-T2: 4 Finalizado 1 Cancelado, 2026-T4: 2 Abierto 1 Cancelado 1 Planificado 1 Cerrado, 2027-T2: 5 Planificado)" y "Matrículas de prueba: 79 (60 activas; retiradas: 13 CancelacionGrupo, 5 RetiroVoluntario, 1 CambioGrupo); grupo lleno 7/7; cambio de grupo: True". La siembra final dejó 53 matrículas (40 activas, 8 por cancelación, 4 voluntarias y 1 por cambio de grupo) y el grupo lleno en 5/5 |
+    | 12 consultas `psql` de matrículas: `cupos_ocupados` distinto de las activas, `cupos_ocupados > cupo` (RN-03), mismo curso y periodo (RN-05), horarios traslapados (RN-06), activas de desactivados en el vigente, activas en grupos cancelados, matrículas en grupos planificados, fecha fuera del rango de matrícula o futura (RN-04), retiro antes de matricular o después de hoy, retiro voluntario o cambio después del límite (RN-10), matrícula anterior al registro del estudiante, y estado y motivo de retiro incoherentes | 0 en todas. Las consultas de grupos de T4 siguen en 0 |
+    | Cobertura | Grupos `Finalizado`, `Abierto` (uno lleno), `Cerrado`, `Cancelado` y `Planificado`. Matrículas `Activa` y `Retirada` por los tres motivos |
+    | Login de `admin@instituto.local` con `DatosPrueba:Contrasena` | `200`, `debeCambiarContrasena: false`. Al reiniciar la API, el log del `AdminSeed` ya no dice "Temporal … renovada" |
+    | Flag apagado con la BD recreada | Sin cursos, y el administrador con temporal y sin definitiva, como siempre |
+    | `registro_auditoria` del `Usuario` 1 | `Creacion` (del `AdminSeed`) y `Modificacion` con el cambio de `PasswordHash`, las dos con autor Sistema |
+    | Pendiente de T4: abrir el grupo futuro sin horarios como administrador | `409 RF-47` |
+    | `estudiante1`: `GET /api/v1/me/matriculas` | Matrículas en `2026-T2` y `2026-T4`, activas y retiradas |
+    | `profesor1`: `GET /api/v1/me/grupos` | Grupos en `2026-T2` (`Finalizado`) y `2026-T4` (`Abierto`) |
+    | `estudiante1` sobre el periodo vigente | Matricular un grupo del mismo curso: `409 RN-05`. Cambio al grupo lleno: `409 RN-03` "no tiene cupos disponibles". Retiro: `204`. Volver a matricular: `201` |
+    | El administrador cambia a un estudiante del grupo lleno al otro grupo del mismo curso | `201`. Las consultas de cupos y traslapes siguen en 0 |
+    | Tiempo con los valores por defecto (BD ya recreada) | Arranque con siembra: 5,4 s. Sin siembra: 4,4 s. La siembra agrega alrededor de 1 s |
+    | 2000 estudiantes, 20 profesores, 15 aulas y 40 grupos por periodo | 120 grupos y 1664 matrículas. Drop, update y arranque en 15,5 s. Las consultas de matrículas y de grupos siguen en 0 |
+    | La contraseña de prueba en los logs | No aparece |
+
+  - Detalles que la tarea no fijaba:
+    - **`SembradorMatriculas`** arma en memoria las matrículas, los retiros, el cambio de grupo y los estados finales, igual que `SembradorGrupos`. `MatriculaSembrada` guarda cada matrícula con su estudiante y su grupo, para liberar el cupo y las franjas al retirarla.
+    - **Orden dentro del periodo vigente:** matrículas normales, cambio de grupo, llenado del grupo lleno, retiros voluntarios y, al final, los estados finales con sus retiros por cancelación. El cambio va antes de llenar, porque el destino es el grupo lleno.
+    - **`profesor1` da el primer grupo de los periodos pasado y vigente,** si cabe en sus franjas. Sin esto, la tabla de cuentas fijas de la spec no se garantizaba, porque el profesor de cada grupo salía al azar. Es un ajuste a `SembradorGrupos` (T4).
+    - **`estudiante1` recibe al menos una matrícula** en cada periodo, si algún grupo lo admite.
+    - Fechas de retiro: las cancelaciones del periodo pasado, al terminar su matrícula; las del vigente, hoy. Los retiros voluntarios y el cambio de grupo, entre la fecha de matrícula y el límite de retiro o hoy.
+    - El administrador recibe la contraseña en el **primer** guardado, junto con las cuentas de prueba, porque ahí ya está el hash.
+    - Los `HTTP000` de una primera prueba de cambio de grupo eran del script: `psql` en Windows termina las líneas en `\r`, y eso rompía la URL. Con el carácter quitado, todas las peticiones llegaron.
+- Files: `src/Matricula.Infrastructure/Seed/DatosPrueba/{SembradorMatriculas,MatriculaSembrada,SembradorGrupos,DatosSembrados,DatosPruebaSeedService}.cs`
 
 ### T6. Cierre del módulo
 - Acceptance:
   - `README.md`: cómo activar los datos de prueba (user-secrets), qué cuentas se crean y cómo reiniciar la BD.
   - `AGENTS.md`: los comandos de reinicio de la BD y la mención de los datos de prueba en la estructura.
   - Toda la tabla de verificación manual de la spec recorrida. Lo que no cubran T1 a T5 se cubre aquí.
-  - Pendiente de T4: abrir por API el grupo del periodo futuro sin horarios → `409 RF-47`. Se verifica en T5, con el administrador que deja la siembra; si no, aquí.
+  - Pendiente de T4: abrir por API el grupo del periodo futuro sin horarios → `409 RF-47`. ✅ Cumplida en T5 (2026-11-16).
   - Revisión del log completo de una siembra: no contiene la contraseña.
   - Criterios de éxito de la spec cumplidos.
   - Estados al día en la spec, este `todo.md` y `specs/mapa-modulos.md` (módulo **Completado**).

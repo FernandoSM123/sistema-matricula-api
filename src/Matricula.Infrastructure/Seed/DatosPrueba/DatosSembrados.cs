@@ -31,4 +31,9 @@ public sealed class DatosSembrados
 
     /// <summary>Grupos que no se pudieron crear por falta de franjas libres.</summary>
     public int GruposSinEspacio { get; set; }
+
+    public List<MatriculaSembrada> Matriculas { get; } = [];
+
+    /// <summary>Si se hizo el cambio de grupo del periodo vigente (punto 5 de la spec).</summary>
+    public bool HuboCambioDeGrupo { get; set; }
 }

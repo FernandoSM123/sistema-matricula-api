@@ -255,7 +255,7 @@ Todo endpoint exige un token, salvo estos, que tienen un límite de peticiones p
 | `POST /api/v1/auth/olvido-contrasena` | 5 cada 15 minutos |
 | `POST /api/v1/estudiantes/registro` (registro público de estudiantes) | 10 cada 15 minutos |
 
-`/health`, OpenAPI y Scalar también están abiertos, sin límite.
+También están abiertos, sin límite, las consultas públicas de solo lectura `GET /api/v1/oferta-academica` y `GET /api/v1/periodos/vigente` (COR-01), además de `/health`, OpenAPI y Scalar.
 
 ## Migraciones
 

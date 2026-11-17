@@ -7,6 +7,7 @@ API REST en .NET 10 + EF Core 10 + PostgreSQL para la matrícula de un instituto
 - **Cómo construirlo:** `docs/arquitectura.md` (stack, capas, convenciones REST, EF Core, seguridad, orden de implementación).
 - **Mapa de módulos:** `specs/mapa-modulos.md` (ids, dependencias, orden y decisiones aprobadas).
 - **Specs por módulo:** `specs/SPEC-<modulo>.md` · **Plan y tareas por módulo:** `tasks/<modulo>/plan.md`, `tasks/<modulo>/todo.md`.
+- **Correcciones posteriores al cierre de los módulos:** `correcciones/COR-<nn>-<tema>.md`, con su índice en `correcciones/README.md`.
 
 Si algo de una spec contradice estos documentos, detente y pregunta; no elijas por tu cuenta.
 

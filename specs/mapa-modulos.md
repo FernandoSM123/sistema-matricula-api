@@ -95,3 +95,8 @@ Verificaciones que un módulo no pudo hacer por falta de datos o endpoints. Se c
     - **Datos variados con Bogus** (35.6.5, paquete nuevo aprobado por el usuario) y una semilla opcional para reproducirlos. Las cantidades se configuran en `appsettings`.
     - **Las entidades se crean con su dominio** y se guardan con el change tracker y `SaveChangesAsync`, en una transacción: la auditoría las registra con autor Sistema. No se usa `HasData` ni SQL.
     - **Una contraseña común** para las cuentas de prueba, en user-secrets. No se envían correos.
+14. **Correcciones posteriores al cierre** (2026-11-17). Los ajustes a módulos ya completados se registran en `correcciones/COR-<nn>-<tema>.md`, y en el historial de la spec afectada. [COR-01](../correcciones/COR-01-brechas-frontend.md), sobre las brechas detectadas al planear el frontend:
+    - `GET /api/v1/periodos/vigente` pasa a ser público, junto con la oferta académica (§2, §2.2, RF-38 y §7 de los requerimientos).
+    - `GET /api/v1/me` incluye `personaId`.
+    - El mensaje del olvido de contraseña trata de usted.
+    - No se expone la lista de entidades auditadas.

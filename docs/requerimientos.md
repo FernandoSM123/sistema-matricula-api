@@ -51,7 +51,7 @@ Para que un estudiante se pueda matricular en un grupo, se deben cumplir dos con
 | **Administrador** | Personal administrativo del instituto, registrado con sus datos personales. Tiene control total: gestiona todos los catálogos, abre y cierra grupos, y puede matricular, retirar o cambiar de grupo a cualquier estudiante. Es el único que puede registrar profesores y otros administradores. También puede registrar estudiantes. |
 | **Profesor** | Docente del instituto. Consulta los grupos que tiene asignados, sus horarios y los estudiantes matriculados en ellos. Su cuenta solo la puede crear un administrador. |
 | **Estudiante** | Persona registrada en el instituto. Consulta la oferta de grupos abiertos, se matricula, se retira o cambia de grupo, y ve su propia matrícula y su horario. Puede registrarse por su cuenta o ser registrado por un administrador. |
-| **Visitante** *(sin sesión)* | Persona que todavía no ha iniciado sesión. Solo puede registrarse como estudiante, iniciar sesión, solicitar una contraseña temporal si olvidó la suya y consultar la oferta académica (RF-50). |
+| **Visitante** *(sin sesión)* | Persona que todavía no ha iniciado sesión. Solo puede registrarse como estudiante, iniciar sesión, solicitar una contraseña temporal si olvidó la suya, y consultar la oferta académica (RF-50) y el periodo vigente (RF-38). |
 
 ### 2.1 Formas de registro por rol
 
@@ -83,6 +83,7 @@ Para que un estudiante se pueda matricular en un grupo, se deben cumplir dos con
 | Gestionar aulas | — | ✔ | Consultar | — |
 | Gestionar grupos y horarios | — | ✔ | Consultar los suyos | Consultar los abiertos |
 | Consultar la oferta académica | ✔ | ✔ | ✔ | ✔ |
+| Consultar el periodo vigente | ✔ | ✔ | ✔ | ✔ |
 | Cambiar el estado de un grupo | — | ✔ | — | — |
 | Matricular, retirar o cambiar de grupo | — | ✔ (a cualquier estudiante) | — | ✔ (solo a sí mismo) |
 | Ver los estudiantes de un grupo | — | ✔ | Solo de sus grupos | — |
@@ -133,7 +134,7 @@ Para que un estudiante se pueda matricular en un grupo, se deben cumplir dos con
 - **RF-10 Olvido de contraseña:**
   - Cualquier persona sin sesión puede solicitarlo indicando un correo.
   - Si el correo pertenece a una cuenta activa, el sistema le envía una contraseña temporal (RF-05) que **vence en 1 hora**.
-  - La respuesta es siempre la misma, exista o no el correo: *"Si el correo está registrado, recibirás una contraseña temporal"* (RN-28).
+  - La respuesta es siempre la misma, exista o no el correo: *"Si el correo está registrado, recibirá una contraseña temporal"* (RN-28).
 - **RF-11 Vigencia de la contraseña actual durante un olvido:**
   - Mientras la temporal no se use, la contraseña actual **sigue funcionando**.
   - Si el usuario ingresa con la temporal, se aplica el cambio obligatorio (RF-07).
@@ -208,7 +209,7 @@ Perfil ─► Cambiar contraseña ─► Contraseña actual + nueva + confirmaci
 - **RF-35 Registrar un periodo académico:** con las fechas de clases, el rango de matrícula y la fecha límite de retiro.
 - **RF-36 Listar, consultar y modificar periodos.**
 - **RF-37 Eliminar un periodo:** solo si no tiene grupos asociados. Los periodos no se desactivan: los pasados se conservan como historial.
-- **RF-38 Consultar el periodo vigente.**
+- **RF-38 Consultar el periodo vigente:** disponible también sin sesión, junto con la oferta académica (RF-50).
 
 ### 3.8 Aulas
 - **RF-39 Registrar un aula:** con su código, ubicación y capacidad.
@@ -571,6 +572,7 @@ Todos los listados deben permitir búsqueda y filtrado, y deben mostrarse por p�
     - El inicio de sesión.
     - La solicitud de contraseña temporal por olvido.
     - La consulta de la oferta académica (RF-50).
+    - La consulta del periodo vigente (RF-38), para saber de qué periodo es la oferta y hasta cuándo se puede matricular.
   - Ni las contraseñas ni las contraseñas temporales se almacenan en texto plano.
   - La auditoría no guarda contraseñas, temporales ni otros datos secretos (RN-44).
   - El registro de errores no guarda el contenido de las solicitudes ni datos secretos (RN-47). El usuario solo ve un mensaje genérico con el identificador de la operación, nunca el detalle técnico.

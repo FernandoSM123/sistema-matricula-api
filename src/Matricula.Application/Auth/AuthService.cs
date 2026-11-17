@@ -17,7 +17,7 @@ public class AuthService(
     EnvioCorreos envioCorreos,
     TimeProvider timeProvider)
 {
-    public const string MensajeOlvido = "Si el correo está registrado, recibirás una contraseña temporal.";
+    public const string MensajeOlvido = "Si el correo está registrado, recibirá una contraseña temporal.";
 
     /// <summary>
     /// RF-10: si el correo es de una cuenta activa, envía una temporal de 1 hora que reemplaza a la anterior
@@ -127,6 +127,7 @@ public class AuthService(
             {
                 Perfil = new PerfilResponse(
                     u.Id,
+                    null,
                     u.Correo,
                     u.Rol,
                     u.Activo,
@@ -136,23 +137,37 @@ public class AuthService(
                     null),
                 Administrador = db.Administradores
                     .Where(a => a.UsuarioId == u.Id)
-                    .Select(a => new DatosPersonalesResponse(a.Cedula, a.Nombre, a.Apellidos, a.Telefono, null, null, null, null, null))
+                    .Select(a => new
+                    {
+                        a.Id,
+                        Datos = new DatosPersonalesResponse(
+                            a.Cedula, a.Nombre, a.Apellidos, a.Telefono, null, null, null, null, null)
+                    })
                     .FirstOrDefault(),
                 Estudiante = db.Estudiantes
                     .Where(e => e.UsuarioId == u.Id)
-                    .Select(e => new DatosPersonalesResponse(
-                        e.Cedula, e.Nombre, e.Apellidos, e.Telefono, e.FechaNacimiento, e.Direccion, e.FechaRegistro, null, null))
+                    .Select(e => new
+                    {
+                        e.Id,
+                        Datos = new DatosPersonalesResponse(
+                            e.Cedula, e.Nombre, e.Apellidos, e.Telefono, e.FechaNacimiento, e.Direccion, e.FechaRegistro, null, null)
+                    })
                     .FirstOrDefault(),
                 Profesor = db.Profesores
                     .Where(p => p.UsuarioId == u.Id)
-                    .Select(p => new DatosPersonalesResponse(
-                        p.Cedula, p.Nombre, p.Apellidos, p.Telefono, null, null, null, p.Especialidad, p.FechaContratacion))
+                    .Select(p => new
+                    {
+                        p.Id,
+                        Datos = new DatosPersonalesResponse(
+                            p.Cedula, p.Nombre, p.Apellidos, p.Telefono, null, null, null, p.Especialidad, p.FechaContratacion)
+                    })
                     .FirstOrDefault()
             })
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException("La cuenta ya no existe.");
 
-        return resultado.Perfil with { DatosPersonales = resultado.Administrador ?? resultado.Estudiante ?? resultado.Profesor };
+        var persona = resultado.Administrador ?? resultado.Estudiante ?? resultado.Profesor;
+        return resultado.Perfil with { PersonaId = persona?.Id, DatosPersonales = persona?.Datos };
     }
 
     /// <summary>

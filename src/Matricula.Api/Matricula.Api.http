@@ -40,7 +40,8 @@ Content-Type: application/json
 
 ###
 
-# Perfil propio (RF-13). Con el token de una temporal responde 403 RN-24.
+# Perfil propio (RF-13). personaId es el id del administrador, estudiante o profesor de la cuenta (por ejemplo, el de
+# PUT /administradores/{id}). Con el token de una temporal responde 403 RN-24.
 GET {{host}}/api/v1/me
 Authorization: Bearer {{token}}
 
@@ -83,7 +84,7 @@ Authorization: Bearer {{token}}
 
 ###
 
-# Olvido de contraseña (RF-10). Siempre 200 con el mismo mensaje; la temporal (1 hora) llega a smtp4dev.
+# Olvido de contraseña (RF-10). Siempre 200 con el mismo mensaje ("…recibirá una contraseña temporal."); la temporal (1 hora) llega a smtp4dev.
 # Límite: 5 solicitudes cada 15 minutos por IP (después 429).
 POST {{host}}/api/v1/auth/olvido-contrasena
 Content-Type: application/json
@@ -473,10 +474,9 @@ Authorization: Bearer {{token}}
 
 ###
 
-# Periodo vigente (RF-38), con cualquier sesión: inicioMatricula ≤ hoy ≤ finClases, con la fecha de Instituto:ZonaHoraria.
-# Si hay varios, el de inicioMatricula más reciente y luego el id mayor. Sin vigente → 404.
+# Periodo vigente (RF-38), público, sin token (COR-01): inicioMatricula ≤ hoy ≤ finClases, con la fecha de
+# Instituto:ZonaHoraria. Si hay varios, el de inicioMatricula más reciente y luego el id mayor. Sin vigente → 404.
 GET {{host}}/api/v1/periodos/vigente
-Authorization: Bearer {{token}}
 
 ###
 

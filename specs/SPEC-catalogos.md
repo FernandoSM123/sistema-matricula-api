@@ -12,6 +12,7 @@ Módulo `catalogos` del [mapa de módulos](mapa-modulos.md). Depende de `acceso`
 - 2026-11-02: resuelta la zona horaria (decisión 6) y v1 aprobada, con sus seis supuestos. Plan y lista de 10 tareas en revisión.
 - 2026-11-02: plan y lista de tareas aprobados; la implementación empieza por T1.
 - 2026-11-02: módulo completado (10/10 tareas), sin cambios de alcance. Detalles de implementación que la spec no fijaba: `Costo`, `Nivel` y las fechas del periodo son anulables en los DTO para que un dato omitido responda `400`, y las reglas compartidas viven en `CursoRules`, `AulaRules` y `DatosPeriodoValidator`.
+- 2026-11-17: corrección posterior al cierre ([COR-01](../correcciones/COR-01-brechas-frontend.md), B-01, aprobada por el usuario): `GET /api/v1/periodos/vigente` pasa a ser público, para que el visitante sepa de qué periodo es la oferta y hasta cuándo puede matricular. Se actualizaron §2, §2.2, RF-38 y §7 de los requerimientos. Los demás endpoints de periodos siguen exigiendo sesión.
 
 ## Objetivo
 
@@ -21,7 +22,7 @@ Que el administrador mantenga los tres catálogos sobre los que se abren los gru
 - Administrador: registra, lista, consulta y edita los tres catálogos; desactiva y reactiva cursos y aulas.
 - Profesor: consulta cursos, periodos y aulas.
 - Estudiante: consulta cursos y periodos, no aulas.
-- Visitante: no accede. La oferta académica pública (RF-50) es de `grupos`.
+- Visitante: solo consulta el periodo vigente (desde COR-01). La oferta académica pública (RF-50) es de `grupos`.
 - El equipo de desarrollo: `grupos` referencia estas entidades, y `matriculas` usa el periodo vigente y las reglas de fechas del periodo.
 
 ### Alcance
@@ -77,7 +78,7 @@ Que el administrador mantenga los tres catálogos sobre los que se abren los gru
    | `POST /api/v1/periodos` | Administrador | RF-35, RN-13, RN-16 | `201` + `Location` · `400` · `409 RN-13` |
    | `GET /api/v1/periodos` | Con sesión | RF-36 | `200` paginado; `search` (nombre); los más recientes primero |
    | `GET /api/v1/periodos/{id}` | Con sesión | RF-36 | `200` · `404` |
-   | `GET /api/v1/periodos/vigente` | Con sesión | RF-38 | `200` · `404` si ninguno está vigente |
+   | `GET /api/v1/periodos/vigente` | Público (desde COR-01) | RF-38 | `200` · `404` si ninguno está vigente |
    | `PUT /api/v1/periodos/{id}` | Administrador | RF-36, RN-13, RN-16 | `200` · `400` · `404` · `409 RN-13` |
    | `POST /api/v1/aulas` | Administrador | RF-39, RN-13, RN-39 | `201` + `Location` · `409 RN-13` · `409 RN-39` |
    | `GET /api/v1/aulas` | Administrador o Profesor | RF-40, RN-41 | `200` paginado; `search` (código o ubicación), `incluirInactivos` |

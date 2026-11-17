@@ -14,6 +14,9 @@ Módulo `acceso` del [mapa de módulos](mapa-modulos.md). Depende de `fundacion`
 - 2026-10-19: módulo completado (13/13 tareas). Desviaciones registradas: seed al inicio de `Program` (no `IHostedService`), política `Politicas.Administrador` en lugar de `Roles`, rutas inexistentes sin token → `401` (supuesto 11), `GET /administradores/{id}` adelantado a T10.
 - 2026-10-19: T6, los endpoints de administrador usan la política `Politicas.Administrador` en lugar de `Roles`, y se documenta que una ruta inexistente sin token responde `401` (supuesto 11).
 - 2026-10-19: el seed se ejecuta al inicio de `Program` en lugar de en un `IHostedService` (sin paquetes nuevos; §5 de la arquitectura admite ambas opciones).
+- 2026-11-17: correcciones posteriores al cierre ([COR-01](../correcciones/COR-01-brechas-frontend.md)), sin cambio de reglas:
+  - B-02: `GET /api/v1/me` incluye `personaId`, el id del administrador, estudiante o profesor de la cuenta.
+  - B-04: el mensaje del olvido de contraseña trata de usted ("recibirá"), como el resto de la API.
 
 ## Objetivo
 
@@ -82,7 +85,7 @@ Dar al sistema cuentas de usuario, autenticación y autorización, para que los 
    | `POST /api/v1/auth/cambiar-contrasena` | Autenticado | RF-09, RN-25, RN-26, RN-33 | `200` con un token nuevo |
    | `POST /api/v1/auth/logout` | `PasswordChangePending` | RF-08 | `204` |
    | `POST /api/v1/auth/olvido-contrasena` | Anónimo, con rate limiting | RF-10, RN-28, RN-29, RN-32 | `200` siempre, con el mismo mensaje |
-   | `GET /api/v1/me` | Autenticado | RF-13 | `200` con los datos de la cuenta (correo, rol, estado, fecha de creación, último ingreso, último cambio de contraseña) y, para un administrador, sus datos personales |
+   | `GET /api/v1/me` | Autenticado | RF-13 | `200` con los datos de la cuenta (`personaId` desde COR-01, correo, rol, estado, fecha de creación, último ingreso, último cambio de contraseña) y, para un administrador, sus datos personales |
    | `POST /api/v1/administradores` | Administrador | RF-04, RF-05, RN-13, RN-20, RN-22, RN-39 | `201` + `Location` con el administrador y `correoEnviado` · `409 RN-13` · `409 RN-39` |
    | `GET /api/v1/administradores` | Administrador | RF-55, RN-41 | `200` paginado; `search` (nombre, apellidos, cédula o correo) e `incluirInactivos` |
    | `GET /api/v1/administradores/{id}` | Administrador | RF-55 | `200` · `404` |

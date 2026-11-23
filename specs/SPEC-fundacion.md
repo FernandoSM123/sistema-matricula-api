@@ -9,6 +9,7 @@ Módulo `fundacion` del [mapa de módulos](mapa-modulos.md). Sin dependencias.
 **Historial:**
 - 2026-10-15: v1 aprobada.
 - 2026-10-15: v2, se difieren las pruebas de integración y el módulo se reduce a errores, CORS, rutas y README.
+- 2026-11-23: [COR-02](../correcciones/COR-02-encabezados-cors.md), la política CORS expone `Retry-After` y `Location`.
 
 ## Objetivo
 
@@ -30,6 +31,7 @@ Parte del esqueleto ya existe: capas, `Directory.Build.props`, `GlobalExceptionH
    - Una política por defecto que lee los orígenes permitidos de `Cors:OrigenesPermitidos` (arreglo en la configuración).
    - En `appsettings.json` la lista está vacía y en `appsettings.Development.json` contiene `http://localhost:5173` (provisional hasta conocer el puerto del frontend).
    - Con la lista vacía no se permite ningún origen.
+   - Expone los encabezados `Retry-After` (del `429`) y `Location` (del `201`), que el navegador no deja leer desde otro origen sin declararlos ([COR-02](../correcciones/COR-02-encabezados-cors.md)).
 
 3. **Rutas en kebab-case**
    - `ApiControllerBase` ya fija `api/v1/[controller]`. Se añade un transformador de rutas (`SlugifyParameterTransformer`), así los controllers con nombre compuesto generan rutas como `/api/v1/cambio-grupo`.
@@ -100,6 +102,7 @@ public class PaginacionRequestTests
 | Ruta inexistente | `curl -i http://localhost:5022/api/v1/no-existe` | `404`, `application/problem+json`, con `traceId` |
 | CORS permitido | `curl -i -X OPTIONS http://localhost:5022/health -H "Origin: http://localhost:5173" -H "Access-Control-Request-Method: GET"` | Incluye `Access-Control-Allow-Origin: http://localhost:5173` |
 | CORS no permitido | El mismo comando con `Origin: http://otro.local` | Sin `Access-Control-Allow-Origin` |
+| Encabezados expuestos (COR-02) | `curl -i http://localhost:5022/api/v1/cursos -H "Origin: http://localhost:5173"` | Incluye `Access-Control-Expose-Headers: Retry-After,Location` |
 | Health | `curl -i http://localhost:5022/health` | `200` |
 | Scalar | Abrir http://localhost:5022/scalar | Carga sin errores |
 

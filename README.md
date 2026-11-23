@@ -131,6 +131,12 @@ $env:Cors__OrigenesPermitidos__1 = "https://admin.ejemplo.com"
 
 La lista se lee al arrancar, así que hay que reiniciar la API después de cambiarla. CORS solo afecta a los navegadores; herramientas como `curl` o Scalar no lo necesitan.
 
+La política también expone dos encabezados de respuesta que el navegador no deja leer desde otro origen si no se declaran (`Access-Control-Expose-Headers`):
+- `Retry-After`: los segundos de espera de un `429`, para que el frontend muestre cuánto falta y deshabilite el envío ese tiempo.
+- `Location`: la ruta del recurso creado en un `201`.
+
+Ver [COR-02](correcciones/COR-02-encabezados-cors.md).
+
 ### Instituto (zona horaria)
 
 La opción `Instituto:ZonaHoraria` define qué día es "hoy" para el sistema. Está en `appsettings.json` con el valor `America/Costa_Rica`. Es un identificador [IANA](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) y no es un secreto.

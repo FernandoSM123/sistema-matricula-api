@@ -100,3 +100,5 @@ Verificaciones que un módulo no pudo hacer por falta de datos o endpoints. Se c
     - `GET /api/v1/me` incluye `personaId`.
     - El mensaje del olvido de contraseña trata de usted.
     - No se expone la lista de entidades auditadas.
+
+    [COR-02](../correcciones/COR-02-encabezados-cors.md) (2026-11-23): la política CORS expone `Retry-After` y `Location`, para que el frontend lea la espera de un `429` y la ruta del recurso creado en un `201`.

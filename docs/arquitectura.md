@@ -145,7 +145,7 @@ Son dos piezas distintas que trabajan juntas.
 - **Fecha de hoy:** las comparaciones con fechas sin hora (RN-04, RN-10, periodo vigente) usan `IFechaLocal.Hoy()`, que convierte la hora de `TimeProvider` a la zona de `Instituto:ZonaHoraria` (`America/Costa_Rica`). Nunca calcules la fecha de hoy desde UTC: desde las 18:00 en Costa Rica ya sería el día siguiente.
 - Logging con `ILogger<T>` y mensajes estructurados. Serilog es opcional. **Nunca registres contraseñas ni temporales.** El log sigue siendo el respaldo del registro de errores (§5.2): todo error inesperado se escribe primero en el log y después en la tabla.
 - Ciclos de vida en la inyección de dependencias: el `DbContext` y los servicios son `Scoped`; `TimeProvider` y el generador de contraseñas, `Singleton`.
-- Health check (`/health`), CORS configurado para el front y **rate limiting** integrado en `login` y `olvido-contrasena`.
+- Health check (`/health`), CORS configurado para el front y **rate limiting** integrado en `login` y `olvido-contrasena`. La política CORS expone `Retry-After` (del `429`) y `Location` (del `201`), porque el navegador no deja leerlos desde otro origen si no se declaran (COR-02).
 
 ## 5. Buenas prácticas de EF Core
 - **Fluent API** en una clase `IEntityTypeConfiguration<T>` por entidad, cargadas con `ApplyConfigurationsFromAssembly`. No uses data annotations en el dominio.

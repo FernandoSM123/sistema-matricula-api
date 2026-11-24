@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using Matricula.Api.Common;
 using Matricula.Api.Seguridad;
 using Matricula.Api.Services;
@@ -26,14 +25,20 @@ builder.Services.AddControllers(options =>
         options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
         options.Conventions.Add(new RouteTokenTransformerConvention(new SlugifyParameterTransformer()));
     })
-    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
+    .AddJsonOptions(options => OpcionesJson.Configurar(options.JsonSerializerOptions))
     .ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = RespuestaModeloInvalido.Crear);
+// El generador del OpenAPI lee estas opciones, no las de MVC (COR-03).
+builder.Services.ConfigureHttpJsonOptions(options => OpcionesJson.Configurar(options.SerializerOptions));
 builder.Services.AddRouting(options => options.LowercaseUrls = true);
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-builder.Services.AddOpenApi(options => options.AddDocumentTransformer<BearerSecuritySchemeTransformer>());
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+    options.AddSchemaTransformer<EnumSinNullSchemaTransformer>();
+});
 builder.Services.AddHealthChecks();
 
 // Sin orígenes configurados no se permite ninguno.

@@ -108,7 +108,7 @@ Infrastructure implementa las interfaces definidas en Application (inversión de
 - **Errores con `ProblemDetails` (RFC 9457)** en todas las respuestas, con una extensión `code` que referencie la regla, por ejemplo `"code": "RN-05"`, más un mensaje legible. Esto cubre el requisito de "mensajes claros".
 - **Paginación estándar:** `?page=1&pageSize=20&search=...&incluirInactivos=false&orden=nombre`. La respuesta es `{ items, page, pageSize, totalCount }`. Pon un `pageSize` máximo (por ejemplo, 100).
 - **DTOs separados** para entrada y salida (`CrearGrupoRequest`, `GrupoResponse`, `GrupoDetalleResponse`). **Nunca expongas las entidades.** Haz el mapeo a mano o con métodos de extensión.
-- **Tipos:** `DateOnly` para fechas, `TimeOnly` para las horas del horario, `DateTimeOffset`/UTC para marcas de tiempo. Serializa los enums como string (`JsonStringEnumConverter`).
+- **Tipos:** `DateOnly` para fechas, `TimeOnly` para las horas del horario, `DateTimeOffset`/UTC para marcas de tiempo. Serializa los enums como string (`JsonStringEnumConverter`) y lee los números en modo estricto (`JsonNumberHandling.Strict`). La configuración vive en `OpcionesJson` y se aplica a las opciones de MVC y a las HTTP (`ConfigureHttpJsonOptions`), porque el generador del OpenAPI lee estas últimas; si difieren, el contrato no coincide con la API (COR-03).
 - Versionado: basta con el prefijo `/api/v1` desde el inicio; no hace falta una librería de versionado.
 
 ### 3.1 Documentación de la API: OpenAPI y Scalar

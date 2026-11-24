@@ -10,6 +10,7 @@ Módulo `fundacion` del [mapa de módulos](mapa-modulos.md). Sin dependencias.
 - 2026-10-15: v1 aprobada.
 - 2026-10-15: v2, se difieren las pruebas de integración y el módulo se reduce a errores, CORS, rutas y README.
 - 2026-11-23: [COR-02](../correcciones/COR-02-encabezados-cors.md), la política CORS expone `Retry-After` y `Location`.
+- 2026-11-24: [COR-03](../correcciones/COR-03-contrato-openapi.md), opciones JSON comunes a MVC y a HTTP: el OpenAPI declara los números como `integer` y los enums como texto con sus valores, sin `null`.
 
 ## Objetivo
 
@@ -36,7 +37,12 @@ Parte del esqueleto ya existe: capas, `Directory.Build.props`, `GlobalExceptionH
 3. **Rutas en kebab-case**
    - `ApiControllerBase` ya fija `api/v1/[controller]`. Se añade un transformador de rutas (`SlugifyParameterTransformer`), así los controllers con nombre compuesto generan rutas como `/api/v1/cambio-grupo`.
 
-4. **Pruebas unitarias de lo existente**
+4. **Opciones JSON comunes** ([COR-03](../correcciones/COR-03-contrato-openapi.md))
+   - `OpcionesJson.Configurar` se aplica a las opciones de MVC y a las HTTP (`ConfigureHttpJsonOptions`), que son las que lee el generador del OpenAPI.
+   - Enums como texto (`JsonStringEnumConverter`) y números estrictos (`JsonNumberHandling.Strict`): un número enviado como texto responde `400`.
+   - `EnumSinNullSchemaTransformer` quita el `null` de los valores de los enums en el OpenAPI; la nulabilidad la declara cada propiedad con su `oneOf`.
+
+5. **Pruebas unitarias de lo existente**
    - `PaginacionRequest` limita `Page ≥ 1` y `1 ≤ PageSize ≤ 100`.
 
 5. **README**
@@ -103,6 +109,8 @@ public class PaginacionRequestTests
 | CORS permitido | `curl -i -X OPTIONS http://localhost:5022/health -H "Origin: http://localhost:5173" -H "Access-Control-Request-Method: GET"` | Incluye `Access-Control-Allow-Origin: http://localhost:5173` |
 | CORS no permitido | El mismo comando con `Origin: http://otro.local` | Sin `Access-Control-Allow-Origin` |
 | Encabezados expuestos (COR-02) | `curl -i http://localhost:5022/api/v1/cursos -H "Origin: http://localhost:5173"` | Incluye `Access-Control-Expose-Headers: Retry-After,Location` |
+| Contrato OpenAPI (COR-03) | Abrir http://localhost:5022/openapi/v1.json | Los números son `integer` (sin `string` ni `pattern`) y los enums traen sus valores de texto |
+| Número como texto (COR-03) | Con token de administrador, `POST /api/v1/grupos` con `"cupo": "30"` | `400` con "El valor enviado no tiene el formato esperado." |
 | Health | `curl -i http://localhost:5022/health` | `200` |
 | Scalar | Abrir http://localhost:5022/scalar | Carga sin errores |
 

@@ -102,3 +102,5 @@ Verificaciones que un módulo no pudo hacer por falta de datos o endpoints. Se c
     - No se expone la lista de entidades auditadas.
 
     [COR-02](../correcciones/COR-02-encabezados-cors.md) (2026-11-23): la política CORS expone `Retry-After` y `Location`, para que el frontend lea la espera de un `429` y la ruta del recurso creado en un `201`.
+
+    [COR-03](../correcciones/COR-03-contrato-openapi.md) (2026-11-24): las opciones JSON de MVC y de HTTP se configuran en un solo lugar (`OpcionesJson`), con enums como texto y números estrictos, para que el OpenAPI declare `integer` y los valores de cada enum.

@@ -20,7 +20,7 @@ Para que un estudiante se pueda matricular en un grupo, se deben cumplir dos con
 ### 1.3 Alcance
 **Incluido:**
 - Registro de usuarios: registro público de estudiantes, y registro de estudiantes, profesores y administradores por parte de un administrador.
-- Inicio de sesión, contraseñas temporales enviadas por correo con cambio obligatorio al ingresar, olvido de contraseña y cambio de contraseña desde el perfil.
+- Inicio de sesión, renovación de la sesión sin volver a pedir la contraseña, contraseñas temporales enviadas por correo con cambio obligatorio al ingresar, olvido de contraseña y cambio de contraseña desde el perfil.
 - Control de acceso por roles.
 - Gestión de estudiantes, profesores, cursos, periodos académicos, aulas, grupos y horarios.
 - Proceso de matrícula, retiro y cambio de grupo.
@@ -71,6 +71,7 @@ Para que un estudiante se pueda matricular en un grupo, se deben cumplir dos con
 | Registrarse como estudiante | ✔ | — | — | — |
 | Iniciar sesión y solicitar una contraseña temporal por olvido | ✔ | — | — | — |
 | Cambiar la contraseña propia y consultar el perfil propio | — | ✔ | ✔ | ✔ |
+| Renovar la sesión (RF-60) | — | ✔ | ✔ | ✔ |
 | Registrar estudiantes | — | ✔ | — | — |
 | Registrar profesores y administradores | — | ✔ | — | — |
 | Gestionar administradores (listar, consultar y modificar sus datos) | — | ✔ | — | — |
@@ -143,6 +144,12 @@ Para que un estudiante se pueda matricular en un grupo, se deben cumplir dos con
 - **RF-12 Reenvío de contraseña temporal por un administrador:**
   - El administrador puede generar y enviar una nueva contraseña temporal (RF-05) a cualquier usuario, por ejemplo si no le llegó el correo o si la temporal anterior venció.
   - Si la persona ya no tiene acceso a su correo, el administrador primero actualiza el correo y luego reenvía la temporal.
+- **RF-60 Renovar la sesión:**
+  - Al iniciar sesión con la contraseña definitiva, al completar el cambio obligatorio (RF-07) y al cambiar la contraseña (RF-09), el usuario recibe, además del token de acceso, un **token de renovación** (refresh token).
+  - Cuando el token de acceso vence, el usuario presenta el token de renovación y recibe un token de acceso nuevo y un token de renovación nuevo, sin volver a escribir su contraseña.
+  - La sesión dura como máximo 8 horas desde el inicio de sesión; renovarla no la extiende (RN-50).
+  - Quien ingresa con una contraseña temporal no recibe token de renovación: su sesión solo sirve para el cambio obligatorio (RN-24, RN-52).
+  - Si la sesión ya no se puede renovar, el sistema responde siempre lo mismo ("La sesión terminó. Inicie sesión de nuevo."), sin indicar el motivo.
 
 **Flujos de acceso**
 ```
@@ -154,6 +161,9 @@ Inicio de sesión
 Cuenta creada por un administrador ─────► Recibe una temporal por correo ──► Primer ingreso con la temporal ──► Cambio obligatorio
 
 Perfil ─► Cambiar contraseña ─► Contraseña actual + nueva + confirmación ─► Correo de aviso del cambio
+
+Sesión iniciada ─► Vence el token de acceso (15 min) ─► Renovar con el token de renovación ─► Tokens nuevos
+                                                       └─ Pasaron 8 horas, cerró sesión o cambió la contraseña ─► Iniciar sesión de nuevo
 ```
 
 ### 3.3 Gestión de cuentas
@@ -320,6 +330,9 @@ Perfil ─► Cambiar contraseña ─► Contraseña actual + nueva + confirmaci
 | RN-31 | Cada cuenta tiene un único rol, que se asigna al crearla y **nunca cambia**. Si una persona pasa a cumplir otro rol (por ejemplo, un profesor que se vuelve administrador), se le registra en ese rol con una cuenta nueva y un correo distinto; si deja el rol anterior, esa cuenta se desactiva y conserva su historial (RN-40). Cada estudiante, cada profesor y cada administrador tiene exactamente una cuenta. El correo se guarda solo en la cuenta y es a la vez el correo de contacto de la persona; cambiarlo en el registro de la persona es cambiarlo en su cuenta. |
 | RN-32 | Una solicitud de olvido de contraseña **no invalida** la contraseña actual: esta sigue funcionando hasta que el usuario defina una nueva. |
 | RN-33 | Cada vez que cambia la contraseña de una cuenta, el sistema envía un correo de aviso al usuario. |
+| RN-50 | El token de acceso vence a los **15 minutos**. La sesión dura como máximo **8 horas** desde el inicio de sesión; renovarla no la extiende. Después hay que iniciar sesión de nuevo. |
+| RN-51 | Cada renovación reemplaza el token de renovación por uno nuevo, y el anterior deja de servir. Si alguien usa uno ya reemplazado, el sistema termina esa sesión. |
+| RN-52 | Una sesión no se puede renovar si la cuenta se desactivó, cambió su contraseña o cerró sesión, ni si se inició con una contraseña temporal. Cerrar sesión termina todas las sesiones de la cuenta. |
 
 ### 4.2 Política de eliminación y desactivación
 
@@ -342,6 +355,7 @@ Los registros del sistema están relacionados entre sí; por ejemplo, un grupo d
 | Matrícula | Retirar (estado propio) | ❌ Nunca |
 | Usuario | Desactivar / reactivar | Solo junto con su estudiante o profesor, cuando estos se eliminan. Nunca por sí sola ni la de un administrador |
 | Registro de auditoría | No se modifica | ❌ Nunca (RN-43) |
+| Sesión (§5.14) | Vence o se anula (RN-50 a RN-52) | Sí: las vencidas cuando la cuenta vuelve a iniciar sesión, y todas junto con su estudiante o profesor |
 
 Los registros de auditoría **no cuentan como datos relacionados**: no impiden eliminar el registro que describen, y se conservan después de eliminarlo (RN-43).
 
@@ -541,6 +555,21 @@ Los **registros de auditoría** (§5.12) describen cambios de cualquiera de esto
 
 Los registros de errores no están relacionados con ningún otro dato y se eliminan automáticamente al cumplir su tiempo de conservación (RN-49).
 
+### 5.14 Sesión
+Cada token de renovación entregado (RF-60). Es un dato técnico: no se registra en la auditoría (RN-46).
+
+| Dato | Descripción | Obligatorio |
+|---|---|:---:|
+| Usuario | Cuenta a la que pertenece | Sí |
+| Token de renovación | Almacenado protegido, nunca en texto plano | Sí |
+| Sesión | Identifica el inicio de sesión del que salió el token; es la misma en todas sus renovaciones | Sí |
+| Marca de seguridad de la cuenta | Copia del momento en que se entregó: si la cuenta cierra sesión, cambia su contraseña o se desactiva, la sesión ya no se puede renovar (RN-52) | Sí |
+| Fecha de entrega | | Sí |
+| Fin de la sesión | Inicio de sesión + 8 horas; no cambia al renovar (RN-50) | Sí |
+| Fecha de uso o anulación | Cuándo se reemplazó por uno nuevo o se anuló por un reuso (RN-51) | Condicional |
+
+Las sesiones vencidas de una cuenta se eliminan cuando esa cuenta vuelve a iniciar sesión, y todas las de una cuenta se eliminan junto con su estudiante o profesor (RN-35).
+
 ---
 
 ## 6. Consultas y listados requeridos
@@ -573,7 +602,8 @@ Todos los listados deben permitir búsqueda y filtrado, y deben mostrarse por p�
     - La solicitud de contraseña temporal por olvido.
     - La consulta de la oferta académica (RF-50).
     - La consulta del periodo vigente (RF-38), para saber de qué periodo es la oferta y hasta cuándo se puede matricular.
-  - Ni las contraseñas ni las contraseñas temporales se almacenan en texto plano.
+    - La renovación de la sesión (RF-60), que se identifica con el token de renovación porque el token de acceso puede haber vencido.
+  - Ni las contraseñas, ni las contraseñas temporales, ni los tokens de renovación se almacenan en texto plano.
   - La auditoría no guarda contraseñas, temporales ni otros datos secretos (RN-44).
   - El registro de errores no guarda el contenido de las solicitudes ni datos secretos (RN-47). El usuario solo ve un mensaje genérico con el identificador de la operación, nunca el detalle técnico.
 - **Correo electrónico:** el sistema debe poder enviar correos para:
@@ -610,4 +640,5 @@ Todos los listados deben permitir búsqueda y filtrado, y deben mostrarse por p�
 | **Contraseña temporal** | Contraseña aleatoria que genera el sistema y envía al correo del usuario. Se genera cuando un administrador crea una cuenta, cuando reenvía una temporal o cuando el usuario olvida su contraseña. Al ingresar con ella, se debe definir una nueva. |
 | **Auditoría** | Registro automático e inmutable de los cambios de datos: quién hizo cada cambio, cuándo, sobre qué registro y qué valores cambiaron. |
 | **Sistema** | Autor que se registra en la auditoría cuando un cambio ocurre sin una sesión iniciada, por ejemplo en el registro público o en los datos iniciales. |
+| **Token de renovación** | Dato que el sistema entrega al iniciar sesión y que permite obtener un token de acceso nuevo sin volver a escribir la contraseña, mientras la sesión esté vigente (RF-60). Cada uso lo reemplaza por uno nuevo. |
 | **Olvido de contraseña** | Proceso que inicia una persona sin sesión cuando olvidó su contraseña. Recibe por correo una contraseña temporal que vence en 1 hora y, al ingresar con ella, debe definir una nueva. |

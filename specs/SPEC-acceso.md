@@ -17,6 +17,7 @@ Módulo `acceso` del [mapa de módulos](mapa-modulos.md). Depende de `fundacion`
 - 2026-11-17: correcciones posteriores al cierre ([COR-01](../correcciones/COR-01-brechas-frontend.md)), sin cambio de reglas:
   - B-02: `GET /api/v1/me` incluye `personaId`, el id del administrador, estudiante o profesor de la cuenta.
   - B-04: el mensaje del olvido de contraseña trata de usted ("recibirá"), como el resto de la API.
+- 2026-11-26: el módulo [`sesiones`](SPEC-sesiones.md) agrega la renovación de la sesión con refresh token (RF-60, RN-50 a RN-52): el login con la definitiva, el cambio obligatorio y cambiar contraseña devuelven también `refreshToken` y `refreshExpiraEn`, y el token de acceso pasa a durar 15 minutos. Ya no aplica "refresh token" en *Fuera de alcance*.
 
 ## Objetivo
 

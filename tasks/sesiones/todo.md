@@ -17,7 +17,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T3. Emisión en los ingresos | Completada | ✅ | ➖ | ✅ | ✅ |
 | T4. Renovación `POST /api/v1/auth/refresh` | Completada | ✅ | ➖ | ✅ | ✅ |
 | T5. Eliminar a una persona borra sus sesiones | Completada | ✅ | ➖ | ✅ | ✅ |
-| T6. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T6. Cierre del módulo | Completada | ✅ | ➖ | ✅ | ✅ |
 
 **Estados de tarea:**
 - **Pendiente:** no se ha empezado.

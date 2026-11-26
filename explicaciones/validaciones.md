@@ -1,8 +1,8 @@
-# Validación de entrada: `RespuestaModeloInvalido` vs `ValidationFilter`
+# Validación de entrada: `InvalidModelStateResponse` vs `ValidationFilter`
 
 las dos clases sirven para devolver un **400 Bad Request** cuando los datos que llegan no son válidos. Pero actúan en **momentos distintos** y atrapan **problemas distintos**:
 
-- **`RespuestaModeloInvalido`**: el JSON llegó roto o vacío. No se pudo ni siquiera construir el objeto `LoginRequest`.
+- **`InvalidModelStateResponse`**: el JSON llegó roto o vacío. No se pudo ni siquiera construir el objeto `LoginRequest`.
 - **`ValidationFilter`**: el objeto se construyó bien, pero sus valores no cumplen las reglas. Aquí entra tu caso: falta la contraseña, el correo tiene un formato inválido, etc.
 
 ---
@@ -17,7 +17,7 @@ JSON del body
    ▼
 ① Model binding: convierte el JSON en un LoginRequest
    │   ¿falló? (body vacío, JSON mal formado, tipo incorrecto)
-   │      └─► RespuestaModeloInvalido  → 400  (y se detiene aquí)
+   │      └─► InvalidModelStateResponse  → 400  (y se detiene aquí)
    ▼
 ② ValidationFilter: ejecuta LoginRequestValidator (FluentValidation)
    │   ¿hay errores? (correo vacío, contraseña vacía, demasiado larga…)
@@ -30,14 +30,14 @@ Gracias a esto, cuando tu código del controller y del servicio se ejecuta, **ya
 
 ---
 
-## 2. `RespuestaModeloInvalido`: errores de formato
+## 2. `InvalidModelStateResponse`: errores de formato
 
 El **model binding** es el paso en que ASP.NET lee el JSON y lo convierte en tu record `LoginRequest(string Correo, string Contrasena)`. Si no puede hacerlo, registra el error en el `ModelState`. El atributo `[ApiController]` (que tienes en `ApiControllerBase`) revisa ese `ModelState` y, si hay errores, responde 400 automáticamente.
 
-`RespuestaModeloInvalido` **reemplaza la respuesta que ASP.NET daría por defecto**. Se conecta en `Program.cs`:
+`InvalidModelStateResponse` **reemplaza la respuesta que ASP.NET daría por defecto**. Se conecta en `Program.cs`:
 
 ```csharp
-.ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = RespuestaModeloInvalido.Crear);
+.ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = InvalidModelStateResponse.Create);
 ```
 
 ### Cuándo se dispara
@@ -165,7 +165,7 @@ Content-Type: application/json
 { "correo": "ana@instituto.com" }
 ```
 
-1. **Model binding:** el JSON es válido. Falta `contrasena`, pero eso no es un error de formato, así que `Contrasena` simplemente queda en `null`. `RespuestaModeloInvalido` no interviene.
+1. **Model binding:** el JSON es válido. Falta `contrasena`, pero eso no es un error de formato, así que `Contrasena` simplemente queda en `null`. `InvalidModelStateResponse` no interviene.
 2. **`ValidationFilter`:** ejecuta `LoginRequestValidator`, y `NotEmpty()` falla para `Contrasena`.
 3. **Respuesta:**
 
@@ -185,7 +185,7 @@ HTTP/1.1 400 Bad Request
 
 El campo `errors` **agrupa los mensajes por campo**, así el frontend puede mostrar cada mensaje debajo de su input. Si faltaran los dos campos, vendrían ambos juntos: FluentValidation evalúa todas las reglas y no se detiene en el primer error.
 
-Si en cambio envías `{ "correo": "ana@instituto.com",` (JSON cortado), se detiene en el **paso 1** y responde `RespuestaModeloInvalido` con *"Falta el cuerpo de la solicitud o no es un JSON válido."*
+Si en cambio envías `{ "correo": "ana@instituto.com",` (JSON cortado), se detiene en el **paso 1** y responde `InvalidModelStateResponse` con *"Falta el cuerpo de la solicitud o no es un JSON válido."*
 
 ---
 
@@ -212,7 +212,7 @@ Esa **no** la manejan estas clases:
 
 | Situación | Quién responde | Código |
 |---|---|---|
-| JSON roto o body vacío | `RespuestaModeloInvalido` | **400** |
+| JSON roto o body vacío | `InvalidModelStateResponse` | **400** |
 | Falta un campo o tiene un formato inválido | `ValidationFilter` + validador | **400** |
 | Credenciales incorrectas | `AuthService` → `GlobalExceptionHandler` | **401** |
 | Cuenta desactivada | `AuthService` → `GlobalExceptionHandler` | **403** |

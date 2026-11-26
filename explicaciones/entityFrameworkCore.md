@@ -153,7 +153,7 @@ services.AddDbContext<AppDbContext>((sp, options) => options
     .UseNpgsql(connectionString)
     .UseSnakeCaseNamingConvention()
     .AddInterceptors(
-        sp.GetRequiredService<AuditoriaInterceptor>()));
+        sp.GetRequiredService<TimestampsInterceptor>()));
 
 services.AddScoped<IAppDbContext>(sp =>
     sp.GetRequiredService<AppDbContext>());
@@ -194,14 +194,14 @@ Así, `AdministradorService` puede trabajar con `IAppDbContext` sin conocer dire
 
 Este es uno de los conceptos más importantes de EF Core.
 
-Veamos el método `ActualizarAsync` de `AdministradorService`:
+Veamos el método `UpdateAsync` de `AdministradorService`:
 
 ```
 var administrador = await db.Administradores
     .Include(a => a.Usuario)
     .SingleOrDefaultAsync(a => a.Id == id, ct);
 
-administrador.ActualizarDatos(request.Cedula, ...);
+administrador.Update(request.Cedula, ...);
 
 await db.SaveChangesAsync(ct);
 ```
@@ -210,7 +210,7 @@ El proceso es el siguiente:
 
 1. **Consulta:** EF Core ejecuta un `SELECT` para obtener el administrador y su usuario relacionado.
 2. **Seguimiento:** si la consulta utiliza el seguimiento predeterminado, EF Core comienza a rastrear las entidades obtenidas.
-3. **Modificación:** `ActualizarDatos(...)` cambia las propiedades del objeto en memoria.
+3. **Modificación:** `Update(...)` cambia las propiedades del objeto en memoria.
 4. **Detección de cambios:** al guardar, EF Core detecta qué propiedades han cambiado.
 5. **Persistencia:** EF Core genera las instrucciones SQL necesarias, como un `UPDATE`.
 
@@ -242,7 +242,7 @@ Cuando se ejecuta `SaveChangesAsync()`, EF Core genera el `INSERT` correspondien
 
 ### 4.2. `AsNoTracking()`: consultas de solo lectura
 
-En métodos como `ListarAsync` y `ObtenerAsync` utilizas expresiones similares a esta:
+En métodos como `ListAsync` y `GetAsync` utilizas expresiones similares a esta:
 
 ```
 db.Administradores.AsNoTracking()
@@ -271,7 +271,7 @@ De forma simplificada, el proceso incluye:
 3. Ejecutar las instrucciones SQL necesarias.
 4. Confirmar la transacción si todo termina correctamente o revertirla si se produce un error dentro de esa transacción.
 
-En tu `AuditoriaInterceptor` tienes una lógica similar a esta:
+En tu `TimestampsInterceptor` tienes una lógica similar a esta:
 
 ```
 foreach (var entry in eventData.Context
@@ -342,7 +342,7 @@ AdministradorService(IAppDbContext db)
     |
     +--> SaveChangesAsync()
             |
-            +--> AuditoriaInterceptor establece fechas
+            +--> TimestampsInterceptor establece fechas
             |
             +--> INSERT / UPDATE / DELETE
             |
@@ -448,6 +448,6 @@ Ten en cuenta que los registros pueden contener información sensible según las
 
 El `DbContext` es mucho más que una conexión a la base de datos. Es el componente que reúne el modelo de entidades, la ejecución de consultas, el seguimiento de cambios y la persistencia.
 
-En tu arquitectura, `AppDbContext` implementa `IAppDbContext`, la inyección de dependencias administra su ciclo de vida y `AdministradorService` lo utiliza para consultar y modificar entidades. Finalmente, `SaveChangesAsync()` coordina la persistencia, mientras que `AuditoriaInterceptor` automatiza parte de la lógica de auditoría.
+En tu arquitectura, `AppDbContext` implementa `IAppDbContext`, la inyección de dependencias administra su ciclo de vida y `AdministradorService` lo utiliza para consultar y modificar entidades. Finalmente, `SaveChangesAsync()` coordina la persistencia, mientras que `TimestampsInterceptor` automatiza parte de la lógica de auditoría.
 
 Comprender cómo se relacionan estos componentes te permitirá escribir servicios más claros, evitar consultas innecesarias y aprovechar mejor Entity Framework Core.

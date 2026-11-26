@@ -87,7 +87,7 @@ var violacionUnicidad = exception is DbUpdateException
 
 Esto es **pattern matching**. Pregunta si la excepción es un `DbUpdateException` de EF cuya excepción interna sea un error de Postgres con código *"violación de unicidad"* (SQLSTATE `23505`). Si lo es, la guarda en `violacionUnicidad`.
 
-**¿Por qué hace falta?** Los servicios ya validan duplicados antes (`ValidarCedulaDisponibleAsync`), pero dos requests simultáneos podrían pasar la validación a la vez. En ese caso, el índice único de la BD es quien finalmente rechaza el segundo. Es una **red de seguridad**.
+**¿Por qué hace falta?** Los servicios ya validan duplicados antes (`EnsureCedulaAvailableAsync`), pero dos requests simultáneos podrían pasar la validación a la vez. En ese caso, el índice único de la BD es quien finalmente rechaza el segundo. Es una **red de seguridad**.
 
 ### Paso 2: decidir status, título y código
 
@@ -171,7 +171,7 @@ Así el cliente recibe `"usuarioId": 7` y puede ofrecer directamente el botón *
 ## 4. ¿Por qué no se pierde nada al cortar con una excepción?
 
 ```csharp
-var cuenta = await cuentaService.CrearCuentaConTemporalAsync(...);
+var cuenta = await cuentaService.CreateWithTemporaryPasswordAsync(...);
 db.Administradores.Add(administrador);
 await db.SaveChangesAsync(cancellationToken); // ...nunca se llega a guardar
 ```
@@ -189,17 +189,17 @@ Por eso no hacen falta `try/catch` para "deshacer" cambios.
 
 Sí se usa, pero **solo cuando vas a hacer algo útil con el error ahí mismo**. En tu proyecto hay exactamente dos casos.
 
-### `Application/Correos/EnvioCorreos.cs`: un fallo del correo no tumba el registro
+### `Application/Email/EmailDispatcher.cs`: un fallo del correo no tumba el registro
 
 ```csharp
 try
 {
-    await emailSender.EnviarAsync(...);
+    await emailSender.SendAsync(...);
 }
 catch (Exception e) when (e is not OperationCanceledException)
 {
-    LogFalloEnvio(logger, e, tipo, destinatario);
-    return false;   // → AdministradorRegistradoResponse.CorreoEnviado = false
+    LogSendFailed(logger, e, tipo, destinatario);
+    return false;   // → AdministradorCreatedResponse.CorreoEnviado = false
 }
 ```
 
@@ -233,9 +233,9 @@ No todas las respuestas de error vienen de excepciones. Algunas las generan otra
 
 | Error | Lo genera |
 |---|---|
-| **400** de validación | `ValidationFilter` (FluentValidation) y `RespuestaModeloInvalido`, antes de entrar al controller |
-| **401/403** por token ausente o sin permiso | El middleware de autenticación/autorización (`...AutorizacionHandler`) |
-| **429** | El rate limiter (`LimitesPeticiones.ResponderAsync`) |
+| **400** de validación | `ValidationFilter` (FluentValidation) y `InvalidModelStateResponse`, antes de entrar al controller |
+| **401/403** por token ausente o sin permiso | El middleware de autenticación/autorización (`AuthorizationResultHandler`) |
+| **429** | El rate limiter (`RateLimitPolicies.RespondAsync`) |
 | **404** de ruta inexistente, **405**, etc. | `UseStatusCodePages()`, que les pone cuerpo `ProblemDetails` |
 
 Todos usan el mismo `IProblemDetailsService`, así que el cliente recibe siempre el mismo formato de error, venga de donde venga.

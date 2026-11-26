@@ -1,14 +1,14 @@
 # Proyecciones: de `Administrador` a `AdministradorResponse`
 
-`AdministradorProyecciones` convierte una entidad `Administrador` en el DTO `AdministradorResponse`. Lo hace de **dos maneras**, según de dónde venga el administrador:
+`AdministradorProjections` convierte una entidad `Administrador` en el DTO `AdministradorResponse`. Lo hace de **dos maneras**, según de dónde venga el administrador:
 
 - Desde una **consulta a la BD** → se traduce a SQL.
 - Desde una **entidad ya cargada en memoria** → se ejecuta en C#.
 
 ```csharp
-public static class AdministradorProyecciones
+public static class AdministradorProjections
 {
-    public static readonly Expression<Func<Administrador, AdministradorResponse>> AResponse = a => new AdministradorResponse(
+    public static readonly Expression<Func<Administrador, AdministradorResponse>> ToResponseExpression = a => new AdministradorResponse(
         a.Id,
         a.UsuarioId,
         a.Cedula,
@@ -20,24 +20,24 @@ public static class AdministradorProyecciones
         a.FechaCreacion,
         a.Usuario.UltimoIngreso);
 
-    private static readonly Func<Administrador, AdministradorResponse> AResponseCompilada = AResponse.Compile();
+    private static readonly Func<Administrador, AdministradorResponse> ToResponseCompiled = ToResponseExpression.Compile();
 
-    public static AdministradorResponse ToResponse(this Administrador administrador) => AResponseCompilada(administrador);
+    public static AdministradorResponse ToResponse(this Administrador administrador) => ToResponseCompiled(administrador);
 }
 ```
 
 ---
 
-## 1. `AResponse`: para consultas a la BD
+## 1. `ToResponseExpression`: para consultas a la BD
 
-`AResponse` es una **`Expression`**, no una función normal. Una `Expression` es la **descripción** del código en forma de datos, y eso permite que EF Core la lea y la convierta en SQL.
+`ToResponseExpression` es una **`Expression`**, no una función normal. Una `Expression` es la **descripción** del código en forma de datos, y eso permite que EF Core la lea y la convierta en SQL.
 
-Se usa con `.Select(...)` en `ListarAsync` y `ObtenerAsync`:
+Se usa con `.Select(...)` en `ListAsync` y `GetAsync`:
 
 ```csharp
 db.Administradores.AsNoTracking()
     .Where(a => a.Id == id)
-    .Select(AdministradorProyecciones.AResponse)
+    .Select(AdministradorProjections.ToResponseExpression)
     .SingleOrDefaultAsync(cancellationToken);
 ```
 
@@ -61,14 +61,14 @@ Ventajas:
 
 ## 2. `ToResponse()`: para una entidad ya cargada
 
-A veces el objeto ya está en memoria, porque se acaba de crear o modificar. En `ActualizarAsync`, por ejemplo:
+A veces el objeto ya está en memoria, porque se acaba de crear o modificar. En `UpdateAsync`, por ejemplo:
 
 ```csharp
 var administrador = await db.Administradores
     .Include(a => a.Usuario)                  // carga también la cuenta
     .SingleOrDefaultAsync(a => a.Id == id, cancellationToken) ...;
 
-administrador.ActualizarDatos(...);
+administrador.Update(...);
 await db.SaveChangesAsync(cancellationToken);
 
 return administrador.ToResponse();            // no vuelve a la BD
@@ -86,11 +86,11 @@ No tiene sentido hacer otra consulta. Para eso está `ToResponse()`:
 
 ## 3. Una sola fuente de verdad
 
-¿Por qué no escribir dos mapeos por separado, uno para SQL y otro para memoria? Porque si mañana se añade un campo a `AdministradorResponse`, solo se cambia `AResponse`, y las dos rutas se actualizan juntas. Con dos mapeos escritos a mano es fácil actualizar uno y olvidar el otro.
+¿Por qué no escribir dos mapeos por separado, uno para SQL y otro para memoria? Porque si mañana se añade un campo a `AdministradorResponse`, solo se cambia `ToResponseExpression`, y las dos rutas se actualizan juntas. Con dos mapeos escritos a mano es fácil actualizar uno y olvidar el otro.
 
 | Situación | Se usa | Dónde se ejecuta |
 |---|---|---|
-| Consultar desde la BD | `.Select(AdministradorProyecciones.AResponse)` | En PostgreSQL (como SQL) |
+| Consultar desde la BD | `.Select(AdministradorProjections.ToResponseExpression)` | En PostgreSQL (como SQL) |
 | Ya tienes la entidad cargada | `administrador.ToResponse()` | En C# (en memoria) |
 
 Además, así se cumple la regla del proyecto: **las entidades nunca salen de `Application`**, solo los DTOs.
@@ -103,7 +103,7 @@ Esto es justo lo que hacen librerías como **AutoMapper**, y hasta tienen los mi
 
 | Esta clase | AutoMapper | Para qué |
 |---|---|---|
-| `.Select(AdministradorProyecciones.AResponse)` | `.ProjectTo<AdministradorResponse>(config)` | Consulta a la BD, traducida a SQL |
+| `.Select(AdministradorProjections.ToResponseExpression)` | `.ProjectTo<AdministradorResponse>(config)` | Consulta a la BD, traducida a SQL |
 | `administrador.ToResponse()` | `mapper.Map<AdministradorResponse>(administrador)` | Entidad ya en memoria |
 
 Por dentro AutoMapper hace algo parecido. Empareja propiedades por nombre (`Nombre` → `Nombre`), aplana las anidadas por convención (`Usuario.Correo` → `UsuarioCorreo`) y con eso construye una `Expression` como la de esta clase y la compila.
@@ -113,7 +113,7 @@ Por dentro AutoMapper hace algo parecido. Empareja propiedades por nombre (`Nomb
 `AGENTS.md` prohíbe AutoMapper. Las razones:
 
 1. **Los errores aparecen al compilar, no en producción.** Si se renombra `Telefono` en la entidad, la proyección deja de compilar. Con AutoMapper compila igual y el campo llega `null` o falla en tiempo de ejecución.
-2. **Se ve lo que pasa.** Con F12 sobre `AResponse` se ve cada campo y de dónde sale. Con AutoMapper el mapeo queda implícito en convenciones y perfiles.
+2. **Se ve lo que pasa.** Con F12 sobre `ToResponseExpression` se ve cada campo y de dónde sale. Con AutoMapper el mapeo queda implícito en convenciones y perfiles.
 3. **Los nombres no siempre coinciden.** El DTO tiene `Correo` y `Activo`, pero vienen de `a.Usuario.Correo` y `a.Usuario.Activo`. En AutoMapper habría que configurarlo con `ForMember(...)`: casi el mismo código, pero menos directo.
 4. **Sin fugas accidentales.** Un mapeo automático puede copiar una propiedad que no se quería exponer si alguien la añade al DTO con el mismo nombre. A mano, solo sale lo que se escribe.
 5. **Es poco código.** Unas diez líneas por DTO. Una librería con su configuración no compensa.

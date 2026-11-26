@@ -1,5 +1,5 @@
 using Matricula.Api.Common;
-using Matricula.Api.Seguridad;
+using Matricula.Api.Security;
 using Matricula.Api.Services;
 using Matricula.Application;
 using Matricula.Application.Abstractions;
@@ -25,10 +25,10 @@ builder.Services.AddControllers(options =>
         options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
         options.Conventions.Add(new RouteTokenTransformerConvention(new SlugifyParameterTransformer()));
     })
-    .AddJsonOptions(options => OpcionesJson.Configurar(options.JsonSerializerOptions))
-    .ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = RespuestaModeloInvalido.Crear);
+    .AddJsonOptions(options => JsonSettings.Configure(options.JsonSerializerOptions))
+    .ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = InvalidModelStateResponse.Create);
 // El generador del OpenAPI lee estas opciones, no las de MVC (COR-03).
-builder.Services.ConfigureHttpJsonOptions(options => OpcionesJson.Configurar(options.SerializerOptions));
+builder.Services.ConfigureHttpJsonOptions(options => JsonSettings.Configure(options.SerializerOptions));
 builder.Services.AddRouting(options => options.LowercaseUrls = true);
 
 builder.Services.AddProblemDetails();
@@ -37,7 +37,7 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddOpenApi(options =>
 {
     options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
-    options.AddSchemaTransformer<EnumSinNullSchemaTransformer>();
+    options.AddSchemaTransformer<NonNullableEnumSchemaTransformer>();
 });
 builder.Services.AddHealthChecks();
 
@@ -50,8 +50,8 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
     .AllowAnyMethod()
     .WithExposedHeaders(HeaderNames.RetryAfter, HeaderNames.Location)));
 
-builder.Services.AddSeguridad(builder.Configuration);
-builder.Services.AddLimitesPeticiones();
+builder.Services.AddSecurity(builder.Configuration);
+builder.Services.AddRateLimitPolicies();
 
 var app = builder.Build();
 

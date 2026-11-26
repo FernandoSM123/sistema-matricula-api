@@ -1,5 +1,5 @@
 using Matricula.Api.Common;
-using Matricula.Api.Seguridad;
+using Matricula.Api.Security;
 using Matricula.Application.Matriculas;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,31 +16,31 @@ public class MatriculasController(MatriculaService matriculaService) : ApiContro
     /// Al administrador no se le aplican el estado Abierto ni las fechas de matrícula.
     /// </summary>
     [HttpPost]
-    [Authorize(Policy = Politicas.Administrador)]
+    [Authorize(Policy = Policies.Administrador)]
     [ProducesResponseType<MatriculaResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<MatriculaResponse>> Matricular(
+    public async Task<ActionResult<MatriculaResponse>> Enroll(
         MatricularRequest request, CancellationToken cancellationToken)
     {
-        var matricula = await matriculaService.MatricularAsync(request, cancellationToken);
-        return CreatedAtAction(nameof(Obtener), new { id = matricula.Id }, matricula);
+        var matricula = await matriculaService.EnrollAsync(request, cancellationToken);
+        return CreatedAtAction(nameof(Get), new { id = matricula.Id }, matricula);
     }
 
     /// <summary>
     /// Detalle de una matrícula. Un estudiante solo ve las suyas (RN-18).
     /// </summary>
     [HttpGet("{id:int}")]
-    [Authorize(Policy = Politicas.AdministradorOEstudiante)]
+    [Authorize(Policy = Policies.AdministradorOrEstudiante)]
     [ProducesResponseType<MatriculaResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<MatriculaResponse>> Obtener(int id, CancellationToken cancellationToken) =>
-        Ok(await matriculaService.ObtenerAsync(id, cancellationToken));
+    public async Task<ActionResult<MatriculaResponse>> Get(int id, CancellationToken cancellationToken) =>
+        Ok(await matriculaService.GetAsync(id, cancellationToken));
 
     /// <summary>
     /// Retira una matrícula (RF-52): queda Retirada con la fecha de hoy y el cupo se libera. Un estudiante solo retira
@@ -48,15 +48,15 @@ public class MatriculasController(MatriculaService matriculaService) : ApiContro
     /// le aplican el estado ni la fecha. Una matrícula ya retirada responde RF-52.
     /// </summary>
     [HttpPost("{id:int}/retiro")]
-    [Authorize(Policy = Politicas.AdministradorOEstudiante)]
+    [Authorize(Policy = Policies.AdministradorOrEstudiante)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Retirar(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Withdraw(int id, CancellationToken cancellationToken)
     {
-        await matriculaService.RetirarAsync(id, cancellationToken);
+        await matriculaService.WithdrawAsync(id, cancellationToken);
         return NoContent();
     }
 
@@ -67,17 +67,17 @@ public class MatriculasController(MatriculaService matriculaService) : ApiContro
     /// sobre el destino. El Location apunta a la matrícula nueva.
     /// </summary>
     [HttpPost("{id:int}/cambio-grupo")]
-    [Authorize(Policy = Politicas.AdministradorOEstudiante)]
+    [Authorize(Policy = Policies.AdministradorOrEstudiante)]
     [ProducesResponseType<MatriculaResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<MatriculaResponse>> CambiarGrupo(
+    public async Task<ActionResult<MatriculaResponse>> ChangeGrupo(
         int id, CambioGrupoRequest request, CancellationToken cancellationToken)
     {
-        var nueva = await matriculaService.CambiarGrupoAsync(id, request, cancellationToken);
-        return CreatedAtAction(nameof(Obtener), new { id = nueva.Id }, nueva);
+        var nueva = await matriculaService.ChangeGrupoAsync(id, request, cancellationToken);
+        return CreatedAtAction(nameof(Get), new { id = nueva.Id }, nueva);
     }
 }

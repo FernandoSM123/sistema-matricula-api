@@ -21,12 +21,12 @@ public class EstudianteService(
     /// RF-02: crea la cuenta (rol Estudiante, temporal de 72 horas) y el registro del estudiante en un solo
     /// guardado, y después envía la temporal.
     /// </summary>
-    public async Task<EstudianteRegistradoResponse> RegistrarAsync(RegistrarEstudianteRequest request, CancellationToken cancellationToken)
+    public async Task<EstudianteRegistradoResponse> CreateAsync(RegistrarEstudianteRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        await ValidarCedulaDisponibleAsync(request.Cedula, cancellationToken);
-        var cuenta = await cuentaService.CrearCuentaConTemporalAsync(request.Correo, Rol.Estudiante, cancellationToken);
+        await EnsureCedulaAvailableAsync(request.Cedula, cancellationToken);
+        var cuenta = await cuentaService.CreateWithTemporaryPasswordAsync(request.Correo, Rol.Estudiante, cancellationToken);
 
         var estudiante = new Estudiante(
             cuenta.Usuario,
@@ -48,7 +48,7 @@ public class EstudianteService(
     /// RF-01: la persona define su contraseña y la cuenta siempre es de estudiante (RN-19). Cuenta y estudiante
     /// en un solo guardado; no se envía correo ni se inicia sesión.
     /// </summary>
-    public async Task<MensajeResponse> RegistrarPublicoAsync(RegistroPublicoRequest request, CancellationToken cancellationToken)
+    public async Task<MensajeResponse> SignUpAsync(RegistroPublicoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -65,7 +65,7 @@ public class EstudianteService(
                 + "olvidó la suya o contacte a la administración.");
         }
 
-        var usuario = await cuentaService.CrearCuentaPublicaAsync(request.Correo, request.Contrasena, cancellationToken);
+        var usuario = await cuentaService.CreatePublicAsync(request.Correo, request.Contrasena, cancellationToken);
         db.Estudiantes.Add(new Estudiante(
             usuario,
             request.Cedula,
@@ -83,7 +83,7 @@ public class EstudianteService(
     /// <summary>
     /// RF-16 y consulta 1: listado paginado, solo activos salvo que se pidan los inactivos (RN-41).
     /// </summary>
-    public Task<PagedResult<EstudianteResponse>> ListarAsync(ListarEstudiantesRequest request, CancellationToken cancellationToken)
+    public Task<PagedResult<EstudianteResponse>> ListAsync(ListarEstudiantesRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -118,7 +118,7 @@ public class EstudianteService(
     /// RF-18: datos personales y correo de un estudiante. El correo se cambia en la cuenta (RN-31).
     /// La fecha de registro no se edita.
     /// </summary>
-    public async Task<EstudianteResponse> ActualizarAsync(int id, ActualizarEstudianteRequest request, CancellationToken cancellationToken)
+    public async Task<EstudianteResponse> UpdateAsync(int id, ActualizarEstudianteRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -134,7 +134,7 @@ public class EstudianteService(
             throw new BusinessRuleException("RN-13", $"Ya existe un estudiante con la cédula {cedula}.");
         }
 
-        await cuentaService.CambiarCorreoAsync(estudiante.Usuario, request.Correo, cancellationToken);
+        await cuentaService.ChangeCorreoAsync(estudiante.Usuario, request.Correo, cancellationToken);
         estudiante.Update(
             request.Cedula, request.Nombre, request.Apellidos, request.Telefono, request.FechaNacimiento, request.Direccion);
         await db.SaveChangesAsync(cancellationToken);
@@ -142,7 +142,7 @@ public class EstudianteService(
         return estudiante.ToResponse();
     }
 
-    public async Task<EstudianteResponse> ObtenerAsync(int id, CancellationToken cancellationToken) =>
+    public async Task<EstudianteResponse> GetAsync(int id, CancellationToken cancellationToken) =>
         await db.Estudiantes.AsNoTracking()
             .Where(e => e.Id == id)
             .Select(EstudianteProjections.ToResponseExpression)
@@ -153,7 +153,7 @@ public class EstudianteService(
     /// El estudiante actual edita su teléfono y su dirección (matriz §2.2). Se identifica por el claim
     /// estudiante_id, no por un id que envíe el cliente (RN-18).
     /// </summary>
-    public async Task ActualizarContactoAsync(ActualizarContactoRequest request, CancellationToken cancellationToken)
+    public async Task UpdateContactoAsync(ActualizarContactoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -172,15 +172,15 @@ public class EstudianteService(
     /// RF-19 y RN-38: el estado del estudiante es el de su cuenta, así que se desactiva la cuenta. RN-36 vive en
     /// UsuarioService, para que aplique también a /usuarios/{id}/desactivar.
     /// </summary>
-    public async Task DesactivarAsync(int id, CancellationToken cancellationToken) =>
-        await usuarioService.DesactivarAsync(await ObtenerUsuarioIdAsync(id, cancellationToken), cancellationToken);
+    public async Task DeactivateAsync(int id, CancellationToken cancellationToken) =>
+        await usuarioService.DeactivateAsync(await GetUsuarioIdAsync(id, cancellationToken), cancellationToken);
 
     /// <summary>
     /// RF-19 y RN-34: solo un estudiante que nunca tuvo matrículas, ni siquiera retiradas; si no, se desactiva. Su
     /// cuenta se elimina con él en el mismo guardado (RN-35, decisión 10 del mapa), así el correo y la cédula se pueden
     /// volver a registrar. Sus tokens dejan de valer porque la cuenta ya no existe.
     /// </summary>
-    public async Task EliminarAsync(int id, CancellationToken cancellationToken)
+    public async Task DeleteAsync(int id, CancellationToken cancellationToken)
     {
         var estudiante = await db.Estudiantes
             .Include(e => e.Usuario)
@@ -203,10 +203,10 @@ public class EstudianteService(
     /// <summary>
     /// RF-19, RN-38 y RN-39: un estudiante que regresa se reactiva, no se registra de nuevo.
     /// </summary>
-    public async Task ReactivarAsync(int id, CancellationToken cancellationToken) =>
-        await usuarioService.ReactivarAsync(await ObtenerUsuarioIdAsync(id, cancellationToken), cancellationToken);
+    public async Task ReactivateAsync(int id, CancellationToken cancellationToken) =>
+        await usuarioService.ReactivateAsync(await GetUsuarioIdAsync(id, cancellationToken), cancellationToken);
 
-    private async Task<int> ObtenerUsuarioIdAsync(int id, CancellationToken cancellationToken)
+    private async Task<int> GetUsuarioIdAsync(int id, CancellationToken cancellationToken)
     {
         var usuarioId = await db.Estudiantes.AsNoTracking()
             .Where(e => e.Id == id)
@@ -217,7 +217,7 @@ public class EstudianteService(
     }
 
     // RN-13 (cédula única entre estudiantes) y RN-39 (un inactivo se reactiva, no se registra de nuevo).
-    private async Task ValidarCedulaDisponibleAsync(string cedula, CancellationToken cancellationToken)
+    private async Task EnsureCedulaAvailableAsync(string cedula, CancellationToken cancellationToken)
     {
         var buscada = cedula.Trim();
         var existente = await db.Estudiantes.AsNoTracking()

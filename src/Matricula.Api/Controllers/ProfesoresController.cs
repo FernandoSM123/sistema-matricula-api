@@ -1,5 +1,5 @@
 using Matricula.Api.Common;
-using Matricula.Api.Seguridad;
+using Matricula.Api.Security;
 using Matricula.Application.Common.Pagination;
 using Matricula.Application.Grupos;
 using Matricula.Application.Grupos.Queries;
@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Matricula.Api.Controllers;
 
-[Authorize(Policy = Politicas.Administrador)]
+[Authorize(Policy = Policies.Administrador)]
 public class ProfesoresController(
     ProfesorService profesorService, GrupoService grupoService, HorarioSemanalService horarioService) : ApiControllerBase
 {
@@ -23,11 +23,11 @@ public class ProfesoresController(
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<ProfesorRegistradoResponse>> Registrar(
+    public async Task<ActionResult<ProfesorRegistradoResponse>> Create(
         RegistrarProfesorRequest request, CancellationToken cancellationToken)
     {
-        var registrado = await profesorService.RegistrarAsync(request, cancellationToken);
-        return CreatedAtAction(nameof(Obtener), new { id = registrado.Profesor.Id }, registrado);
+        var registrado = await profesorService.CreateAsync(request, cancellationToken);
+        return CreatedAtAction(nameof(Get), new { id = registrado.Profesor.Id }, registrado);
     }
 
     /// <summary>
@@ -36,9 +36,9 @@ public class ProfesoresController(
     /// </summary>
     [HttpGet]
     [ProducesResponseType<PagedResult<ProfesorResponse>>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<PagedResult<ProfesorResponse>>> Listar(
+    public async Task<ActionResult<PagedResult<ProfesorResponse>>> List(
         [FromQuery] ListarProfesoresRequest request, CancellationToken cancellationToken) =>
-        Ok(await profesorService.ListarAsync(request, cancellationToken));
+        Ok(await profesorService.ListAsync(request, cancellationToken));
 
     /// <summary>
     /// Modifica los datos personales y el correo de un profesor (RF-25).
@@ -48,9 +48,9 @@ public class ProfesoresController(
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<ProfesorResponse>> Actualizar(
+    public async Task<ActionResult<ProfesorResponse>> Update(
         int id, ActualizarProfesorRequest request, CancellationToken cancellationToken) =>
-        Ok(await profesorService.ActualizarAsync(id, request, cancellationToken));
+        Ok(await profesorService.UpdateAsync(id, request, cancellationToken));
 
     /// <summary>
     /// Desactiva al profesor y su cuenta (RF-26, RN-38): no puede ingresar y sus sesiones se cierran.
@@ -59,9 +59,9 @@ public class ProfesoresController(
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Desactivar(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Deactivate(int id, CancellationToken cancellationToken)
     {
-        await profesorService.DesactivarAsync(id, cancellationToken);
+        await profesorService.DeactivateAsync(id, cancellationToken);
         return NoContent();
     }
 
@@ -71,9 +71,9 @@ public class ProfesoresController(
     [HttpPost("{id:int}/reactivar")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Reactivar(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Reactivate(int id, CancellationToken cancellationToken)
     {
-        await profesorService.ReactivarAsync(id, cancellationToken);
+        await profesorService.ReactivateAsync(id, cancellationToken);
         return NoContent();
     }
 
@@ -83,8 +83,8 @@ public class ProfesoresController(
     [HttpGet("{id:int}")]
     [ProducesResponseType<ProfesorResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<ProfesorResponse>> Obtener(int id, CancellationToken cancellationToken) =>
-        Ok(await profesorService.ObtenerAsync(id, cancellationToken));
+    public async Task<ActionResult<ProfesorResponse>> Get(int id, CancellationToken cancellationToken) =>
+        Ok(await profesorService.GetAsync(id, cancellationToken));
 
     /// <summary>
     /// Elimina un profesor que nunca tuvo grupos, junto con su cuenta (RF-26, RN-35). Si tuvo alguno, incluso
@@ -94,9 +94,9 @@ public class ProfesoresController(
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Eliminar(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        await profesorService.EliminarAsync(id, cancellationToken);
+        await profesorService.DeleteAsync(id, cancellationToken);
         return NoContent();
     }
 
@@ -106,9 +106,9 @@ public class ProfesoresController(
     [HttpGet("{id:int}/grupos")]
     [ProducesResponseType<PagedResult<GrupoResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PagedResult<GrupoResponse>>> ListarGrupos(
+    public async Task<ActionResult<PagedResult<GrupoResponse>>> ListGrupos(
         int id, [FromQuery] ListarGruposProfesorRequest request, CancellationToken cancellationToken) =>
-        Ok(await grupoService.ListarDeProfesorAsync(id, request, cancellationToken));
+        Ok(await grupoService.ListByProfesorAsync(id, request, cancellationToken));
 
     /// <summary>
     /// Horario semanal de un profesor (RF-28): sus bloques del periodo, sin grupos cancelados, por día y hora. Sin
@@ -117,7 +117,7 @@ public class ProfesoresController(
     [HttpGet("{id:int}/horario")]
     [ProducesResponseType<IReadOnlyList<BloqueHorarioResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<IReadOnlyList<BloqueHorarioResponse>>> Horario(
+    public async Task<ActionResult<IReadOnlyList<BloqueHorarioResponse>>> GetHorario(
         int id, [FromQuery] int? periodoId, CancellationToken cancellationToken) =>
-        Ok(await horarioService.HorarioProfesorAsync(id, periodoId, cancellationToken));
+        Ok(await horarioService.GetProfesorHorarioAsync(id, periodoId, cancellationToken));
 }

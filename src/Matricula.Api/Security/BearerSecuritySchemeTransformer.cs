@@ -1,14 +1,14 @@
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
-namespace Matricula.Api.Seguridad;
+namespace Matricula.Api.Security;
 
 /// <summary>
 /// Declara el esquema Bearer en el documento OpenAPI, para que Scalar permita enviar el token.
 /// </summary>
 public class BearerSecuritySchemeTransformer : IOpenApiDocumentTransformer
 {
-    private const string Esquema = "Bearer";
+    private const string Scheme = "Bearer";
 
     public Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
     {
@@ -16,7 +16,7 @@ public class BearerSecuritySchemeTransformer : IOpenApiDocumentTransformer
 
         document.Components ??= new OpenApiComponents();
         document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
-        document.Components.SecuritySchemes[Esquema] = new OpenApiSecurityScheme
+        document.Components.SecuritySchemes[Scheme] = new OpenApiSecurityScheme
         {
             Type = SecuritySchemeType.Http,
             Scheme = "bearer",
@@ -27,7 +27,7 @@ public class BearerSecuritySchemeTransformer : IOpenApiDocumentTransformer
         document.Security ??= [];
         document.Security.Add(new OpenApiSecurityRequirement
         {
-            [new OpenApiSecuritySchemeReference(Esquema, document)] = []
+            [new OpenApiSecuritySchemeReference(Scheme, document)] = []
         });
 
         return Task.CompletedTask;

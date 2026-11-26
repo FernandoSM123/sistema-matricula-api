@@ -5,14 +5,14 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Matricula.Api.Seguridad;
+namespace Matricula.Api.Security;
 
 public class JwtTokenGenerator(IOptions<JwtOptions> options, TimeProvider timeProvider) : ITokenGenerator
 {
     private readonly JwtOptions _options = options.Value;
     private readonly JsonWebTokenHandler _handler = new();
 
-    public static SymmetricSecurityKey CrearClave(JwtOptions options)
+    public static SymmetricSecurityKey CreateSigningKey(JwtOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
 
@@ -28,22 +28,22 @@ public class JwtTokenGenerator(IOptions<JwtOptions> options, TimeProvider timePr
 
         var claims = new Dictionary<string, object>
         {
-            [ClaimsToken.UsuarioId] = datos.UsuarioId.ToString(CultureInfo.InvariantCulture),
-            [ClaimsToken.Correo] = datos.Correo,
-            [ClaimsToken.Rol] = datos.Rol.ToString(),
-            [ClaimsToken.SecurityStamp] = datos.SecurityStamp
+            [TokenClaims.UsuarioId] = datos.UsuarioId.ToString(CultureInfo.InvariantCulture),
+            [TokenClaims.Correo] = datos.Correo,
+            [TokenClaims.Rol] = datos.Rol.ToString(),
+            [TokenClaims.SecurityStamp] = datos.SecurityStamp
         };
         if (datos.DebeCambiarContrasena)
         {
-            claims[ClaimsToken.DebeCambiarContrasena] = "true";
+            claims[TokenClaims.DebeCambiarContrasena] = "true";
         }
         if (datos.EstudianteId is { } estudianteId)
         {
-            claims[ClaimsToken.EstudianteId] = estudianteId.ToString(CultureInfo.InvariantCulture);
+            claims[TokenClaims.EstudianteId] = estudianteId.ToString(CultureInfo.InvariantCulture);
         }
         if (datos.ProfesorId is { } profesorId)
         {
-            claims[ClaimsToken.ProfesorId] = profesorId.ToString(CultureInfo.InvariantCulture);
+            claims[TokenClaims.ProfesorId] = profesorId.ToString(CultureInfo.InvariantCulture);
         }
 
         var descriptor = new SecurityTokenDescriptor
@@ -54,7 +54,7 @@ public class JwtTokenGenerator(IOptions<JwtOptions> options, TimeProvider timePr
             IssuedAt = ahora.UtcDateTime,
             NotBefore = ahora.UtcDateTime,
             Expires = expira.UtcDateTime,
-            SigningCredentials = new SigningCredentials(CrearClave(_options), SecurityAlgorithms.HmacSha256)
+            SigningCredentials = new SigningCredentials(CreateSigningKey(_options), SecurityAlgorithms.HmacSha256)
         };
 
         return new GeneratedToken(_handler.CreateToken(descriptor), expira);

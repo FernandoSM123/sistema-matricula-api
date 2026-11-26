@@ -4,7 +4,7 @@ Corrección transversal de la API, equivalente a `SPEC-nombres` del SPA. No es u
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/nombres/plan.md) | [Aprobadas](../tasks/nombres/todo.md) | 3/7 tareas |
+| **Aprobada** | [Aprobado](../tasks/nombres/plan.md) | [Aprobadas](../tasks/nombres/todo.md) | 4/7 tareas |
 
 **Historial:**
 - 2026-11-26: v1 en revisión. Parte del análisis de factibilidad hecho a pedido del usuario: el renombre es viable, no toca la BD y solo cambia el contrato en los nombres de los esquemas del OpenAPI (§2.6).
@@ -18,6 +18,11 @@ Corrección transversal de la API, equivalente a `SPEC-nombres` del SPA. No es u
   - Las dependencias inyectadas toman el nombre de su tipo nuevo (`localClock`, `tokenGenerator`, `passwordGenerator`, `emailDispatcher`, `errorRecorder`). Los campos privados, los parámetros y las variables locales en español se dejan como están.
   - Se adelantan dos renombres de la tabla: `CuentaService.SendTemporaryPasswordAsync` (T4) y `TestDataSeedService.RunAsync` (T6), porque comparten nombre con los de esta tarea.
   - Verificación con la API: olvido de contraseña con el correo en smtp4dev, `pageSize` limitado a 100 en la oferta y el registro de auditoría del cambio, con autor Sistema y el hash como `***`.
+- 2026-11-26: T4 completada, sin cambio de alcance. Detalles que la spec no fijaba:
+  - Los nombres internos de las políticas de rate limit pasan a `"forgot-password"` y `"sign-up"` (constantes de `RateLimitPolicies`); no salen en la API ni en el OpenAPI.
+  - Métodos privados de los servicios: `Ensure*` para las validaciones que lanzan (`EnsureCedulaAvailableAsync`, `EnsureNoOverlapsAsync`...), `Load*` para las búsquedas que lanzan 404, `CurrentProfesorId`/`CurrentEstudianteId`, `IsAdministrador`, `QueryPageAsync`, `SaveAsync`.
+  - Las acciones de los controllers cambian de nombre sin cambiar rutas: el OpenAPI generado es idéntico a la línea base.
+  - Verificación con la API: `201` con `Location` al crear un curso (y `GET` de ese `Location`), `403` de un estudiante en `/administradores` y `429` con `Retry-After` en el sexto olvido de contraseña.
 
 ## Objetivo
 

@@ -4,14 +4,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Matricula.Api.Seguridad;
+namespace Matricula.Api.Security;
 
-public static class SeguridadExtensions
+public static class SecurityExtensions
 {
     /// <summary>
     /// Autenticación JWT con validación del SecurityStamp en cada petición, y políticas de autorización.
     /// </summary>
-    public static IServiceCollection AddSeguridad(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddSecurity(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddOptions<JwtOptions>()
             .Bind(configuration.GetSection(JwtOptions.SectionName))
@@ -34,16 +34,16 @@ public static class SeguridadExtensions
                 {
                     ValidIssuer = opciones.Issuer,
                     ValidAudience = opciones.Audience,
-                    IssuerSigningKey = JwtTokenGenerator.CrearClave(opciones),
-                    NameClaimType = ClaimsToken.UsuarioId,
-                    RoleClaimType = ClaimsToken.Rol,
+                    IssuerSigningKey = JwtTokenGenerator.CreateSigningKey(opciones),
+                    NameClaimType = TokenClaims.UsuarioId,
+                    RoleClaimType = TokenClaims.Rol,
                     ClockSkew = TimeSpan.FromMinutes(1)
                 };
-                bearer.Events = new JwtBearerEvents { OnTokenValidated = ValidacionSecurityStamp.OnTokenValidated };
+                bearer.Events = new JwtBearerEvents { OnTokenValidated = SecurityStampValidation.OnTokenValidated };
             });
 
-        services.AddPoliticas();
-        services.AddSingleton<IAuthorizationMiddlewareResultHandler, ResultadoAutorizacionHandler>();
+        services.AddPolicies();
+        services.AddSingleton<IAuthorizationMiddlewareResultHandler, AuthorizationResultHandler>();
 
         return services;
     }

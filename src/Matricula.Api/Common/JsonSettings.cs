@@ -8,9 +8,9 @@ namespace Matricula.Api.Common;
 /// (las que usan el generador del OpenAPI y los ProblemDetails de IProblemDetailsService). Si se separan,
 /// el contrato publicado deja de coincidir con lo que la API envía y acepta (COR-03).
 /// </summary>
-public static class OpcionesJson
+public static class JsonSettings
 {
-    public static void Configurar(JsonSerializerOptions opciones)
+    public static void Configure(JsonSerializerOptions opciones)
     {
         ArgumentNullException.ThrowIfNull(opciones);
 

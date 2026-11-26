@@ -13,7 +13,7 @@ public class AuditoriaService(IAppDbContext db, ILocalClock localClock)
     /// <summary>
     /// Filtra con todos los criterios recibidos y ordena del cambio más reciente al más antiguo.
     /// </summary>
-    public async Task<PagedResult<RegistroAuditoriaResponse>> ListarAsync(
+    public async Task<PagedResult<RegistroAuditoriaResponse>> ListAsync(
         ListarAuditoriaRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -99,13 +99,13 @@ public class AuditoriaService(IAppDbContext db, ILocalClock localClock)
                 r.UsuarioCorreo,
                 r.UsuarioRol,
                 r.OperacionId,
-                LeerJson(r.Cambios)))
+                ReadJson(r.Cambios)))
             .ToList();
 
         return new PagedResult<RegistroAuditoriaResponse>(items, pagina.Page, pagina.PageSize, pagina.TotalCount);
     }
 
-    private static JsonElement LeerJson(string json)
+    private static JsonElement ReadJson(string json)
     {
         using var documento = JsonDocument.Parse(json);
         return documento.RootElement.Clone();

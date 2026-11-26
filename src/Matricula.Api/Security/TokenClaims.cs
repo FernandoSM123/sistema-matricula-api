@@ -1,9 +1,9 @@
-namespace Matricula.Api.Seguridad;
+namespace Matricula.Api.Security;
 
 /// <summary>
 /// Nombres de los claims del token. Se leen tal cual se emiten (MapInboundClaims = false).
 /// </summary>
-public static class ClaimsToken
+public static class TokenClaims
 {
     public const string UsuarioId = "sub";
     public const string Correo = "email";

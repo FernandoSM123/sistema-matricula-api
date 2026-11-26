@@ -8,9 +8,9 @@ namespace Matricula.Api.Common;
 /// 400 cuando el cuerpo falta o no es un JSON válido. Los mensajes del framework están en inglés y
 /// pueden describir tipos internos, así que se reemplazan por textos en español.
 /// </summary>
-public static class RespuestaModeloInvalido
+public static class InvalidModelStateResponse
 {
-    public static IActionResult Crear(ActionContext context)
+    public static IActionResult Create(ActionContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 

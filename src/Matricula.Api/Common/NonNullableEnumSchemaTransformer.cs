@@ -10,7 +10,7 @@ namespace Matricula.Api.Common;
 /// anulable (Rol? en la auditoría) y queda en el esquema compartido, así que Rol saldría anulable también
 /// donde nunca lo es (perfil, login). La nulabilidad ya la declara cada propiedad con su oneOf (COR-03).
 /// </summary>
-public class EnumSinNullSchemaTransformer : IOpenApiSchemaTransformer
+public class NonNullableEnumSchemaTransformer : IOpenApiSchemaTransformer
 {
     public Task TransformAsync(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
     {

@@ -13,12 +13,12 @@ public class AulaService(IAppDbContext db)
     /// <summary>
     /// RF-39: registra un aula activa.
     /// </summary>
-    public async Task<AulaResponse> RegistrarAsync(RegistrarAulaRequest request, CancellationToken cancellationToken)
+    public async Task<AulaResponse> CreateAsync(RegistrarAulaRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         var aula = new Aula(request.Codigo, request.Ubicacion, request.Capacidad);
-        await ValidarCodigoDisponibleAsync(aula.Codigo, cancellationToken);
+        await EnsureCodigoAvailableAsync(aula.Codigo, cancellationToken);
 
         db.Aulas.Add(aula);
         await db.SaveChangesAsync(cancellationToken);
@@ -28,7 +28,7 @@ public class AulaService(IAppDbContext db)
     /// <summary>
     /// RF-40: listado paginado, solo activas salvo que se pidan las inactivas (RN-41).
     /// </summary>
-    public Task<PagedResult<AulaResponse>> ListarAsync(ListarAulasRequest request, CancellationToken cancellationToken)
+    public Task<PagedResult<AulaResponse>> ListAsync(ListarAulasRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -60,11 +60,11 @@ public class AulaService(IAppDbContext db)
     /// RF-40: también se editan aulas inactivas. El módulo grupos impide reducir la capacidad por debajo del cupo de
     /// sus grupos (RN-09).
     /// </summary>
-    public async Task<AulaResponse> ActualizarAsync(int id, ActualizarAulaRequest request, CancellationToken cancellationToken)
+    public async Task<AulaResponse> UpdateAsync(int id, ActualizarAulaRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var aula = await BuscarAsync(id, cancellationToken);
+        var aula = await LoadAsync(id, cancellationToken);
 
         // RN-13: aquí un código de una inactiva tampoco se puede usar, y reactivarla no resolvería el conflicto.
         var codigo = Aula.NormalizeCodigo(request.Codigo);
@@ -101,7 +101,7 @@ public class AulaService(IAppDbContext db)
     /// <summary>
     /// RF-40: un aula inactiva también se consulta, porque el historial la sigue mostrando.
     /// </summary>
-    public async Task<AulaResponse> ObtenerAsync(int id, CancellationToken cancellationToken) =>
+    public async Task<AulaResponse> GetAsync(int id, CancellationToken cancellationToken) =>
         await db.Aulas.AsNoTracking()
             .Where(a => a.Id == id)
             .Select(AulaProjections.ToResponseExpression)
@@ -111,9 +111,9 @@ public class AulaService(IAppDbContext db)
     /// <summary>
     /// RF-40: repetir la operación no cambia nada. El módulo grupos añade RN-37.
     /// </summary>
-    public async Task DesactivarAsync(int id, CancellationToken cancellationToken)
+    public async Task DeactivateAsync(int id, CancellationToken cancellationToken)
     {
-        var aula = await BuscarAsync(id, cancellationToken);
+        var aula = await LoadAsync(id, cancellationToken);
         if (aula.Activo)
         {
             await db.EnsureNoActiveGruposAsync(g => g.AulaId == id, $"el aula {aula.Codigo}", cancellationToken);
@@ -126,9 +126,9 @@ public class AulaService(IAppDbContext db)
     /// <summary>
     /// RF-40 y RN-39: un aula que vuelve a usarse se reactiva, no se registra de nuevo.
     /// </summary>
-    public async Task ReactivarAsync(int id, CancellationToken cancellationToken)
+    public async Task ReactivateAsync(int id, CancellationToken cancellationToken)
     {
-        var aula = await BuscarAsync(id, cancellationToken);
+        var aula = await LoadAsync(id, cancellationToken);
         aula.Reactivate();
         await db.SaveChangesAsync(cancellationToken);
     }
@@ -136,9 +136,9 @@ public class AulaService(IAppDbContext db)
     /// <summary>
     /// RF-40 y RN-34: solo un aula que nunca tuvo grupos, ni siquiera cancelados. Si no, se desactiva.
     /// </summary>
-    public async Task EliminarAsync(int id, CancellationToken cancellationToken)
+    public async Task DeleteAsync(int id, CancellationToken cancellationToken)
     {
-        var aula = await BuscarAsync(id, cancellationToken);
+        var aula = await LoadAsync(id, cancellationToken);
 
         if (await db.Grupos.AnyAsync(g => g.AulaId == id, cancellationToken))
         {
@@ -150,12 +150,12 @@ public class AulaService(IAppDbContext db)
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task<Aula> BuscarAsync(int id, CancellationToken cancellationToken) =>
+    private async Task<Aula> LoadAsync(int id, CancellationToken cancellationToken) =>
         await db.Aulas.SingleOrDefaultAsync(a => a.Id == id, cancellationToken)
         ?? throw new NotFoundException($"No existe el aula {id}.");
 
     // RN-13 (código único) y RN-39 (una inactiva se reactiva, no se registra de nuevo).
-    private async Task ValidarCodigoDisponibleAsync(string codigo, CancellationToken cancellationToken)
+    private async Task EnsureCodigoAvailableAsync(string codigo, CancellationToken cancellationToken)
     {
         var existente = await db.Aulas.AsNoTracking()
             .Where(a => a.Codigo == codigo)

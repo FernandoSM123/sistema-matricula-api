@@ -15,7 +15,7 @@ namespace Matricula.Application.Grupos.Queries;
 public class HorarioSemanalService(IAppDbContext db, PeriodoService periodoService, ICurrentUser currentUser)
 {
     /// <summary>RF-28 para el administrador.</summary>
-    public async Task<IReadOnlyList<BloqueHorarioResponse>> HorarioProfesorAsync(
+    public async Task<IReadOnlyList<BloqueHorarioResponse>> GetProfesorHorarioAsync(
         int profesorId, int? periodoId, CancellationToken cancellationToken)
     {
         if (!await db.Profesores.AnyAsync(p => p.Id == profesorId, cancellationToken))
@@ -23,11 +23,11 @@ public class HorarioSemanalService(IAppDbContext db, PeriodoService periodoServi
             throw new NotFoundException($"No existe el profesor {profesorId}.");
         }
 
-        return await BloquesAsync(g => g.ProfesorId == profesorId, periodoId, cancellationToken);
+        return await GetBloquesAsync(g => g.ProfesorId == profesorId, periodoId, cancellationToken);
     }
 
     /// <summary>RF-21 para el administrador: los grupos en que el estudiante tiene una matrícula activa.</summary>
-    public async Task<IReadOnlyList<BloqueHorarioResponse>> HorarioEstudianteAsync(
+    public async Task<IReadOnlyList<BloqueHorarioResponse>> GetEstudianteHorarioAsync(
         int estudianteId, int? periodoId, CancellationToken cancellationToken)
     {
         if (!await db.Estudiantes.AnyAsync(e => e.Id == estudianteId, cancellationToken))
@@ -35,14 +35,14 @@ public class HorarioSemanalService(IAppDbContext db, PeriodoService periodoServi
             throw new NotFoundException($"No existe el estudiante {estudianteId}.");
         }
 
-        return await BloquesAsync(DelEstudiante(estudianteId), periodoId, cancellationToken);
+        return await GetBloquesAsync(OfEstudiante(estudianteId), periodoId, cancellationToken);
     }
 
     /// <summary>
     /// Horario de la sesión: RF-21 para el estudiante y RF-28 para el profesor. La política del endpoint solo deja pasar
     /// a esos dos roles.
     /// </summary>
-    public Task<IReadOnlyList<BloqueHorarioResponse>> MiHorarioAsync(int? periodoId, CancellationToken cancellationToken)
+    public Task<IReadOnlyList<BloqueHorarioResponse>> GetMyHorarioAsync(int? periodoId, CancellationToken cancellationToken)
     {
         // Un token emitido antes de que existiera el claim no lo trae: basta con iniciar sesión de nuevo.
         if (currentUser.Rol == nameof(Rol.Estudiante))
@@ -50,17 +50,17 @@ public class HorarioSemanalService(IAppDbContext db, PeriodoService periodoServi
             var estudianteId = currentUser.EstudianteId
                 ?? throw new ForbiddenException("Su sesión no identifica a un estudiante. Inicie sesión de nuevo.");
 
-            return BloquesAsync(DelEstudiante(estudianteId), periodoId, cancellationToken);
+            return GetBloquesAsync(OfEstudiante(estudianteId), periodoId, cancellationToken);
         }
 
         var profesorId = currentUser.ProfesorId
             ?? throw new ForbiddenException("Su sesión no identifica a un profesor. Inicie sesión de nuevo.");
 
-        return BloquesAsync(g => g.ProfesorId == profesorId, periodoId, cancellationToken);
+        return GetBloquesAsync(g => g.ProfesorId == profesorId, periodoId, cancellationToken);
     }
 
     /// <summary>RF-41: los bloques en que el aula está ocupada.</summary>
-    public async Task<IReadOnlyList<BloqueHorarioResponse>> OcupacionAulaAsync(
+    public async Task<IReadOnlyList<BloqueHorarioResponse>> GetAulaOcupacionAsync(
         int aulaId, int? periodoId, CancellationToken cancellationToken)
     {
         if (!await db.Aulas.AnyAsync(a => a.Id == aulaId, cancellationToken))
@@ -68,13 +68,13 @@ public class HorarioSemanalService(IAppDbContext db, PeriodoService periodoServi
             throw new NotFoundException($"No existe el aula {aulaId}.");
         }
 
-        return await BloquesAsync(g => g.AulaId == aulaId, periodoId, cancellationToken);
+        return await GetBloquesAsync(g => g.AulaId == aulaId, periodoId, cancellationToken);
     }
 
-    private async Task<IReadOnlyList<BloqueHorarioResponse>> BloquesAsync(
+    private async Task<IReadOnlyList<BloqueHorarioResponse>> GetBloquesAsync(
         Expression<Func<Grupo, bool>> filtro, int? periodoId, CancellationToken cancellationToken)
     {
-        var periodo = await ResolverPeriodoAsync(periodoId, cancellationToken);
+        var periodo = await ResolvePeriodoAsync(periodoId, cancellationToken);
 
         var bloques = await db.Grupos.AsNoTracking()
             .Where(filtro)
@@ -98,11 +98,11 @@ public class HorarioSemanalService(IAppDbContext db, PeriodoService periodoServi
         return [.. bloques.OrderBy(b => b.Dia).ThenBy(b => b.HoraInicio).ThenBy(b => b.Nrc)];
     }
 
-    private Expression<Func<Grupo, bool>> DelEstudiante(int estudianteId) =>
+    private Expression<Func<Grupo, bool>> OfEstudiante(int estudianteId) =>
         g => db.Matriculas.Any(m =>
             m.GrupoId == g.Id && m.EstudianteId == estudianteId && m.Estado == EstadoMatricula.Activa);
 
-    private async Task<int> ResolverPeriodoAsync(int? periodoId, CancellationToken cancellationToken)
+    private async Task<int> ResolvePeriodoAsync(int? periodoId, CancellationToken cancellationToken)
     {
         if (periodoId is { } id)
         {
@@ -111,7 +111,7 @@ public class HorarioSemanalService(IAppDbContext db, PeriodoService periodoServi
                 : throw new NotFoundException($"No existe el periodo {id}.");
         }
 
-        return await periodoService.ObtenerIdVigenteAsync(cancellationToken)
+        return await periodoService.GetVigenteIdAsync(cancellationToken)
             ?? throw new NotFoundException("No hay un periodo vigente. Indique el periodoId a consultar.");
     }
 }

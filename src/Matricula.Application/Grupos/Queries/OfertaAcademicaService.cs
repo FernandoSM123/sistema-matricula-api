@@ -12,12 +12,12 @@ public class OfertaAcademicaService(IAppDbContext db, PeriodoService periodoServ
     /// RF-50 (consulta 9): los grupos Abierto del periodo vigente, incluidos los que no tienen cupos disponibles. Sin
     /// periodo vigente devuelve una página vacía (supuesto 8). Ordena por curso y NRC.
     /// </summary>
-    public async Task<PagedResult<OfertaAcademicaResponse>> ListarAsync(
+    public async Task<PagedResult<OfertaAcademicaResponse>> ListAsync(
         ListarOfertaRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (await periodoService.ObtenerIdVigenteAsync(cancellationToken) is not { } periodoId)
+        if (await periodoService.GetVigenteIdAsync(cancellationToken) is not { } periodoId)
         {
             return new PagedResult<OfertaAcademicaResponse>([], request.Page, request.PageSize, 0);
         }

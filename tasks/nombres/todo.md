@@ -13,7 +13,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T1. La regla en los documentos y la línea base del OpenAPI | Completada | ✅ | ➖ | ✅ | ✅ |
 | T2. Domain | Completada | ✅ | ✅ | ✅ | ✅ |
 | T3. Piezas técnicas de Application e Infrastructure | Completada | ✅ | ✅ | ✅ | ✅ |
-| T4. Api técnica, métodos de los servicios y acciones | Pendiente | ⬜ | ⬜ | ⬜ | ⬜ |
+| T4. Api técnica, métodos de los servicios y acciones | Completada | ✅ | ✅ | ✅ | ✅ |
 | T5. DTO y validadores | Pendiente | ⬜ | ⬜ | ⬜ | ⬜ |
 | T6. Configuración y datos de prueba | Pendiente | ⬜ | ⬜ | ⬜ | ⬜ |
 | T7. Cierre | Pendiente | ⬜ | ⬜ | ⬜ | ⬜ |

@@ -14,7 +14,7 @@ public class ErroresService(IAppDbContext db, ILocalClock localClock)
     /// <summary>
     /// Filtra con todos los criterios recibidos y ordena del error más reciente al más antiguo, sin el detalle.
     /// </summary>
-    public async Task<PagedResult<RegistroErrorResponse>> ListarAsync(
+    public async Task<PagedResult<RegistroErrorResponse>> ListAsync(
         ListarErroresRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -74,7 +74,7 @@ public class ErroresService(IAppDbContext db, ILocalClock localClock)
     }
 
     /// <summary>Un error con su detalle técnico. Uno ya depurado (RN-49) no existe.</summary>
-    public async Task<RegistroErrorDetalleResponse> ObtenerAsync(long id, CancellationToken cancellationToken) =>
+    public async Task<RegistroErrorDetalleResponse> GetAsync(long id, CancellationToken cancellationToken) =>
         await db.RegistrosError
             .Where(r => r.Id == id)
             .Select(r => new RegistroErrorDetalleResponse(

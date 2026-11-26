@@ -1,5 +1,5 @@
 using Matricula.Api.Common;
-using Matricula.Api.Seguridad;
+using Matricula.Api.Security;
 using Matricula.Application.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +15,7 @@ public class AuthController(AuthService authService) : ApiControllerBase
     /// </summary>
     [HttpPost("login")]
     [AllowAnonymous]
-    [EnableRateLimiting(LimitesPeticiones.Login)]
+    [EnableRateLimiting(RateLimitPolicies.Login)]
     [ProducesResponseType<TokenResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -30,26 +30,26 @@ public class AuthController(AuthService authService) : ApiControllerBase
     /// </summary>
     [HttpPost("olvido-contrasena")]
     [AllowAnonymous]
-    [EnableRateLimiting(LimitesPeticiones.OlvidoContrasena)]
+    [EnableRateLimiting(RateLimitPolicies.ForgotPassword)]
     [ProducesResponseType<MensajeResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
-    public async Task<ActionResult<MensajeResponse>> OlvidoContrasena(OlvidoContrasenaRequest request, CancellationToken cancellationToken) =>
-        Ok(await authService.OlvidoContrasenaAsync(request, cancellationToken));
+    public async Task<ActionResult<MensajeResponse>> ForgotPassword(OlvidoContrasenaRequest request, CancellationToken cancellationToken) =>
+        Ok(await authService.ForgotPasswordAsync(request, cancellationToken));
 
     /// <summary>
     /// Cambio obligatorio tras ingresar con una temporal (RF-07): nueva contraseña y confirmación.
     /// Devuelve un token nuevo, sin cambio pendiente; el anterior deja de funcionar.
     /// </summary>
     [HttpPost("cambio-obligatorio")]
-    [Authorize(Policy = Politicas.PasswordChangePending)]
+    [Authorize(Policy = Policies.PasswordChangePending)]
     [ProducesResponseType<TokenResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<TokenResponse>> CambioObligatorio(CambioObligatorioRequest request, CancellationToken cancellationToken) =>
-        Ok(await authService.CambioObligatorioAsync(request, cancellationToken));
+    public async Task<ActionResult<TokenResponse>> RequiredPasswordChange(CambioObligatorioRequest request, CancellationToken cancellationToken) =>
+        Ok(await authService.RequiredPasswordChangeAsync(request, cancellationToken));
 
     /// <summary>
     /// Cambio de la contraseña propia (RF-09): actual, nueva y confirmación. Envía un aviso por correo y
@@ -61,14 +61,14 @@ public class AuthController(AuthService authService) : ApiControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<TokenResponse>> CambiarContrasena(CambiarContrasenaRequest request, CancellationToken cancellationToken) =>
-        Ok(await authService.CambiarContrasenaAsync(request, cancellationToken));
+    public async Task<ActionResult<TokenResponse>> ChangePassword(CambiarContrasenaRequest request, CancellationToken cancellationToken) =>
+        Ok(await authService.ChangePasswordAsync(request, cancellationToken));
 
     /// <summary>
     /// Cierra sesión (RF-08). Invalida todos los tokens del usuario. Se permite también con cambio pendiente.
     /// </summary>
     [HttpPost("logout")]
-    [Authorize(Policy = Politicas.PasswordChangePending)]
+    [Authorize(Policy = Policies.PasswordChangePending)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)

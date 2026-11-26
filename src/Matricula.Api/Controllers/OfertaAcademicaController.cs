@@ -17,7 +17,7 @@ public class OfertaAcademicaController(OfertaAcademicaService ofertaService) : A
     [AllowAnonymous]
     [ProducesResponseType<PagedResult<OfertaAcademicaResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<PagedResult<OfertaAcademicaResponse>>> Listar(
+    public async Task<ActionResult<PagedResult<OfertaAcademicaResponse>>> List(
         [FromQuery] ListarOfertaRequest request, CancellationToken cancellationToken) =>
-        Ok(await ofertaService.ListarAsync(request, cancellationToken));
+        Ok(await ofertaService.ListAsync(request, cancellationToken));
 }

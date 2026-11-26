@@ -1,4 +1,4 @@
-namespace Matricula.Api.Seguridad;
+namespace Matricula.Api.Security;
 
 /// <summary>
 /// Configuración del token. <see cref="Clave"/> va solo en user-secrets o en variables de entorno.

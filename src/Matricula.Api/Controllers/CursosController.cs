@@ -1,5 +1,5 @@
 using Matricula.Api.Common;
-using Matricula.Api.Seguridad;
+using Matricula.Api.Security;
 using Matricula.Application.Common.Pagination;
 using Matricula.Application.Cursos;
 using Matricula.Application.Grupos;
@@ -16,17 +16,17 @@ public class CursosController(CursoService cursoService, GrupoService grupoServi
     /// Registra un curso (RF-29). El código de un curso activo responde RN-13 y el de uno inactivo RN-39 con cursoId.
     /// </summary>
     [HttpPost]
-    [Authorize(Policy = Politicas.Administrador)]
+    [Authorize(Policy = Policies.Administrador)]
     [ProducesResponseType<CursoResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<CursoResponse>> Registrar(
+    public async Task<ActionResult<CursoResponse>> Create(
         RegistrarCursoRequest request, CancellationToken cancellationToken)
     {
-        var curso = await cursoService.RegistrarAsync(request, cancellationToken);
-        return CreatedAtAction(nameof(Obtener), new { id = curso.Id }, curso);
+        var curso = await cursoService.CreateAsync(request, cancellationToken);
+        return CreatedAtAction(nameof(Get), new { id = curso.Id }, curso);
     }
 
     /// <summary>
@@ -38,37 +38,37 @@ public class CursosController(CursoService cursoService, GrupoService grupoServi
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PagedResult<CursoResponse>>> Listar(
+    public async Task<ActionResult<PagedResult<CursoResponse>>> List(
         [FromQuery] ListarCursosRequest request, CancellationToken cancellationToken) =>
-        Ok(await cursoService.ListarAsync(request, cancellationToken));
+        Ok(await cursoService.ListAsync(request, cancellationToken));
 
     /// <summary>
     /// Modifica los datos de un curso (RF-32), incluso si está inactivo.
     /// </summary>
     [HttpPut("{id:int}")]
-    [Authorize(Policy = Politicas.Administrador)]
+    [Authorize(Policy = Policies.Administrador)]
     [ProducesResponseType<CursoResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<CursoResponse>> Actualizar(
+    public async Task<ActionResult<CursoResponse>> Update(
         int id, ActualizarCursoRequest request, CancellationToken cancellationToken) =>
-        Ok(await cursoService.ActualizarAsync(id, request, cancellationToken));
+        Ok(await cursoService.UpdateAsync(id, request, cancellationToken));
 
     /// <summary>
     /// Desactiva un curso (RF-33). Repetir la operación responde igual.
     /// </summary>
     [HttpPost("{id:int}/desactivar")]
-    [Authorize(Policy = Politicas.Administrador)]
+    [Authorize(Policy = Policies.Administrador)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Desactivar(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Deactivate(int id, CancellationToken cancellationToken)
     {
-        await cursoService.DesactivarAsync(id, cancellationToken);
+        await cursoService.DeactivateAsync(id, cancellationToken);
         return NoContent();
     }
 
@@ -76,14 +76,14 @@ public class CursosController(CursoService cursoService, GrupoService grupoServi
     /// Reactiva un curso (RF-33, RN-39). Repetir la operación responde igual.
     /// </summary>
     [HttpPost("{id:int}/reactivar")]
-    [Authorize(Policy = Politicas.Administrador)]
+    [Authorize(Policy = Policies.Administrador)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Reactivar(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Reactivate(int id, CancellationToken cancellationToken)
     {
-        await cursoService.ReactivarAsync(id, cancellationToken);
+        await cursoService.ReactivateAsync(id, cancellationToken);
         return NoContent();
     }
 
@@ -92,15 +92,15 @@ public class CursosController(CursoService cursoService, GrupoService grupoServi
     /// desactiva en su lugar.
     /// </summary>
     [HttpDelete("{id:int}")]
-    [Authorize(Policy = Politicas.Administrador)]
+    [Authorize(Policy = Policies.Administrador)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Eliminar(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        await cursoService.EliminarAsync(id, cancellationToken);
+        await cursoService.DeleteAsync(id, cancellationToken);
         return NoContent();
     }
 
@@ -113,8 +113,8 @@ public class CursosController(CursoService cursoService, GrupoService grupoServi
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<CursoResponse>> Obtener(int id, CancellationToken cancellationToken) =>
-        Ok(await cursoService.ObtenerAsync(id, cancellationToken));
+    public async Task<ActionResult<CursoResponse>> Get(int id, CancellationToken cancellationToken) =>
+        Ok(await cursoService.GetAsync(id, cancellationToken));
 
     /// <summary>
     /// Grupos de un curso (RF-34), con filtros por periodo y estado; search busca en el NRC. El administrador ve
@@ -127,7 +127,7 @@ public class CursosController(CursoService cursoService, GrupoService grupoServi
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PagedResult<GrupoResponse>>> ListarGrupos(
+    public async Task<ActionResult<PagedResult<GrupoResponse>>> ListGrupos(
         int id, [FromQuery] ListarGruposCursoRequest request, CancellationToken cancellationToken) =>
-        Ok(await grupoService.ListarPorCursoAsync(id, request, cancellationToken));
+        Ok(await grupoService.ListByCursoAsync(id, request, cancellationToken));
 }

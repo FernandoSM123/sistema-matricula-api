@@ -2,13 +2,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Matricula.Api.Seguridad;
+namespace Matricula.Api.Security;
 
 /// <summary>
 /// Responde 403 con code "RN-24" cuando el acceso se niega por un cambio de contraseña pendiente;
 /// el resto de casos los resuelve el manejador por defecto.
 /// </summary>
-public class ResultadoAutorizacionHandler(IProblemDetailsService problemDetailsService) : IAuthorizationMiddlewareResultHandler
+public class AuthorizationResultHandler(IProblemDetailsService problemDetailsService) : IAuthorizationMiddlewareResultHandler
 {
     private readonly AuthorizationMiddlewareResultHandler _porDefecto = new();
 
@@ -18,7 +18,7 @@ public class ResultadoAutorizacionHandler(IProblemDetailsService problemDetailsS
         ArgumentNullException.ThrowIfNull(authorizeResult);
 
         var porCambioPendiente = authorizeResult.Forbidden
-            && authorizeResult.AuthorizationFailure?.FailedRequirements.OfType<SinCambioPendienteRequirement>().Any() == true;
+            && authorizeResult.AuthorizationFailure?.FailedRequirements.OfType<NoPasswordChangePendingRequirement>().Any() == true;
 
         if (!porCambioPendiente)
         {

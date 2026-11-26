@@ -1,7 +1,7 @@
 using Matricula.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 
-namespace Matricula.Api.Seguridad;
+namespace Matricula.Api.Security;
 
 /// <summary>
 /// Políticas de autorización. Para restringir por rol se usan <see cref="Administrador"/>, <see cref="Profesor"/> y
@@ -9,7 +9,7 @@ namespace Matricula.Api.Seguridad;
 /// [Authorize(Roles = ...)]: el atributo con Roles reemplaza la política por defecto y dejaría pasar
 /// a un usuario con cambio de contraseña pendiente (RN-24).
 /// </summary>
-public static class Politicas
+public static class Policies
 {
     /// <summary>Solo exige sesión. La usan únicamente el cambio obligatorio y el logout.</summary>
     public const string PasswordChangePending = nameof(PasswordChangePending);
@@ -20,17 +20,17 @@ public static class Politicas
 
     public const string Profesor = nameof(Profesor);
 
-    public const string AdministradorOProfesor = nameof(AdministradorOProfesor);
+    public const string AdministradorOrProfesor = nameof(AdministradorOrProfesor);
 
-    public const string AdministradorOEstudiante = nameof(AdministradorOEstudiante);
+    public const string AdministradorOrEstudiante = nameof(AdministradorOrEstudiante);
 
-    public const string ProfesorOEstudiante = nameof(ProfesorOEstudiante);
+    public const string ProfesorOrEstudiante = nameof(ProfesorOrEstudiante);
 
-    public static IServiceCollection AddPoliticas(this IServiceCollection services)
+    public static IServiceCollection AddPolicies(this IServiceCollection services)
     {
         var conSesionSinCambioPendiente = new AuthorizationPolicyBuilder()
             .RequireAuthenticatedUser()
-            .AddRequirements(new SinCambioPendienteRequirement())
+            .AddRequirements(new NoPasswordChangePendingRequirement())
             .Build();
 
         services.AddAuthorizationBuilder()
@@ -47,13 +47,13 @@ public static class Politicas
             .AddPolicy(Profesor, policy => policy
                 .Combine(conSesionSinCambioPendiente)
                 .RequireRole(nameof(Rol.Profesor)))
-            .AddPolicy(AdministradorOProfesor, policy => policy
+            .AddPolicy(AdministradorOrProfesor, policy => policy
                 .Combine(conSesionSinCambioPendiente)
                 .RequireRole(nameof(Rol.Administrador), nameof(Rol.Profesor)))
-            .AddPolicy(AdministradorOEstudiante, policy => policy
+            .AddPolicy(AdministradorOrEstudiante, policy => policy
                 .Combine(conSesionSinCambioPendiente)
                 .RequireRole(nameof(Rol.Administrador), nameof(Rol.Estudiante)))
-            .AddPolicy(ProfesorOEstudiante, policy => policy
+            .AddPolicy(ProfesorOrEstudiante, policy => policy
                 .Combine(conSesionSinCambioPendiente)
                 .RequireRole(nameof(Rol.Profesor), nameof(Rol.Estudiante)));
 

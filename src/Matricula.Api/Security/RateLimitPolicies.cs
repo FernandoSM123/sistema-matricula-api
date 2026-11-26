@@ -3,37 +3,37 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
-namespace Matricula.Api.Seguridad;
+namespace Matricula.Api.Security;
 
 /// <summary>
 /// Rate limiting por IP de los endpoints anónimos sensibles a fuerza bruta.
 /// </summary>
-public static class LimitesPeticiones
+public static class RateLimitPolicies
 {
     public const string Login = "login";
-    public const string OlvidoContrasena = "olvido-contrasena";
-    public const string RegistroEstudiante = "registro-estudiante";
+    public const string ForgotPassword = "forgot-password";
+    public const string SignUp = "sign-up";
 
-    public static IServiceCollection AddLimitesPeticiones(this IServiceCollection services)
+    public static IServiceCollection AddRateLimitPolicies(this IServiceCollection services)
     {
         services.AddRateLimiter(options =>
         {
-            options.AddPolicy(Login, context => PorIp(context, limite: 10, ventana: TimeSpan.FromMinutes(1)));
-            options.AddPolicy(OlvidoContrasena, context => PorIp(context, limite: 5, ventana: TimeSpan.FromMinutes(15)));
+            options.AddPolicy(Login, context => ByIp(context, limite: 10, ventana: TimeSpan.FromMinutes(1)));
+            options.AddPolicy(ForgotPassword, context => ByIp(context, limite: 5, ventana: TimeSpan.FromMinutes(15)));
             // Más holgado que el olvido: varios estudiantes pueden registrarse desde la red del instituto.
-            options.AddPolicy(RegistroEstudiante, context => PorIp(context, limite: 10, ventana: TimeSpan.FromMinutes(15)));
-            options.OnRejected = ResponderAsync;
+            options.AddPolicy(SignUp, context => ByIp(context, limite: 10, ventana: TimeSpan.FromMinutes(15)));
+            options.OnRejected = RespondAsync;
         });
 
         return services;
     }
 
-    private static RateLimitPartition<string> PorIp(HttpContext context, int limite, TimeSpan ventana) =>
+    private static RateLimitPartition<string> ByIp(HttpContext context, int limite, TimeSpan ventana) =>
         RateLimitPartition.GetFixedWindowLimiter(
             context.Connection.RemoteIpAddress?.ToString() ?? "desconocida",
             _ => new FixedWindowRateLimiterOptions { PermitLimit = limite, Window = ventana, QueueLimit = 0 });
 
-    private static async ValueTask ResponderAsync(OnRejectedContext context, CancellationToken cancellationToken)
+    private static async ValueTask RespondAsync(OnRejectedContext context, CancellationToken cancellationToken)
     {
         var http = context.HttpContext;
         http.Response.StatusCode = StatusCodes.Status429TooManyRequests;

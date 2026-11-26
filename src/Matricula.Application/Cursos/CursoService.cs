@@ -13,7 +13,7 @@ public class CursoService(IAppDbContext db)
     /// <summary>
     /// RF-29: registra un curso activo. Costo y Nivel ya los exige el validador.
     /// </summary>
-    public async Task<CursoResponse> RegistrarAsync(RegistrarCursoRequest request, CancellationToken cancellationToken)
+    public async Task<CursoResponse> CreateAsync(RegistrarCursoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -24,7 +24,7 @@ public class CursoService(IAppDbContext db)
             request.DuracionHoras,
             request.Costo!.Value,
             request.Nivel!.Value);
-        await ValidarCodigoDisponibleAsync(curso.Codigo, cancellationToken);
+        await EnsureCodigoAvailableAsync(curso.Codigo, cancellationToken);
 
         db.Cursos.Add(curso);
         await db.SaveChangesAsync(cancellationToken);
@@ -34,7 +34,7 @@ public class CursoService(IAppDbContext db)
     /// <summary>
     /// RF-30: listado paginado, solo activos salvo que se pidan los inactivos (RN-41).
     /// </summary>
-    public Task<PagedResult<CursoResponse>> ListarAsync(ListarCursosRequest request, CancellationToken cancellationToken)
+    public Task<PagedResult<CursoResponse>> ListAsync(ListarCursosRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -68,11 +68,11 @@ public class CursoService(IAppDbContext db)
     /// <summary>
     /// RF-32: también se editan cursos inactivos. Costo y Nivel ya los exige el validador.
     /// </summary>
-    public async Task<CursoResponse> ActualizarAsync(int id, ActualizarCursoRequest request, CancellationToken cancellationToken)
+    public async Task<CursoResponse> UpdateAsync(int id, ActualizarCursoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var curso = await BuscarAsync(id, cancellationToken);
+        var curso = await LoadAsync(id, cancellationToken);
 
         // RN-13: aquí un código de un inactivo tampoco se puede usar, y reactivarlo no resolvería el conflicto.
         var codigo = Curso.NormalizeCodigo(request.Codigo);
@@ -97,9 +97,9 @@ public class CursoService(IAppDbContext db)
     /// <summary>
     /// RF-33: repetir la operación no cambia nada. El módulo grupos añade RN-37.
     /// </summary>
-    public async Task DesactivarAsync(int id, CancellationToken cancellationToken)
+    public async Task DeactivateAsync(int id, CancellationToken cancellationToken)
     {
-        var curso = await BuscarAsync(id, cancellationToken);
+        var curso = await LoadAsync(id, cancellationToken);
         if (curso.Activo)
         {
             await db.EnsureNoActiveGruposAsync(g => g.CursoId == id, $"el curso {curso.Codigo}", cancellationToken);
@@ -112,9 +112,9 @@ public class CursoService(IAppDbContext db)
     /// <summary>
     /// RF-33 y RN-39: un curso que vuelve a ofrecerse se reactiva, no se registra de nuevo.
     /// </summary>
-    public async Task ReactivarAsync(int id, CancellationToken cancellationToken)
+    public async Task ReactivateAsync(int id, CancellationToken cancellationToken)
     {
-        var curso = await BuscarAsync(id, cancellationToken);
+        var curso = await LoadAsync(id, cancellationToken);
         curso.Reactivate();
         await db.SaveChangesAsync(cancellationToken);
     }
@@ -122,7 +122,7 @@ public class CursoService(IAppDbContext db)
     /// <summary>
     /// RF-31: un curso inactivo también se consulta, porque el historial lo sigue mostrando.
     /// </summary>
-    public async Task<CursoResponse> ObtenerAsync(int id, CancellationToken cancellationToken) =>
+    public async Task<CursoResponse> GetAsync(int id, CancellationToken cancellationToken) =>
         await db.Cursos.AsNoTracking()
             .Where(c => c.Id == id)
             .Select(CursoProjections.ToResponseExpression)
@@ -132,9 +132,9 @@ public class CursoService(IAppDbContext db)
     /// <summary>
     /// RF-33 y RN-34: solo un curso que nunca tuvo grupos, ni siquiera cancelados. Si no, se desactiva.
     /// </summary>
-    public async Task EliminarAsync(int id, CancellationToken cancellationToken)
+    public async Task DeleteAsync(int id, CancellationToken cancellationToken)
     {
-        var curso = await BuscarAsync(id, cancellationToken);
+        var curso = await LoadAsync(id, cancellationToken);
 
         if (await db.Grupos.AnyAsync(g => g.CursoId == id, cancellationToken))
         {
@@ -146,12 +146,12 @@ public class CursoService(IAppDbContext db)
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task<Curso> BuscarAsync(int id, CancellationToken cancellationToken) =>
+    private async Task<Curso> LoadAsync(int id, CancellationToken cancellationToken) =>
         await db.Cursos.SingleOrDefaultAsync(c => c.Id == id, cancellationToken)
         ?? throw new NotFoundException($"No existe el curso {id}.");
 
     // RN-13 (código único) y RN-39 (un inactivo se reactiva, no se registra de nuevo).
-    private async Task ValidarCodigoDisponibleAsync(string codigo, CancellationToken cancellationToken)
+    private async Task EnsureCodigoAvailableAsync(string codigo, CancellationToken cancellationToken)
     {
         var existente = await db.Cursos.AsNoTracking()
             .Where(c => c.Codigo == codigo)

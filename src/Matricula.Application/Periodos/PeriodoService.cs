@@ -12,7 +12,7 @@ public class PeriodoService(IAppDbContext db, ILocalClock localClock)
     /// <summary>
     /// RF-35: registra un periodo. Las fechas ya las exige el validador, y los periodos pueden traslaparse.
     /// </summary>
-    public async Task<PeriodoResponse> RegistrarAsync(RegistrarPeriodoRequest request, CancellationToken cancellationToken)
+    public async Task<PeriodoResponse> CreateAsync(RegistrarPeriodoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -38,7 +38,7 @@ public class PeriodoService(IAppDbContext db, ILocalClock localClock)
     /// <summary>
     /// RF-36: listado paginado, con los más recientes primero.
     /// </summary>
-    public Task<PagedResult<PeriodoResponse>> ListarAsync(ListarPeriodosRequest request, CancellationToken cancellationToken)
+    public Task<PagedResult<PeriodoResponse>> ListAsync(ListarPeriodosRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -59,7 +59,7 @@ public class PeriodoService(IAppDbContext db, ILocalClock localClock)
             .ToPagedResultAsync(request, cancellationToken);
     }
 
-    public async Task<PeriodoResponse> ObtenerAsync(int id, CancellationToken cancellationToken) =>
+    public async Task<PeriodoResponse> GetAsync(int id, CancellationToken cancellationToken) =>
         await db.Periodos.AsNoTracking()
             .Where(p => p.Id == id)
             .Select(PeriodoProjections.ToResponseExpression)
@@ -70,9 +70,9 @@ public class PeriodoService(IAppDbContext db, ILocalClock localClock)
     /// RF-38: vigente es el periodo con InicioMatricula ≤ hoy ≤ FinClases. Los periodos pueden traslaparse: gana el de
     /// matrícula más reciente y, si coinciden, el de mayor id.
     /// </summary>
-    public async Task<PeriodoResponse> ObtenerVigenteAsync(CancellationToken cancellationToken)
+    public async Task<PeriodoResponse> GetVigenteAsync(CancellationToken cancellationToken)
     {
-        var id = await ObtenerIdVigenteAsync(cancellationToken)
+        var id = await GetVigenteIdAsync(cancellationToken)
             ?? throw new NotFoundException("No hay un periodo vigente.");
 
         return await db.Periodos.AsNoTracking()
@@ -85,7 +85,7 @@ public class PeriodoService(IAppDbContext db, ILocalClock localClock)
     /// Id del periodo vigente, o null si no hay. Para las consultas de otros módulos que lo usan por defecto (la oferta
     /// académica, el horario semanal y la ocupación de un aula).
     /// </summary>
-    public async Task<int?> ObtenerIdVigenteAsync(CancellationToken cancellationToken)
+    public async Task<int?> GetVigenteIdAsync(CancellationToken cancellationToken)
     {
         var hoy = localClock.Today();
 
@@ -100,7 +100,7 @@ public class PeriodoService(IAppDbContext db, ILocalClock localClock)
     /// <summary>
     /// RF-36: también se editan periodos pasados. Las fechas ya las exige el validador.
     /// </summary>
-    public async Task<PeriodoResponse> ActualizarAsync(int id, ActualizarPeriodoRequest request, CancellationToken cancellationToken)
+    public async Task<PeriodoResponse> UpdateAsync(int id, ActualizarPeriodoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -130,7 +130,7 @@ public class PeriodoService(IAppDbContext db, ILocalClock localClock)
     /// RF-37 y RN-34: solo un periodo sin grupos, ni siquiera cancelados. Los periodos no se desactivan: uno con grupos
     /// se corrige o se conserva como historial.
     /// </summary>
-    public async Task EliminarAsync(int id, CancellationToken cancellationToken)
+    public async Task DeleteAsync(int id, CancellationToken cancellationToken)
     {
         var periodo = await db.Periodos.SingleOrDefaultAsync(p => p.Id == id, cancellationToken)
             ?? throw new NotFoundException($"No existe el periodo {id}.");

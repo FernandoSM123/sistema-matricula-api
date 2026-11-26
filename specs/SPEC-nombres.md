@@ -4,13 +4,20 @@ Corrección transversal de la API, equivalente a `SPEC-nombres` del SPA. No es u
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/nombres/plan.md) | [Aprobadas](../tasks/nombres/todo.md) | 2/7 tareas |
+| **Aprobada** | [Aprobado](../tasks/nombres/plan.md) | [Aprobadas](../tasks/nombres/todo.md) | 3/7 tareas |
 
 **Historial:**
 - 2026-11-26: v1 en revisión. Parte del análisis de factibilidad hecho a pedido del usuario: el renombre es viable, no toca la BD y solo cambia el contrato en los nombres de los esquemas del OpenAPI (§2.6).
 - 2026-11-26: v1 aprobada por el usuario, que resolvió las tres preguntas abiertas como se proponían (decisiones 4 a 6). Plan y tareas en revisión.
 - 2026-11-26: plan y tareas aprobados. T1 completada: regla en `docs/arquitectura.md` §8.1 y en `AGENTS.md`; línea base del OpenAPI con 55 rutas y 73 esquemas.
 - 2026-11-26: T2 completada, sin cambio de alcance. Los miembros de las reglas, que la spec no listaba, siguen la regla: `HorarioRules.AreValidHours`/`Overlap`; `PeriodoRules.MatriculaInOrder`, `ClasesInOrder`, `MatriculaWithinClases`, `RetiroWithinPeriodo`, `ClasesOverlap`, `AreConsistent` y sus `*Message`; `AuditRules.Mask`, `AuditedEntities`, `FindEntity`, `IsExcluded`, `IsMasked`, `Values`, `Differences`; `ErrorLogRules.Truncate`, `NormalizeTraceId`, `RetentionLimit`; `PasswordPolicy.MinLength`, `Message`, `IsValid`; `LocalDateRules.ToLocalDate`, `ToUtcRange`. Las propiedades `Antes`/`Despues` del cambio auditado no cambian: son las claves del JSON guardado. 1104 pruebas en verde y migración de prueba vacía.
+- 2026-11-26: T3 completada, sin cambio de alcance. Detalles que la spec no fijaba:
+  - El parámetro `to` de `IEmailSender.SendAsync` pasa a `recipient`: el analizador (CA1716) rechaza `to`, que es palabra reservada en VB.
+  - El valor `MotivoTemporal.CuentaNueva` **no cambia**: se llama igual que la clase `CuentaNueva` y el reemplazo lo había tocado; se revirtió antes del commit, porque se guarda como texto en la BD. Ningún otro nombre renombrado coincide con un valor de enum.
+  - `EmailTemplate` (`Subject`, `HtmlBody`), `CuentaWithTemporaryPassword.TemporaryPassword`, `PageRequest.MaxPageSize`, `GruposGuards.IsActive`, `ChangeAuthor.System`, `PendingChanges.IsEmpty`/`Complete`/`None`.
+  - Las dependencias inyectadas toman el nombre de su tipo nuevo (`localClock`, `tokenGenerator`, `passwordGenerator`, `emailDispatcher`, `errorRecorder`). Los campos privados, los parámetros y las variables locales en español se dejan como están.
+  - Se adelantan dos renombres de la tabla: `CuentaService.SendTemporaryPasswordAsync` (T4) y `TestDataSeedService.RunAsync` (T6), porque comparten nombre con los de esta tarea.
+  - Verificación con la API: olvido de contraseña con el correo en smtp4dev, `pageSize` limitado a 100 en la oferta y el registro de auditoría del cambio, con autor Sistema y el hash como `***`.
 
 ## Objetivo
 

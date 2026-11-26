@@ -1,13 +1,13 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Matricula.Application.Periodos;
 
-public class PeriodoService(IAppDbContext db, IFechaLocal fechaLocal)
+public class PeriodoService(IAppDbContext db, ILocalClock localClock)
 {
     /// <summary>
     /// RF-35: registra un periodo. Las fechas ya las exige el validador, y los periodos pueden traslaparse.
@@ -55,14 +55,14 @@ public class PeriodoService(IAppDbContext db, IFechaLocal fechaLocal)
         return query
             .OrderByDescending(p => p.InicioClases)
             .ThenBy(p => p.Id)
-            .Select(PeriodoProyecciones.AResponse)
+            .Select(PeriodoProjections.ToResponseExpression)
             .ToPagedResultAsync(request, cancellationToken);
     }
 
     public async Task<PeriodoResponse> ObtenerAsync(int id, CancellationToken cancellationToken) =>
         await db.Periodos.AsNoTracking()
             .Where(p => p.Id == id)
-            .Select(PeriodoProyecciones.AResponse)
+            .Select(PeriodoProjections.ToResponseExpression)
             .SingleOrDefaultAsync(cancellationToken)
         ?? throw new NotFoundException($"No existe el periodo {id}.");
 
@@ -77,7 +77,7 @@ public class PeriodoService(IAppDbContext db, IFechaLocal fechaLocal)
 
         return await db.Periodos.AsNoTracking()
             .Where(p => p.Id == id)
-            .Select(PeriodoProyecciones.AResponse)
+            .Select(PeriodoProjections.ToResponseExpression)
             .SingleAsync(cancellationToken);
     }
 
@@ -87,7 +87,7 @@ public class PeriodoService(IAppDbContext db, IFechaLocal fechaLocal)
     /// </summary>
     public async Task<int?> ObtenerIdVigenteAsync(CancellationToken cancellationToken)
     {
-        var hoy = fechaLocal.Hoy();
+        var hoy = localClock.Today();
 
         return await db.Periodos.AsNoTracking()
             .Where(p => p.InicioMatricula <= hoy && hoy <= p.FinClases)

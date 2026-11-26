@@ -1,12 +1,12 @@
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Matricula.Domain.Enums;
 
 namespace Matricula.Application.Cursos;
 
 /// <summary>
-/// <see cref="PaginacionRequest.Search"/> busca en nombre y código.
+/// <see cref="PageRequest.Search"/> busca en nombre y código.
 /// </summary>
-public class ListarCursosRequest : PaginacionRequest
+public class ListarCursosRequest : PageRequest
 {
     public NivelCurso? Nivel { get; set; }
 

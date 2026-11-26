@@ -1,6 +1,6 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
-using Matricula.Application.Correos;
+using Matricula.Application.Email;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
 using Matricula.Domain.Exceptions;
@@ -10,11 +10,11 @@ namespace Matricula.Application.Auth;
 
 public class AuthService(
     IAppDbContext db,
-    IHasherContrasenas hasher,
-    IGeneradorToken generadorToken,
+    IPasswordHashService hasher,
+    ITokenGenerator tokenGenerator,
     ICurrentUser currentUser,
-    IGeneradorContrasenas generadorContrasenas,
-    EnvioCorreos envioCorreos,
+    IPasswordGenerator passwordGenerator,
+    EmailDispatcher emailDispatcher,
     TimeProvider timeProvider)
 {
     public const string MensajeOlvido = "Si el correo está registrado, recibirá una contraseña temporal.";
@@ -32,11 +32,11 @@ public class AuthService(
 
         if (usuario is { Activo: true })
         {
-            var temporal = generadorContrasenas.Generar();
-            usuario.SetTemporaryPassword(hasher.Hashear(temporal), MotivoTemporal.Olvido, timeProvider.GetUtcNow());
+            var temporal = passwordGenerator.Generate();
+            usuario.SetTemporaryPassword(hasher.Hash(temporal), MotivoTemporal.Olvido, timeProvider.GetUtcNow());
             await db.SaveChangesAsync(cancellationToken);
 
-            await envioCorreos.EnviarTemporalAsync(usuario, temporal, MotivoTemporal.Olvido, cancellationToken);
+            await emailDispatcher.SendTemporaryPasswordAsync(usuario, temporal, MotivoTemporal.Olvido, cancellationToken);
         }
 
         return new MensajeResponse(MensajeOlvido);
@@ -63,17 +63,17 @@ public class AuthService(
             throw new BusinessRuleException("RN-23", "La contraseña temporal venció. Solicite una nueva.");
         }
 
-        if (hasher.Verificar(usuario.TempPasswordHash!, request.NuevaContrasena) != ResultadoVerificacion.Incorrecta)
+        if (hasher.Verify(usuario.TempPasswordHash!, request.NuevaContrasena) != PasswordCheckResult.Failed)
         {
             throw new BusinessRuleException("RN-25", "La nueva contraseña debe ser distinta de la contraseña temporal.");
         }
 
         ValidarDistintaDeLaActual(usuario, request.NuevaContrasena);
 
-        usuario.SetPassword(hasher.Hashear(request.NuevaContrasena), ahora);
+        usuario.SetPassword(hasher.Hash(request.NuevaContrasena), ahora);
         await db.SaveChangesAsync(cancellationToken);
 
-        await envioCorreos.EnviarAvisoCambioContrasenaAsync(usuario, cancellationToken);
+        await emailDispatcher.SendPasswordChangedAsync(usuario, cancellationToken);
         return await EmitirTokenAsync(usuario, debeCambiarContrasena: false, cancellationToken);
     }
 
@@ -88,17 +88,17 @@ public class AuthService(
         var usuario = await CargarUsuarioActualAsync(cancellationToken);
 
         if (usuario.PasswordHash is null
-            || hasher.Verificar(usuario.PasswordHash, request.ContrasenaActual) == ResultadoVerificacion.Incorrecta)
+            || hasher.Verify(usuario.PasswordHash, request.ContrasenaActual) == PasswordCheckResult.Failed)
         {
             throw new BusinessRuleException("RF-09", "La contraseña actual no es correcta.");
         }
 
         ValidarDistintaDeLaActual(usuario, request.NuevaContrasena);
 
-        usuario.SetPassword(hasher.Hashear(request.NuevaContrasena), timeProvider.GetUtcNow());
+        usuario.SetPassword(hasher.Hash(request.NuevaContrasena), timeProvider.GetUtcNow());
         await db.SaveChangesAsync(cancellationToken);
 
-        await envioCorreos.EnviarAvisoCambioContrasenaAsync(usuario, cancellationToken);
+        await emailDispatcher.SendPasswordChangedAsync(usuario, cancellationToken);
         return await EmitirTokenAsync(usuario, debeCambiarContrasena: false, cancellationToken);
     }
 
@@ -184,14 +184,14 @@ public class AuthService(
         var ahora = timeProvider.GetUtcNow();
 
         var definitiva = usuario.PasswordHash is null
-            ? ResultadoVerificacion.Incorrecta
-            : hasher.Verificar(usuario.PasswordHash, request.Contrasena);
-        if (definitiva != ResultadoVerificacion.Incorrecta)
+            ? PasswordCheckResult.Failed
+            : hasher.Verify(usuario.PasswordHash, request.Contrasena);
+        if (definitiva != PasswordCheckResult.Failed)
         {
             ValidarActiva(usuario);
-            if (definitiva == ResultadoVerificacion.CorrectaRequiereRehash)
+            if (definitiva == PasswordCheckResult.SuccessRehashNeeded)
             {
-                usuario.RehashPassword(hasher.Hashear(request.Contrasena));
+                usuario.RehashPassword(hasher.Hash(request.Contrasena));
             }
 
             usuario.RecordLogin(ahora);
@@ -200,7 +200,7 @@ public class AuthService(
         }
 
         if (usuario.HasValidTemporaryPassword(ahora)
-            && hasher.Verificar(usuario.TempPasswordHash!, request.Contrasena) != ResultadoVerificacion.Incorrecta)
+            && hasher.Verify(usuario.TempPasswordHash!, request.Contrasena) != PasswordCheckResult.Failed)
         {
             ValidarActiva(usuario);
             usuario.RecordTemporaryPasswordLogin(ahora);
@@ -231,7 +231,7 @@ public class AuthService(
     private void ValidarDistintaDeLaActual(Usuario usuario, string nuevaContrasena)
     {
         if (usuario.PasswordHash is not null
-            && hasher.Verificar(usuario.PasswordHash, nuevaContrasena) != ResultadoVerificacion.Incorrecta)
+            && hasher.Verify(usuario.PasswordHash, nuevaContrasena) != PasswordCheckResult.Failed)
         {
             throw new BusinessRuleException("RN-25", "La nueva contraseña debe ser distinta de la contraseña actual.");
         }
@@ -262,7 +262,7 @@ public class AuthService(
                 .SingleOrDefaultAsync(cancellationToken)
             : null;
 
-        var token = generadorToken.Generar(new DatosToken(
+        var token = tokenGenerator.Generate(new TokenData(
             usuario.Id, usuario.Correo, usuario.Rol, usuario.SecurityStamp, debeCambiarContrasena, estudianteId, profesorId));
 
         return new TokenResponse(token.AccessToken, token.ExpiraEn, usuario.Rol, debeCambiarContrasena);

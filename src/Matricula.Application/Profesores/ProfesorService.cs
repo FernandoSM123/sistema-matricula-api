@@ -1,6 +1,6 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Matricula.Application.Cuentas;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
@@ -33,7 +33,7 @@ public class ProfesorService(IAppDbContext db, CuentaService cuentaService, Usua
         db.Profesores.Add(profesor);
         await db.SaveChangesAsync(cancellationToken);
 
-        var correoEnviado = await cuentaService.EnviarTemporalAsync(cuenta, cancellationToken);
+        var correoEnviado = await cuentaService.SendTemporaryPasswordAsync(cuenta, cancellationToken);
         return new ProfesorRegistradoResponse(profesor.ToResponse(), correoEnviado);
     }
 
@@ -68,7 +68,7 @@ public class ProfesorService(IAppDbContext db, CuentaService cuentaService, Usua
             .OrderBy(p => p.Apellidos)
             .ThenBy(p => p.Nombre)
             .ThenBy(p => p.Id)
-            .Select(ProfesorProyecciones.AResponse)
+            .Select(ProfesorProjections.ToResponseExpression)
             .ToPagedResultAsync(request, cancellationToken);
     }
 
@@ -102,7 +102,7 @@ public class ProfesorService(IAppDbContext db, CuentaService cuentaService, Usua
     public async Task<ProfesorResponse> ObtenerAsync(int id, CancellationToken cancellationToken) =>
         await db.Profesores.AsNoTracking()
             .Where(p => p.Id == id)
-            .Select(ProfesorProyecciones.AResponse)
+            .Select(ProfesorProjections.ToResponseExpression)
             .SingleOrDefaultAsync(cancellationToken)
         ?? throw new NotFoundException($"No existe el profesor {id}.");
 

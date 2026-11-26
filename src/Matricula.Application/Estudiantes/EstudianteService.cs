@@ -1,7 +1,7 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Auth;
 using Matricula.Application.Common.Exceptions;
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Matricula.Application.Cuentas;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
@@ -15,7 +15,7 @@ public class EstudianteService(
     CuentaService cuentaService,
     UsuarioService usuarioService,
     ICurrentUser currentUser,
-    IFechaLocal fechaLocal)
+    ILocalClock localClock)
 {
     /// <summary>
     /// RF-02: crea la cuenta (rol Estudiante, temporal de 72 horas) y el registro del estudiante en un solo
@@ -36,11 +36,11 @@ public class EstudianteService(
             request.Telefono,
             request.FechaNacimiento,
             request.Direccion,
-            fechaLocal.Hoy());
+            localClock.Today());
         db.Estudiantes.Add(estudiante);
         await db.SaveChangesAsync(cancellationToken);
 
-        var correoEnviado = await cuentaService.EnviarTemporalAsync(cuenta, cancellationToken);
+        var correoEnviado = await cuentaService.SendTemporaryPasswordAsync(cuenta, cancellationToken);
         return new EstudianteRegistradoResponse(estudiante.ToResponse(), correoEnviado);
     }
 
@@ -74,7 +74,7 @@ public class EstudianteService(
             request.Telefono,
             request.FechaNacimiento,
             request.Direccion,
-            fechaLocal.Hoy()));
+            localClock.Today()));
         await db.SaveChangesAsync(cancellationToken);
 
         return new MensajeResponse("Registro completado. Ya puede iniciar sesión con su correo y contraseña.");
@@ -110,7 +110,7 @@ public class EstudianteService(
             .OrderBy(e => e.Apellidos)
             .ThenBy(e => e.Nombre)
             .ThenBy(e => e.Id)
-            .Select(EstudianteProyecciones.AResponse)
+            .Select(EstudianteProjections.ToResponseExpression)
             .ToPagedResultAsync(request, cancellationToken);
     }
 
@@ -145,7 +145,7 @@ public class EstudianteService(
     public async Task<EstudianteResponse> ObtenerAsync(int id, CancellationToken cancellationToken) =>
         await db.Estudiantes.AsNoTracking()
             .Where(e => e.Id == id)
-            .Select(EstudianteProyecciones.AResponse)
+            .Select(EstudianteProjections.ToResponseExpression)
             .SingleOrDefaultAsync(cancellationToken)
         ?? throw new NotFoundException($"No existe el estudiante {id}.");
 

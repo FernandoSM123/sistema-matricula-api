@@ -1,13 +1,13 @@
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Matricula.Domain.Enums;
 
 namespace Matricula.Application.Errores;
 
 /// <summary>
-/// Filtros de los errores (RF-59), todos opcionales y combinables. <see cref="PaginacionRequest.Search"/> busca en el
+/// Filtros de los errores (RF-59), todos opcionales y combinables. <see cref="PageRequest.Search"/> busca en el
 /// mensaje, el tipo de la excepción y la ruta (supuesto 7 de la spec).
 /// </summary>
-public class ListarErroresRequest : PaginacionRequest
+public class ListarErroresRequest : PageRequest
 {
     /// <summary>Fecha local del instituto, incluida.</summary>
     public DateOnly? Desde { get; set; }

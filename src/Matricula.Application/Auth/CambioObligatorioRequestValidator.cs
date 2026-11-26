@@ -6,7 +6,7 @@ public class CambioObligatorioRequestValidator : AbstractValidator<CambioObligat
 {
     public CambioObligatorioRequestValidator()
     {
-        RuleFor(r => r.NuevaContrasena).NuevaContrasenaValida();
-        RuleFor(r => r.Confirmacion).ConfirmacionDe(r => r.NuevaContrasena);
+        RuleFor(r => r.NuevaContrasena).ValidNewPassword();
+        RuleFor(r => r.Confirmacion).ConfirmationOf(r => r.NuevaContrasena);
     }
 }

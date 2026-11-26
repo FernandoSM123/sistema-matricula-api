@@ -1,6 +1,6 @@
 using Matricula.Api.Common;
 using Matricula.Api.Seguridad;
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Matricula.Application.Cursos;
 using Matricula.Application.Grupos;
 using Microsoft.AspNetCore.Authorization;

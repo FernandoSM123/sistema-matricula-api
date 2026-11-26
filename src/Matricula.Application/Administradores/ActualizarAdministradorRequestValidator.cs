@@ -1,5 +1,5 @@
 using FluentValidation;
-using Matricula.Application.Common.Validacion;
+using Matricula.Application.Common.Validation;
 
 namespace Matricula.Application.Administradores;
 

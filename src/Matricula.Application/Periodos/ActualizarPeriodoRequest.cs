@@ -6,4 +6,4 @@ public record ActualizarPeriodoRequest(
     DateOnly? FinClases,
     DateOnly? InicioMatricula,
     DateOnly? FinMatricula,
-    DateOnly? FechaLimiteRetiro) : IDatosPeriodo;
+    DateOnly? FechaLimiteRetiro) : IPeriodoData;

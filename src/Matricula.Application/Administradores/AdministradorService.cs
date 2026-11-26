@@ -1,6 +1,6 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Matricula.Application.Cuentas;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
@@ -26,7 +26,7 @@ public class AdministradorService(IAppDbContext db, CuentaService cuentaService)
         db.Administradores.Add(administrador);
         await db.SaveChangesAsync(cancellationToken);
 
-        var correoEnviado = await cuentaService.EnviarTemporalAsync(cuenta, cancellationToken);
+        var correoEnviado = await cuentaService.SendTemporaryPasswordAsync(cuenta, cancellationToken);
         return new AdministradorRegistradoResponse(administrador.ToResponse(), correoEnviado);
     }
 
@@ -60,7 +60,7 @@ public class AdministradorService(IAppDbContext db, CuentaService cuentaService)
             .OrderBy(a => a.Apellidos)
             .ThenBy(a => a.Nombre)
             .ThenBy(a => a.Id)
-            .Select(AdministradorProyecciones.AResponse)
+            .Select(AdministradorProjections.ToResponseExpression)
             .ToPagedResultAsync(request, cancellationToken);
     }
 
@@ -94,7 +94,7 @@ public class AdministradorService(IAppDbContext db, CuentaService cuentaService)
     public async Task<AdministradorResponse> ObtenerAsync(int id, CancellationToken cancellationToken) =>
         await db.Administradores.AsNoTracking()
             .Where(a => a.Id == id)
-            .Select(AdministradorProyecciones.AResponse)
+            .Select(AdministradorProjections.ToResponseExpression)
             .SingleOrDefaultAsync(cancellationToken)
         ?? throw new NotFoundException($"No existe el administrador {id}.");
 

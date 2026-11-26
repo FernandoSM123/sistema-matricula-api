@@ -22,7 +22,7 @@ public static class SeguridadExtensions
             .Validate(o => o.MinutosVigencia > 0, "'Jwt:MinutosVigencia' debe ser mayor que cero.")
             .ValidateOnStart();
 
-        services.AddSingleton<IGeneradorToken, GeneradorToken>();
+        services.AddSingleton<ITokenGenerator, JwtTokenGenerator>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
         services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
@@ -34,7 +34,7 @@ public static class SeguridadExtensions
                 {
                     ValidIssuer = opciones.Issuer,
                     ValidAudience = opciones.Audience,
-                    IssuerSigningKey = GeneradorToken.CrearClave(opciones),
+                    IssuerSigningKey = JwtTokenGenerator.CrearClave(opciones),
                     NameClaimType = ClaimsToken.UsuarioId,
                     RoleClaimType = ClaimsToken.Rol,
                     ClockSkew = TimeSpan.FromMinutes(1)

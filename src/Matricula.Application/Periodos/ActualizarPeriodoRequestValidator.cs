@@ -1,3 +1,3 @@
 namespace Matricula.Application.Periodos;
 
-public class ActualizarPeriodoRequestValidator : DatosPeriodoValidator<ActualizarPeriodoRequest>;
+public class ActualizarPeriodoRequestValidator : PeriodoDataValidator<ActualizarPeriodoRequest>;

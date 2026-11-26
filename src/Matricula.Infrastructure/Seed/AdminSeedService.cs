@@ -16,13 +16,13 @@ namespace Matricula.Infrastructure.Seed;
 public partial class AdminSeedService(
     AppDbContext db,
     IOptions<AdminSeedOptions> options,
-    IHasherContrasenas hasher,
+    IPasswordHashService hasher,
     TimeProvider timeProvider,
     ILogger<AdminSeedService> logger)
 {
     private readonly AdminSeedOptions _options = options.Value;
 
-    public async Task EjecutarAsync(CancellationToken cancellationToken)
+    public async Task RunAsync(CancellationToken cancellationToken)
     {
         bool hayAdministradores;
         try
@@ -38,14 +38,14 @@ public partial class AdminSeedService(
 
         if (!hayAdministradores)
         {
-            await CrearAdministradorInicialAsync(cancellationToken);
+            await CreateInitialAdministradorAsync(cancellationToken);
             return;
         }
 
-        await RenovarTemporalSiNoTieneContrasenaAsync(cancellationToken);
+        await RenewTemporaryPasswordIfNoPasswordAsync(cancellationToken);
     }
 
-    private async Task CrearAdministradorInicialAsync(CancellationToken cancellationToken)
+    private async Task CreateInitialAdministradorAsync(CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(_options.ContrasenaTemporal))
         {
@@ -56,15 +56,15 @@ public partial class AdminSeedService(
 
         var correo = Usuario.NormalizeCorreo(_options.Correo);
         var usuario = new Usuario(correo, Rol.Administrador, OrigenRegistro.Administrador);
-        usuario.SetTemporaryPassword(hasher.Hashear(_options.ContrasenaTemporal), MotivoTemporal.CuentaNueva, timeProvider.GetUtcNow());
+        usuario.SetTemporaryPassword(hasher.Hash(_options.ContrasenaTemporal), MotivoTemporal.CuentaNueva, timeProvider.GetUtcNow());
 
         db.Administradores.Add(new Administrador(usuario, _options.Cedula, _options.Nombre, _options.Apellidos, _options.Telefono));
         await db.SaveChangesAsync(cancellationToken);
 
-        LogAdministradorInicialCreado(logger, correo);
+        LogInitialAdministradorCreated(logger, correo);
     }
 
-    private async Task RenovarTemporalSiNoTieneContrasenaAsync(CancellationToken cancellationToken)
+    private async Task RenewTemporaryPasswordIfNoPasswordAsync(CancellationToken cancellationToken)
     {
         // El administrador inicial es el único creado sin un administrador que lo registre.
         var inicial = await db.Usuarios.SingleOrDefaultAsync(
@@ -78,23 +78,23 @@ public partial class AdminSeedService(
         var correo = inicial.Correo;
         if (string.IsNullOrWhiteSpace(_options.ContrasenaTemporal))
         {
-            LogSinTemporalParaRenovar(logger, correo);
+            LogNoTemporaryPasswordToRenew(logger, correo);
             return;
         }
 
-        inicial.SetTemporaryPassword(hasher.Hashear(_options.ContrasenaTemporal), MotivoTemporal.CuentaNueva, timeProvider.GetUtcNow());
+        inicial.SetTemporaryPassword(hasher.Hash(_options.ContrasenaTemporal), MotivoTemporal.CuentaNueva, timeProvider.GetUtcNow());
         await db.SaveChangesAsync(cancellationToken);
 
-        LogTemporalRenovada(logger, correo);
+        LogTemporaryPasswordRenewed(logger, correo);
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Administrador inicial creado con el correo {Correo}")]
-    private static partial void LogAdministradorInicialCreado(ILogger logger, string correo);
+    private static partial void LogInitialAdministradorCreated(ILogger logger, string correo);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Temporal del administrador inicial {Correo} renovada")]
-    private static partial void LogTemporalRenovada(ILogger logger, string correo);
+    private static partial void LogTemporaryPasswordRenewed(ILogger logger, string correo);
 
     [LoggerMessage(Level = LogLevel.Warning,
         Message = "El administrador inicial {Correo} aún no define su contraseña y no hay 'AdminSeed:ContrasenaTemporal' para renovar su temporal")]
-    private static partial void LogSinTemporalParaRenovar(ILogger logger, string correo);
+    private static partial void LogNoTemporaryPasswordToRenew(ILogger logger, string correo);
 }

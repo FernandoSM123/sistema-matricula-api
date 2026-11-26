@@ -17,8 +17,8 @@ namespace Matricula.Infrastructure.Seed.DatosPrueba;
 public partial class DatosPruebaSeedService(
     AppDbContext db,
     IOptions<DatosPruebaOptions> options,
-    IHasherContrasenas hasher,
-    IFechaLocal fechaLocal,
+    IPasswordHashService hasher,
+    ILocalClock localClock,
     TimeProvider timeProvider,
     ILogger<DatosPruebaSeedService> logger)
 {
@@ -26,7 +26,7 @@ public partial class DatosPruebaSeedService(
 
     private readonly DatosPruebaOptions _options = options.Value;
 
-    public async Task EjecutarAsync(bool esDesarrollo, CancellationToken cancellationToken)
+    public async Task RunAsync(bool esDesarrollo, CancellationToken cancellationToken)
     {
         if (!_options.Habilitado)
         {
@@ -55,7 +55,7 @@ public partial class DatosPruebaSeedService(
 
         var semilla = _options.Semilla ?? Random.Shared.Next();
         var faker = new Faker("es") { Random = new Randomizer(semilla) };
-        var hoy = fechaLocal.Hoy();
+        var hoy = localClock.Today();
 
         await using var transaccion = await db.Database.BeginTransactionAsync(cancellationToken);
 
@@ -141,7 +141,7 @@ public partial class DatosPruebaSeedService(
 
         // Un solo hash para todas las cuentas: incluye su sal y verifica igual, y hashear miles de veces (PBKDF2)
         // tardaría minutos (plan, decisiones de implementación).
-        var hash = hasher.Hashear(_options.Contrasena!);
+        var hash = hasher.Hash(_options.Contrasena!);
         var ahora = timeProvider.GetUtcNow();
 
         // El administrador inicial también recibe la contraseña de prueba como definitiva, para usarlo de inmediato

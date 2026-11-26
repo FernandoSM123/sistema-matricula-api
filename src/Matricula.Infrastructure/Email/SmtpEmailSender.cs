@@ -10,13 +10,13 @@ public class SmtpEmailSender(IOptions<SmtpOptions> options) : IEmailSender
 {
     private readonly SmtpOptions _options = options.Value;
 
-    public async Task EnviarAsync(string destinatario, string asunto, string cuerpoHtml, CancellationToken cancellationToken = default)
+    public async Task SendAsync(string recipient, string subject, string htmlBody, CancellationToken cancellationToken = default)
     {
         using var mensaje = new MimeMessage();
         mensaje.From.Add(new MailboxAddress(_options.NombreRemitente, _options.Remitente));
-        mensaje.To.Add(MailboxAddress.Parse(destinatario));
-        mensaje.Subject = asunto;
-        mensaje.Body = new BodyBuilder { HtmlBody = cuerpoHtml }.ToMessageBody();
+        mensaje.To.Add(MailboxAddress.Parse(recipient));
+        mensaje.Subject = subject;
+        mensaje.Body = new BodyBuilder { HtmlBody = htmlBody }.ToMessageBody();
 
         using var cliente = new SmtpClient();
         var seguridad = _options.UseSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None;

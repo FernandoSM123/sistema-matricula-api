@@ -1,11 +1,11 @@
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 
 namespace Matricula.Application.Administradores;
 
 /// <summary>
-/// <see cref="PaginacionRequest.Search"/> busca en nombre, apellidos, cédula y correo.
+/// <see cref="PageRequest.Search"/> busca en nombre, apellidos, cédula y correo.
 /// </summary>
-public class ListarAdministradoresRequest : PaginacionRequest
+public class ListarAdministradoresRequest : PageRequest
 {
     /// <summary>RN-41: por defecto solo se listan los activos.</summary>
     public bool IncluirInactivos { get; set; }

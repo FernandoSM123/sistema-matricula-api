@@ -1,6 +1,6 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Matricula.Application.Matriculas;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Matricula.Application.Grupos;
 
-public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLocal fechaLocal)
+public class GrupoService(IAppDbContext db, ICurrentUser currentUser, ILocalClock localClock)
 {
     /// <summary>
     /// RF-43 con la visibilidad de RN-18: el profesor solo ve sus grupos y el estudiante solo los Abierto (supuesto 7),
@@ -87,7 +87,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
 
     // Filtros comunes de los listados; la visibilidad por rol ya viene aplicada en los parámetros.
     private Task<PagedResult<GrupoResponse>> ConsultarAsync(
-        PaginacionRequest request,
+        PageRequest request,
         int? cursoId,
         int? profesorId,
         int? periodoId,
@@ -134,7 +134,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
             .ThenBy(g => g.Curso.Nombre)
             .ThenBy(g => g.Nrc)
             .ThenBy(g => g.Id)
-            .Select(GrupoProyecciones.AResponse)
+            .Select(GrupoProjections.ToResponseExpression)
             .ToPagedResultAsync(request, cancellationToken);
     }
 
@@ -201,7 +201,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
     {
         var detalle = await db.Grupos.AsNoTracking()
             .Where(g => g.Id == id)
-            .Select(GrupoProyecciones.ADetalle)
+            .Select(GrupoProjections.ToDetailExpression)
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException($"No existe el grupo {id}.");
 
@@ -218,7 +218,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
             throw new ForbiddenException("No tiene acceso a este grupo.", "RN-18");
         }
 
-        return detalle.OrdenarHorarios();
+        return detalle.SortHorarios();
     }
 
     // Activa o retirada: el estudiante puede revisar el grupo de su historial.
@@ -248,7 +248,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
         var grupo = await BuscarConHorariosAsync(grupoId, cancellationToken);
         var horario = grupo.AddHorario(request.Dia!.Value, request.HoraInicio!.Value, request.HoraFin!.Value);
         await ValidarTraslapesAsync(grupo, [horario], grupo.ProfesorId, grupo.AulaId, cancellationToken);
-        await db.ValidarBloquesSinChoquesAsync(grupo, [horario], cancellationToken);
+        await db.EnsureBloquesWithoutConflictsAsync(grupo, [horario], cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
         return await ObtenerAsync(grupoId, cancellationToken);
@@ -319,7 +319,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
             .Where(m => m.GrupoId == grupo.Id && m.Estado == EstadoMatricula.Activa)
             .ToListAsync(cancellationToken);
 
-        var hoy = fechaLocal.Hoy();
+        var hoy = localClock.Today();
         foreach (var matricula in activas)
         {
             matricula.Withdraw(hoy, MotivoRetiro.CancelacionGrupo);

@@ -1,3 +1,3 @@
 namespace Matricula.Application.Grupos;
 
-public class CrearGrupoRequestValidator : DatosGrupoValidator<CrearGrupoRequest>;
+public class CrearGrupoRequestValidator : GrupoDataValidator<CrearGrupoRequest>;

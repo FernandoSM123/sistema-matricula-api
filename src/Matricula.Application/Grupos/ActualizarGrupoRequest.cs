@@ -9,4 +9,4 @@ public record ActualizarGrupoRequest(
     int? PeriodoId,
     int? AulaId,
     int? Cupo,
-    Modalidad? Modalidad) : IDatosGrupo;
+    Modalidad? Modalidad) : IGrupoData;

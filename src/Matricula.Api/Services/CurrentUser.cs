@@ -8,13 +8,13 @@ public class CurrentUser(IHttpContextAccessor httpContextAccessor) : ICurrentUse
 {
     private ClaimsPrincipal? User => httpContextAccessor.HttpContext?.User;
 
-    public bool EstaAutenticado => User?.Identity?.IsAuthenticated ?? false;
-    public int? UsuarioId => LeerEntero(ClaimsToken.UsuarioId);
+    public bool IsAuthenticated => User?.Identity?.IsAuthenticated ?? false;
+    public int? UsuarioId => ReadInt(ClaimsToken.UsuarioId);
     public string? Rol => User?.FindFirstValue(ClaimsToken.Rol);
-    public int? EstudianteId => LeerEntero(ClaimsToken.EstudianteId);
-    public int? ProfesorId => LeerEntero(ClaimsToken.ProfesorId);
+    public int? EstudianteId => ReadInt(ClaimsToken.EstudianteId);
+    public int? ProfesorId => ReadInt(ClaimsToken.ProfesorId);
     public bool DebeCambiarContrasena => User?.HasClaim(c => c.Type == ClaimsToken.DebeCambiarContrasena) ?? false;
 
-    private int? LeerEntero(string claim) =>
+    private int? ReadInt(string claim) =>
         int.TryParse(User?.FindFirstValue(claim), out var valor) ? valor : null;
 }

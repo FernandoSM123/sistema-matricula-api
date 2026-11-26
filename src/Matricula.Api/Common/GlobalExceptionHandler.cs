@@ -78,8 +78,8 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
             // sin query string, headers ni body (RN-47). Nunca lanza excepciones (RN-48).
             var metodo = httpContext.Request.Method;
             var ruta = httpContext.Request.Path.Value;
-            await httpContext.RequestServices.GetRequiredService<IRegistroErrores>().RegistrarAsync(
-                new ErrorInesperado(OrigenError.Peticion, $"Error no controlado en {metodo} {ruta}", exception, metodo, ruta));
+            await httpContext.RequestServices.GetRequiredService<IErrorRecorder>().RecordAsync(
+                new UnexpectedError(OrigenError.Peticion, $"Error no controlado en {metodo} {ruta}", exception, metodo, ruta));
         }
         else
         {

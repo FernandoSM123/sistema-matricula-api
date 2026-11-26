@@ -1,3 +1,3 @@
 namespace Matricula.Application.Grupos;
 
-public class ActualizarGrupoRequestValidator : DatosGrupoValidator<ActualizarGrupoRequest>;
+public class ActualizarGrupoRequestValidator : GrupoDataValidator<ActualizarGrupoRequest>;

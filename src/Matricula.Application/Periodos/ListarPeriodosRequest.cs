@@ -1,8 +1,8 @@
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 
 namespace Matricula.Application.Periodos;
 
 /// <summary>
-/// <see cref="PaginacionRequest.Search"/> busca en el nombre.
+/// <see cref="PageRequest.Search"/> busca en el nombre.
 /// </summary>
-public class ListarPeriodosRequest : PaginacionRequest;
+public class ListarPeriodosRequest : PageRequest;

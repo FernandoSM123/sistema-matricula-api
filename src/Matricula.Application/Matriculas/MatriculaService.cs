@@ -1,6 +1,6 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
 using Matricula.Domain.Exceptions;
@@ -13,7 +13,7 @@ namespace Matricula.Application.Matriculas;
 /// Matrícula, retiro y cambio de grupo (RF-51 a RF-53). El estudiante opera sobre sí mismo (RN-18); al administrador
 /// no se le aplican las restricciones de estado del grupo ni de fechas (supuesto 1 de la spec).
 /// </summary>
-public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFechaLocal fechaLocal)
+public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, ILocalClock localClock)
 {
     private const string MensajeConcurrencia =
         "El grupo cambió mientras se procesaba la solicitud (por ejemplo, se ocupó el último cupo). Intente de nuevo.";
@@ -43,7 +43,7 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
     {
         var matricula = await db.Matriculas.AsNoTracking()
             .Where(m => m.Id == id)
-            .Select(MatriculaProyecciones.AResponse)
+            .Select(MatriculaProjections.ToResponseExpression)
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException($"No existe la matrícula {id}.");
 
@@ -63,7 +63,7 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
     public async Task RetirarAsync(int id, CancellationToken cancellationToken)
     {
         var matricula = await BuscarPropiaAsync(id, cancellationToken);
-        var hoy = fechaLocal.Hoy();
+        var hoy = localClock.Today();
 
         ValidarRetiro(matricula, hoy);
 
@@ -83,7 +83,7 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
         ArgumentNullException.ThrowIfNull(request);
 
         var origen = await BuscarPropiaAsync(id, cancellationToken);
-        var hoy = fechaLocal.Hoy();
+        var hoy = localClock.Today();
         ValidarRetiro(origen, hoy);
 
         // El validador ya exige el destino.
@@ -103,8 +103,8 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
 
         await ValidarEstudianteActivoAsync(origen.EstudianteId, cancellationToken);
         destino.EnsureAllowsMovimiento(EsAdministrador());
-        await db.ValidarCursoNoRepetidoAsync(origen.EstudianteId, destino, origen.Id, cancellationToken);
-        await db.ValidarSinChoquesAsync(origen.EstudianteId, destino, origen.Id, cancellationToken);
+        await db.EnsureCursoNotRepeatedAsync(origen.EstudianteId, destino, origen.Id, cancellationToken);
+        await db.EnsureNoConflictsAsync(origen.EstudianteId, destino, origen.Id, cancellationToken);
         destino.TakeCupo();
 
         origen.Withdraw(hoy, MotivoRetiro.CambioGrupo);
@@ -264,7 +264,7 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
             .OrderByDescending(m => m.Grupo.Periodo.InicioClases)
             .ThenBy(m => m.Grupo.Curso.Nombre)
             .ThenByDescending(m => m.Id)
-            .Select(MatriculaProyecciones.AResponse)
+            .Select(MatriculaProjections.ToResponseExpression)
             .ToPagedResultAsync(request, cancellationToken);
     }
 
@@ -277,7 +277,7 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
 
         var grupo = await BuscarGrupoAsync(grupoId, cancellationToken);
         var esAdministrador = EsAdministrador();
-        var hoy = fechaLocal.Hoy();
+        var hoy = localClock.Today();
 
         grupo.EnsureAllowsMovimiento(esAdministrador);
         if (!esAdministrador && !grupo.Periodo.IsInMatriculaRange(hoy))
@@ -288,8 +288,8 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
                 + $"al {grupo.Periodo.FinMatricula:dd/MM/yyyy}.");
         }
 
-        await db.ValidarCursoNoRepetidoAsync(estudianteId, grupo, ignorarMatriculaId: null, cancellationToken);
-        await db.ValidarSinChoquesAsync(estudianteId, grupo, ignorarMatriculaId: null, cancellationToken);
+        await db.EnsureCursoNotRepeatedAsync(estudianteId, grupo, ignorarMatriculaId: null, cancellationToken);
+        await db.EnsureNoConflictsAsync(estudianteId, grupo, ignorarMatriculaId: null, cancellationToken);
         grupo.TakeCupo();
 
         var matricula = new MatriculaEntidad(estudianteId, grupo.Id, hoy);

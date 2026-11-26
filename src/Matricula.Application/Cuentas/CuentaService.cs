@@ -1,5 +1,5 @@
 using Matricula.Application.Abstractions;
-using Matricula.Application.Correos;
+using Matricula.Application.Email;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
 using Matricula.Domain.Exceptions;
@@ -14,10 +14,10 @@ namespace Matricula.Application.Cuentas;
 /// </summary>
 public class CuentaService(
     IAppDbContext db,
-    IHasherContrasenas hasher,
-    IGeneradorContrasenas generadorContrasenas,
+    IPasswordHashService hasher,
+    IPasswordGenerator passwordGenerator,
     ICurrentUser currentUser,
-    EnvioCorreos envioCorreos,
+    EmailDispatcher emailDispatcher,
     TimeProvider timeProvider)
 {
     /// <summary>
@@ -29,7 +29,7 @@ public class CuentaService(
         await ValidarCorreoDisponibleAsync(correo, exceptoUsuarioId: null, cancellationToken);
 
         var usuario = new Usuario(correo, Rol.Estudiante, OrigenRegistro.RegistroPublico);
-        usuario.SetPassword(hasher.Hashear(contrasena), timeProvider.GetUtcNow());
+        usuario.SetPassword(hasher.Hash(contrasena), timeProvider.GetUtcNow());
         db.Usuarios.Add(usuario);
 
         return usuario;
@@ -38,16 +38,16 @@ public class CuentaService(
     /// <summary>
     /// Cuenta creada por el administrador actual con una temporal de 72 horas (RF-05, RN-22, RN-23).
     /// </summary>
-    public async Task<CuentaNueva> CrearCuentaConTemporalAsync(string correo, Rol rol, CancellationToken cancellationToken)
+    public async Task<CuentaWithTemporaryPassword> CrearCuentaConTemporalAsync(string correo, Rol rol, CancellationToken cancellationToken)
     {
         await ValidarCorreoDisponibleAsync(correo, exceptoUsuarioId: null, cancellationToken);
 
-        var temporal = generadorContrasenas.Generar();
+        var temporal = passwordGenerator.Generate();
         var usuario = new Usuario(correo, rol, OrigenRegistro.Administrador, currentUser.UsuarioId);
-        usuario.SetTemporaryPassword(hasher.Hashear(temporal), MotivoTemporal.CuentaNueva, timeProvider.GetUtcNow());
+        usuario.SetTemporaryPassword(hasher.Hash(temporal), MotivoTemporal.CuentaNueva, timeProvider.GetUtcNow());
         db.Usuarios.Add(usuario);
 
-        return new CuentaNueva(usuario, temporal);
+        return new CuentaWithTemporaryPassword(usuario, temporal);
     }
 
     /// <summary>
@@ -69,11 +69,11 @@ public class CuentaService(
     /// <summary>
     /// Se llama después de guardar. Devuelve false si el correo no se pudo enviar.
     /// </summary>
-    public Task<bool> EnviarTemporalAsync(CuentaNueva cuenta, CancellationToken cancellationToken)
+    public Task<bool> SendTemporaryPasswordAsync(CuentaWithTemporaryPassword cuenta, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(cuenta);
 
-        return envioCorreos.EnviarTemporalAsync(cuenta.Usuario, cuenta.Temporal, MotivoTemporal.CuentaNueva, cancellationToken);
+        return emailDispatcher.SendTemporaryPasswordAsync(cuenta.Usuario, cuenta.TemporaryPassword, MotivoTemporal.CuentaNueva, cancellationToken);
     }
 
     // RN-13. El índice único de usuario.correo es la red de seguridad ante dos registros simultáneos.

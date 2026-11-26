@@ -1,13 +1,13 @@
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Matricula.Domain.Enums;
 
 namespace Matricula.Application.Auditoria;
 
 /// <summary>
-/// Filtros de la auditoría (RF-57), todos opcionales y combinables. <see cref="PaginacionRequest.Search"/> busca en
+/// Filtros de la auditoría (RF-57), todos opcionales y combinables. <see cref="PageRequest.Search"/> busca en
 /// el correo del autor (supuesto 10 de la spec).
 /// </summary>
-public class ListarAuditoriaRequest : PaginacionRequest
+public class ListarAuditoriaRequest : PageRequest
 {
     /// <summary>Nombre de la entidad, sin distinguir mayúsculas; por ejemplo, Matricula.</summary>
     public string? Entidad { get; set; }

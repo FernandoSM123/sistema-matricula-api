@@ -1,11 +1,11 @@
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 
 namespace Matricula.Application.Aulas;
 
 /// <summary>
-/// <see cref="PaginacionRequest.Search"/> busca en código y ubicación.
+/// <see cref="PageRequest.Search"/> busca en código y ubicación.
 /// </summary>
-public class ListarAulasRequest : PaginacionRequest
+public class ListarAulasRequest : PageRequest
 {
     /// <summary>RN-41: por defecto solo se listan las activas.</summary>
     public bool IncluirInactivos { get; set; }

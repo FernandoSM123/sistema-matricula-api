@@ -9,4 +9,4 @@ public record CrearGrupoRequest(
     int? PeriodoId,
     int? AulaId,
     int? Cupo,
-    Modalidad? Modalidad) : IDatosGrupo;
+    Modalidad? Modalidad) : IGrupoData;

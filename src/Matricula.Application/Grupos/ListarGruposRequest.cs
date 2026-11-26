@@ -1,13 +1,13 @@
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Matricula.Domain.Enums;
 
 namespace Matricula.Application.Grupos;
 
 /// <summary>
-/// <see cref="PaginacionRequest.Search"/> busca en el NRC. Para un profesor se ignora <see cref="ProfesorId"/> y para un
+/// <see cref="PageRequest.Search"/> busca en el NRC. Para un profesor se ignora <see cref="ProfesorId"/> y para un
 /// estudiante <see cref="Estado"/> (RN-18).
 /// </summary>
-public class ListarGruposRequest : PaginacionRequest
+public class ListarGruposRequest : PageRequest
 {
     public int? CursoId { get; set; }
     public int? ProfesorId { get; set; }

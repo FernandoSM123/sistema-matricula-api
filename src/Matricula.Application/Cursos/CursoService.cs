@@ -1,6 +1,6 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Matricula.Application.Grupos;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Exceptions;
@@ -61,7 +61,7 @@ public class CursoService(IAppDbContext db)
         return query
             .OrderBy(c => c.Nombre)
             .ThenBy(c => c.Id)
-            .Select(CursoProyecciones.AResponse)
+            .Select(CursoProjections.ToResponseExpression)
             .ToPagedResultAsync(request, cancellationToken);
     }
 
@@ -102,7 +102,7 @@ public class CursoService(IAppDbContext db)
         var curso = await BuscarAsync(id, cancellationToken);
         if (curso.Activo)
         {
-            await db.ValidarSinGruposActivosAsync(g => g.CursoId == id, $"el curso {curso.Codigo}", cancellationToken);
+            await db.EnsureNoActiveGruposAsync(g => g.CursoId == id, $"el curso {curso.Codigo}", cancellationToken);
         }
 
         curso.Deactivate();
@@ -125,7 +125,7 @@ public class CursoService(IAppDbContext db)
     public async Task<CursoResponse> ObtenerAsync(int id, CancellationToken cancellationToken) =>
         await db.Cursos.AsNoTracking()
             .Where(c => c.Id == id)
-            .Select(CursoProyecciones.AResponse)
+            .Select(CursoProjections.ToResponseExpression)
             .SingleOrDefaultAsync(cancellationToken)
         ?? throw new NotFoundException($"No existe el curso {id}.");
 

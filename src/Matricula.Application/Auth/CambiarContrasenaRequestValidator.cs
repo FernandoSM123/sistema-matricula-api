@@ -10,7 +10,7 @@ public class CambiarContrasenaRequestValidator : AbstractValidator<CambiarContra
             .NotEmpty().WithMessage("Indique su contraseña actual.")
             .MaximumLength(128).WithMessage("La contraseña no puede superar los 128 caracteres.");
 
-        RuleFor(r => r.NuevaContrasena).NuevaContrasenaValida();
-        RuleFor(r => r.Confirmacion).ConfirmacionDe(r => r.NuevaContrasena);
+        RuleFor(r => r.NuevaContrasena).ValidNewPassword();
+        RuleFor(r => r.Confirmacion).ConfirmationOf(r => r.NuevaContrasena);
     }
 }

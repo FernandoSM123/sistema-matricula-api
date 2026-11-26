@@ -1,6 +1,6 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Matricula.Application.Grupos;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Exceptions;
@@ -52,7 +52,7 @@ public class AulaService(IAppDbContext db)
         return query
             .OrderBy(a => a.Codigo)
             .ThenBy(a => a.Id)
-            .Select(AulaProyecciones.AResponse)
+            .Select(AulaProjections.ToResponseExpression)
             .ToPagedResultAsync(request, cancellationToken);
     }
 
@@ -78,7 +78,7 @@ public class AulaService(IAppDbContext db)
         if (request.Capacidad < aula.Capacidad)
         {
             var mayor = await db.Grupos.AsNoTracking()
-                .Where(GuardasGrupos.Activo)
+                .Where(GruposGuards.IsActive)
                 .Where(g => g.AulaId == id && g.Cupo > request.Capacidad)
                 .OrderByDescending(g => g.Cupo)
                 .Select(g => new { g.Nrc, g.Cupo })
@@ -104,7 +104,7 @@ public class AulaService(IAppDbContext db)
     public async Task<AulaResponse> ObtenerAsync(int id, CancellationToken cancellationToken) =>
         await db.Aulas.AsNoTracking()
             .Where(a => a.Id == id)
-            .Select(AulaProyecciones.AResponse)
+            .Select(AulaProjections.ToResponseExpression)
             .SingleOrDefaultAsync(cancellationToken)
         ?? throw new NotFoundException($"No existe el aula {id}.");
 
@@ -116,7 +116,7 @@ public class AulaService(IAppDbContext db)
         var aula = await BuscarAsync(id, cancellationToken);
         if (aula.Activo)
         {
-            await db.ValidarSinGruposActivosAsync(g => g.AulaId == id, $"el aula {aula.Codigo}", cancellationToken);
+            await db.EnsureNoActiveGruposAsync(g => g.AulaId == id, $"el aula {aula.Codigo}", cancellationToken);
         }
 
         aula.Deactivate();

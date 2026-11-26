@@ -138,7 +138,11 @@ public class ProfesorService(IAppDbContext db, CuentaService cuentaService, Usua
                 $"{profesor.Nombre} {profesor.Apellidos} tiene grupos y no se puede eliminar. Desactívelo en su lugar.");
         }
 
-        // Sin cascada: se eliminan los dos de forma explícita.
+        // Sin cascada: se eliminan de forma explícita las sesiones de la cuenta (RF-60), el profesor y su cuenta.
+        var sesiones = await db.RefreshTokens
+            .Where(t => t.UsuarioId == profesor.UsuarioId)
+            .ToListAsync(cancellationToken);
+        db.RefreshTokens.RemoveRange(sesiones);
         db.Profesores.Remove(profesor);
         db.Usuarios.Remove(profesor.Usuario);
         await db.SaveChangesAsync(cancellationToken);

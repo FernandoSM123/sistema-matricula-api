@@ -33,7 +33,11 @@ Entorno: PostgreSQL y smtp4dev instalados localmente; **no se usa Docker** (el `
 
 ## Límites
 **Siempre**
-- Seguir `docs/arquitectura.md`; nombres de dominio en español sin tildes ni ñ, sufijos técnicos en inglés.
+- Seguir `docs/arquitectura.md`.
+- Nombres (§8.1 de la arquitectura), siempre sin tildes ni ñ:
+  - En español, el dominio del instituto: entidades y sus propiedades (columnas y JSON), enums y sus valores, rutas, controllers (dan la ruta), carpetas de funcionalidad, mensajes, comentarios y descripciones de las pruebas.
+  - En inglés, todo lo demás: clases técnicas, métodos, constantes, carpetas técnicas, opciones y sus claves.
+  - Combinados, primero el dominio y después lo técnico (`CursoService`, `GrupoDetailResponse`, `CreateCursoRequest`); verbos en inglés (`EnrollAsync`, `ChangeGrupoAsync`).
 - DTOs de entrada/salida; las entidades nunca salen de Application.
 - Errores como `ProblemDetails` con `code` de la regla (`"RN-05"`); `BusinessRuleException` → 409.
 - `async` + `CancellationToken` de punta a punta; `TimeProvider` en lugar de `DateTime.Now`; `IFechaLocal.Hoy()` para la fecha de hoy (zona de `Instituto:ZonaHoraria`), nunca la fecha UTC.
@@ -46,6 +50,7 @@ Entorno: PostgreSQL y smtp4dev instalados localmente; **no se usa Docker** (el `
 - Añadir paquetes NuGet o servicios nuevos.
 - Cambiar el esquema de BD fuera de lo que define una spec aprobada.
 - Cambiar una regla de negocio o interpretar un requerimiento ambiguo.
+- El nombre o el idioma de algo, cuando la regla de nombres no lo deja claro.
 
 **Nunca**
 - Exponer entidades en controllers ni usar `DbContext` desde controllers.

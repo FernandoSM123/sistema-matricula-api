@@ -260,10 +260,39 @@ Así las reglas puras se prueban con tests unitarios sin BD, y los servicios orq
 - RN-28: el endpoint de olvido de contraseña siempre responde `200` con el mismo mensaje.
 
 ## 8. Convenciones
-- **Idioma:**
-  - Nombres de **dominio en español y sin tildes ni ñ** (`Matricula`, `Estudiante`, `Periodo`).
-  - Sufijos técnicos en inglés (`Service`, `Controller`, `Request`, `Response`, `Configuration`).
-  - Elige la convención una vez y mantenla.
+
+### 8.1 Idioma de los nombres
+La misma regla que el SPA (`SPEC-nombres` de los dos proyectos): **el dominio del instituto en español y lo técnico en inglés**. Siempre sin tildes ni ñ.
+
+- **En español:**
+  - Las entidades y conceptos del instituto: `Curso`, `Matricula`, `Periodo`, `Estudiante`, `Grupo`, `Aula`, `Horario`, `Rol`, `Usuario`, `Cuenta`, `RegistroAuditoria`, `RegistroError`, `DatosPersonales`, `BloqueHorario`, `OfertaAcademica`…, también dentro de un nombre técnico.
+  - Las propiedades de las entidades y de los DTO, es decir, las columnas de la BD y el JSON (`Nombre`, `FechaMatricula`, `debeCambiarContrasena`, `incluirInactivos`), aunque estén dentro de una pieza con nombre en inglés.
+  - Los enums de dominio y sus valores (`EstadoGrupo.EnCurso`, `MotivoRetiro.CambioGrupo`).
+  - Las rutas y sus parámetros, y por eso el nombre de los controllers, del que sale la ruta (`CursosController` → `/api/v1/cursos`).
+  - Las carpetas de funcionalidad de Application (`Estudiantes/`, `Matriculas/`, `Auditoria/`…), los ids de módulo y los códigos `RF`/`RN`.
+  - Los mensajes al usuario y del log, los comentarios, las descripciones de las pruebas y los documentos.
+- **En inglés:** todo lo demás: clases e interfaces técnicas, métodos, constantes, carpetas técnicas, opciones de configuración y sus claves, y las piezas de ASP.NET y EF (handlers, filtros, transformers, interceptores, extensiones).
+- **Combinados:** primero el nombre de dominio, en español, y después la parte técnica, en inglés: `CursoService`, `GrupoDetailResponse`, `EstudianteCreatedResponse`, `GruposGuards`, `HorarioRules`.
+- **Verbos en inglés**, también en las acciones del negocio: `List`, `Get`, `Create`, `Update`, `Delete`, `Deactivate`, `Reactivate`, `Enroll`, `Withdraw`, `ChangeGrupo`.
+- **Ante la duda, se pregunta** qué nombre o qué idioma le toca a algo, en lugar de elegir.
+
+| Pieza | Ejemplo |
+|---|---|
+| Entidad y sus propiedades | `Grupo.CuposOcupados`, `Periodo.FechaLimiteRetiro` |
+| Método de una entidad | `Grupo.ChangeEstado(EstadoGrupo nuevo)`, `Horario.OverlapsWith(otro)`, `Matricula.Withdraw(...)` |
+| Servicio y sus métodos | `MatriculaService.EnrollAsync`, `GrupoService.ListByProfesorAsync` |
+| DTO de entrada y de salida | `CreateCursoRequest`, `UpdateCursoRequest`, `EnrollRequest`, `CursoResponse`, `GrupoDetailResponse` |
+| Validador | `CreateCursoRequestValidator` |
+| Reglas puras | `Domain/Rules/HorarioRules`, `PasswordPolicy` |
+| Interfaz técnica e implementación | `ILocalClock` / `LocalClock`, `IErrorRecorder` / `DbErrorRecorder` |
+| Opciones y sus claves | `InstituteOptions` → `Institute:TimeZone`; los datos de una entidad, en español: `AdminSeed:Nombre` |
+| Controller y acción | `CursosController.Create` (la ruta sale del controller y de la plantilla, no de la acción) |
+| Prueba unitaria | `HorarioRulesTests.OverlapsWith_TraslapeParcial_DevuelveTrue`: el primer segmento es el método probado; el resto, la descripción en español |
+| Migración | Nombre descriptivo en español, como un commit: `AgregaRefreshToken` |
+
+Las columnas que ya mezclan idiomas (`TempPasswordExpira`, `TempPasswordMotivo` en `usuario`) se quedan así para no migrar la BD.
+
+### 8.2 Otras convenciones
 - Rutas en minúscula y JSON en camelCase (el valor por defecto).
 - Un archivo por clase. Pocos comentarios: solo para explicar *por qué* se hace algo.
 - Usa Git desde el día uno, con commits pequeños, y añade un `README` con los pasos para levantar el proyecto. En desarrollo, PostgreSQL y smtp4dev se instalan localmente; el `docker-compose.yml` queda como alternativa opcional (por ejemplo, para el despliegue futuro).

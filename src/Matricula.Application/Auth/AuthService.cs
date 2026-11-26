@@ -71,10 +71,11 @@ public class AuthService(
         EnsureDifferentFromCurrent(usuario, request.NuevaContrasena);
 
         usuario.SetPassword(hasher.Hash(request.NuevaContrasena), ahora);
+        var (refreshToken, refreshExpiraEn) = StartSession(usuario, ahora);
         await db.SaveChangesAsync(cancellationToken);
 
         await emailDispatcher.SendPasswordChangedAsync(usuario, cancellationToken);
-        return await IssueTokenAsync(usuario, debeCambiarContrasena: false, cancellationToken);
+        return await IssueTokensAsync(usuario, debeCambiarContrasena: false, refreshToken, refreshExpiraEn, cancellationToken);
     }
 
     /// <summary>
@@ -95,11 +96,13 @@ public class AuthService(
 
         EnsureDifferentFromCurrent(usuario, request.NuevaContrasena);
 
-        usuario.SetPassword(hasher.Hash(request.NuevaContrasena), timeProvider.GetUtcNow());
+        var ahora = timeProvider.GetUtcNow();
+        usuario.SetPassword(hasher.Hash(request.NuevaContrasena), ahora);
+        var (refreshToken, refreshExpiraEn) = StartSession(usuario, ahora);
         await db.SaveChangesAsync(cancellationToken);
 
         await emailDispatcher.SendPasswordChangedAsync(usuario, cancellationToken);
-        return await IssueTokenAsync(usuario, debeCambiarContrasena: false, cancellationToken);
+        return await IssueTokensAsync(usuario, debeCambiarContrasena: false, refreshToken, refreshExpiraEn, cancellationToken);
     }
 
     /// <summary>
@@ -195,8 +198,10 @@ public class AuthService(
             }
 
             usuario.RecordLogin(ahora);
+            await RemoveExpiredSessionsAsync(usuario.Id, ahora, cancellationToken);
+            var (refreshToken, refreshExpiraEn) = StartSession(usuario, ahora);
             await db.SaveChangesAsync(cancellationToken);
-            return await IssueTokenAsync(usuario, debeCambiarContrasena: false, cancellationToken);
+            return await IssueTokensAsync(usuario, debeCambiarContrasena: false, refreshToken, refreshExpiraEn, cancellationToken);
         }
 
         if (usuario.HasValidTemporaryPassword(ahora)
@@ -205,7 +210,8 @@ public class AuthService(
             EnsureActive(usuario);
             usuario.RecordTemporaryPasswordLogin(ahora);
             await db.SaveChangesAsync(cancellationToken);
-            return await IssueTokenAsync(usuario, debeCambiarContrasena: true, cancellationToken);
+            // RN-24: la sesión con una temporal solo sirve para el cambio obligatorio; no se puede renovar (RN-52).
+            return await IssueTokensAsync(usuario, debeCambiarContrasena: true, null, null, cancellationToken);
         }
 
         throw new UnauthorizedException();
@@ -246,7 +252,38 @@ public class AuthService(
         }
     }
 
-    private async Task<TokenResponse> IssueTokenAsync(Usuario usuario, bool debeCambiarContrasena, CancellationToken cancellationToken)
+    /// <summary>
+    /// Abre una familia nueva de refresh tokens con el stamp actual de la cuenta. Va después de SetPassword, que
+    /// regenera el stamp, y antes del guardado de la operación. Devuelve el token en claro, que solo viaja en la respuesta.
+    /// </summary>
+    private (string Token, DateTimeOffset ExpiraEn) StartSession(Usuario usuario, DateTimeOffset ahora)
+    {
+        var generado = tokenGenerator.GenerateRefreshToken();
+        var refreshToken = RefreshToken.Issue(
+            usuario.Id, generado.Hash, usuario.SecurityStamp, ahora, tokenGenerator.RefreshTokenLifetime);
+        db.RefreshTokens.Add(refreshToken);
+
+        return (generado.Token, refreshToken.ExpiresAt);
+    }
+
+    /// <summary>
+    /// Supuesto 3: las sesiones vencidas de la cuenta se borran al iniciar sesión. Las anuladas que no han vencido se
+    /// conservan, porque sirven para detectar el reuso (RN-51).
+    /// </summary>
+    private async Task RemoveExpiredSessionsAsync(int usuarioId, DateTimeOffset ahora, CancellationToken cancellationToken)
+    {
+        var vencidas = await db.RefreshTokens
+            .Where(t => t.UsuarioId == usuarioId && t.ExpiresAt <= ahora)
+            .ToListAsync(cancellationToken);
+        db.RefreshTokens.RemoveRange(vencidas);
+    }
+
+    private async Task<TokenResponse> IssueTokensAsync(
+        Usuario usuario,
+        bool debeCambiarContrasena,
+        string? refreshToken,
+        DateTimeOffset? refreshExpiraEn,
+        CancellationToken cancellationToken)
     {
         // RN-18: matriculas y grupos identifican a la persona por estos claims, sin que el cliente envíe su id.
         var estudianteId = usuario.Rol == Rol.Estudiante
@@ -265,6 +302,7 @@ public class AuthService(
         var token = tokenGenerator.Generate(new TokenData(
             usuario.Id, usuario.Correo, usuario.Rol, usuario.SecurityStamp, debeCambiarContrasena, estudianteId, profesorId));
 
-        return new TokenResponse(token.AccessToken, token.ExpiraEn, usuario.Rol, debeCambiarContrasena);
+        return new TokenResponse(
+            token.AccessToken, token.ExpiraEn, usuario.Rol, debeCambiarContrasena, refreshToken, refreshExpiraEn);
     }
 }

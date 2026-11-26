@@ -32,7 +32,7 @@
 | `auditoria` | [Aprobada](SPEC-auditoria.md) | [Aprobado](../tasks/auditoria/plan.md) | [Aprobadas](../tasks/auditoria/todo.md) | 5/5 | Completado |
 | `errores` | [Aprobada](SPEC-errores.md) | [Aprobado](../tasks/errores/plan.md) | [Aprobadas](../tasks/errores/todo.md) | 6/6 | Completado |
 | `datos-prueba` | [Aprobada](SPEC-datos-prueba.md) | [Aprobado](../tasks/datos-prueba/plan.md) | [Aprobadas](../tasks/datos-prueba/todo.md) | 6/6 | Completado |
-| `sesiones` | [Aprobada](SPEC-sesiones.md) | [Aprobado](../tasks/sesiones/plan.md) | [Aprobadas](../tasks/sesiones/todo.md) | 2/6 | En implementación |
+| `sesiones` | [Aprobada](SPEC-sesiones.md) | [Aprobado](../tasks/sesiones/plan.md) | [Aprobadas](../tasks/sesiones/todo.md) | 3/6 | En implementación |
 
 **Correcciones transversales** (no son módulos: cambian una regla de la arquitectura y renombran lo construido):
 

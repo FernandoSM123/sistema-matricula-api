@@ -1,4 +1,6 @@
+using System.Buffers.Text;
 using System.Globalization;
+using System.Security.Cryptography;
 using System.Text;
 using Matricula.Application.Abstractions;
 using Microsoft.Extensions.Options;
@@ -11,6 +13,27 @@ public class JwtTokenGenerator(IOptions<JwtOptions> options, TimeProvider timePr
 {
     private readonly JwtOptions _options = options.Value;
     private readonly JsonWebTokenHandler _handler = new();
+
+    private const int RefreshTokenBytes = 32;
+
+    public TimeSpan RefreshTokenLifetime => TimeSpan.FromMinutes(_options.RefreshTokenMinutes);
+
+    /// <summary>
+    /// 32 bytes aleatorios en Base64Url (43 caracteres) y su SHA-256, que es lo único que se guarda.
+    /// </summary>
+    public GeneratedRefreshToken GenerateRefreshToken()
+    {
+        var token = Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(RefreshTokenBytes));
+
+        return new GeneratedRefreshToken(token, HashRefreshToken(token));
+    }
+
+    public string HashRefreshToken(string token)
+    {
+        ArgumentNullException.ThrowIfNull(token);
+
+        return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+    }
 
     public static SymmetricSecurityKey CreateSigningKey(JwtOptions options)
     {

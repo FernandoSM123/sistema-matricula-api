@@ -92,7 +92,7 @@ public class ProfesorService(IAppDbContext db, CuentaService cuentaService, Usua
         }
 
         await cuentaService.CambiarCorreoAsync(profesor.Usuario, request.Correo, cancellationToken);
-        profesor.ActualizarDatos(
+        profesor.Update(
             request.Cedula, request.Nombre, request.Apellidos, request.Telefono, request.Especialidad, request.FechaContratacion);
         await db.SaveChangesAsync(cancellationToken);
 

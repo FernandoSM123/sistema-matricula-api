@@ -67,7 +67,7 @@ public class AulaService(IAppDbContext db)
         var aula = await BuscarAsync(id, cancellationToken);
 
         // RN-13: aquí un código de una inactiva tampoco se puede usar, y reactivarla no resolvería el conflicto.
-        var codigo = Aula.NormalizarCodigo(request.Codigo);
+        var codigo = Aula.NormalizeCodigo(request.Codigo);
         if (codigo != aula.Codigo
             && await db.Aulas.AnyAsync(a => a.Codigo == codigo && a.Id != id, cancellationToken))
         {
@@ -92,7 +92,7 @@ public class AulaService(IAppDbContext db)
             }
         }
 
-        aula.ActualizarDatos(request.Codigo, request.Ubicacion, request.Capacidad);
+        aula.Update(request.Codigo, request.Ubicacion, request.Capacidad);
         await db.SaveChangesAsync(cancellationToken);
 
         return aula.ToResponse();
@@ -119,7 +119,7 @@ public class AulaService(IAppDbContext db)
             await db.ValidarSinGruposActivosAsync(g => g.AulaId == id, $"el aula {aula.Codigo}", cancellationToken);
         }
 
-        aula.Desactivar();
+        aula.Deactivate();
         await db.SaveChangesAsync(cancellationToken);
     }
 
@@ -129,7 +129,7 @@ public class AulaService(IAppDbContext db)
     public async Task ReactivarAsync(int id, CancellationToken cancellationToken)
     {
         var aula = await BuscarAsync(id, cancellationToken);
-        aula.Reactivar();
+        aula.Reactivate();
         await db.SaveChangesAsync(cancellationToken);
     }
 

@@ -1,7 +1,7 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
 using Matricula.Application.Common.Paginacion;
-using Matricula.Domain.Reglas;
+using Matricula.Domain.Rules;
 using Microsoft.EntityFrameworkCore;
 
 namespace Matricula.Application.Errores;
@@ -39,7 +39,7 @@ public class ErroresService(IAppDbContext db, IFechaLocal fechaLocal)
         }
 
         // El validador ya rechazó los formatos inválidos.
-        if (ReglasErrores.NormalizarTraceId(request.TraceId) is { } traceId)
+        if (ErrorLogRules.NormalizeTraceId(request.TraceId) is { } traceId)
         {
             query = query.Where(r => r.TraceId == traceId);
         }

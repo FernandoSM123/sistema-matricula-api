@@ -1,5 +1,5 @@
 using Matricula.Domain.Entities;
-using Matricula.Domain.Reglas;
+using Matricula.Domain.Rules;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -43,7 +43,7 @@ public partial class DepuracionErrores(
     {
         try
         {
-            var limite = ReglasErrores.LimiteRetencion(timeProvider.GetUtcNow(), opciones.Value.DiasRetencion);
+            var limite = ErrorLogRules.RetentionLimit(timeProvider.GetUtcNow(), opciones.Value.DiasRetencion);
 
             await using var scope = scopeFactory.CreateAsyncScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();

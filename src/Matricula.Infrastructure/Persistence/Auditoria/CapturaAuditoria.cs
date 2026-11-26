@@ -3,7 +3,7 @@ using Matricula.Application.Abstractions;
 using Matricula.Domain.Common;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
-using Matricula.Domain.Reglas;
+using Matricula.Domain.Rules;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
@@ -11,7 +11,7 @@ namespace Matricula.Infrastructure.Persistence.Auditoria;
 
 /// <summary>
 /// Lee el ChangeTracker antes de un guardado y prepara los registros de auditoría (RF-56). Qué se guarda de cada
-/// propiedad lo decide <see cref="ReglasAuditoria"/>; aquí solo se traduce EF a nombres y valores.
+/// propiedad lo decide <see cref="AuditRules"/>; aquí solo se traduce EF a nombres y valores.
 /// </summary>
 public class CapturaAuditoria(ICurrentUser currentUser, TimeProvider timeProvider)
 {
@@ -32,11 +32,11 @@ public class CapturaAuditoria(ICurrentUser currentUser, TimeProvider timeProvide
 
                 case EntityState.Modified:
                     // Solo aquí se conocen los valores originales: después del guardado se reinician.
-                    var diferencias = ReglasAuditoria.Diferencias(
+                    var diferencias = AuditRules.Differences(
                         NombreEntidad(entrada),
                         entrada.Properties
                             .Where(p => p.IsModified)
-                            .Select(p => new PropiedadAuditada(p.Metadata.Name, p.OriginalValue, p.CurrentValue)));
+                            .Select(p => new AuditedProperty(p.Metadata.Name, p.OriginalValue, p.CurrentValue)));
                     if (diferencias is not null)
                     {
                         cambios.Add(new CambioCapturado(
@@ -65,7 +65,7 @@ public class CapturaAuditoria(ICurrentUser currentUser, TimeProvider timeProvide
 
     /// <summary>Creación o eliminación: los valores actuales de todas las propiedades escalares.</summary>
     internal static string Valores(EntityEntry<EntidadBase> entrada) =>
-        ReglasAuditoria.Valores(
+        AuditRules.Values(
             NombreEntidad(entrada),
             entrada.Properties.Select(p => new KeyValuePair<string, object?>(p.Metadata.Name, p.CurrentValue)));
 

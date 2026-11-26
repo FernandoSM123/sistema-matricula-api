@@ -94,9 +94,9 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
             problem.Extensions["code"] = code;
         }
 
-        if (exception is BusinessRuleException { Datos: var datos })
+        if (exception is BusinessRuleException { Extensions: var extensiones })
         {
-            foreach (var (clave, valor) in datos)
+            foreach (var (clave, valor) in extensiones)
             {
                 problem.Extensions[clave] = valor;
             }

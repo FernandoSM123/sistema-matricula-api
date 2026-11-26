@@ -5,7 +5,7 @@ using Matricula.Application.Matriculas;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
 using Matricula.Domain.Exceptions;
-using Matricula.Domain.Reglas;
+using Matricula.Domain.Rules;
 using Microsoft.EntityFrameworkCore;
 
 namespace Matricula.Application.Grupos;
@@ -124,7 +124,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
-            // El NRC se guarda en mayúsculas (Grupo.NormalizarNrc).
+            // El NRC se guarda en mayúsculas (Grupo.NormalizeNrc).
             var termino = request.Search.Trim().ToUpperInvariant();
             query = query.Where(g => g.Nrc.Contains(termino));
         }
@@ -184,7 +184,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
         // Antes de modificar el grupo: RN-17 compara con las referencias que tenía.
         await ValidarReferenciasAsync(cursoId, profesorId, periodoId, request.AulaId, cupo, grupo, cancellationToken);
 
-        grupo.ActualizarDatos(request.Nrc, cursoId, profesorId, periodoId, request.AulaId, cupo, request.Modalidad!.Value);
+        grupo.Update(request.Nrc, cursoId, profesorId, periodoId, request.AulaId, cupo, request.Modalidad!.Value);
         await ValidarNrcDisponibleAsync(grupo.Nrc, grupo.Id, cancellationToken);
         await ValidarTraslapesAsync(grupo, grupo.Horarios, grupo.ProfesorId, grupo.AulaId, cancellationToken);
 
@@ -246,7 +246,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
         ArgumentNullException.ThrowIfNull(request);
 
         var grupo = await BuscarConHorariosAsync(grupoId, cancellationToken);
-        var horario = grupo.AgregarHorario(request.Dia!.Value, request.HoraInicio!.Value, request.HoraFin!.Value);
+        var horario = grupo.AddHorario(request.Dia!.Value, request.HoraInicio!.Value, request.HoraFin!.Value);
         await ValidarTraslapesAsync(grupo, [horario], grupo.ProfesorId, grupo.AulaId, cancellationToken);
         await db.ValidarBloquesSinChoquesAsync(grupo, [horario], cancellationToken);
 
@@ -281,7 +281,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
     public async Task QuitarHorarioAsync(int grupoId, int horarioId, CancellationToken cancellationToken)
     {
         var grupo = await BuscarConHorariosAsync(grupoId, cancellationToken);
-        var horario = grupo.QuitarHorario(horarioId)
+        var horario = grupo.RemoveHorario(horarioId)
             ?? throw new NotFoundException($"El grupo {grupoId} no tiene el bloque de horario {horarioId}.");
 
         // Con FK Restrict, EF no elimina el bloque solo por sacarlo de la colección.
@@ -300,7 +300,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
         // Los horarios se cargan porque abrir un grupo exige al menos un bloque.
         var grupo = await BuscarConHorariosAsync(grupoId, cancellationToken);
         var estadoAnterior = grupo.Estado;
-        grupo.CambiarEstado(request.Estado!.Value);
+        grupo.ChangeEstado(request.Estado!.Value);
 
         if (grupo.Estado == EstadoGrupo.Cancelado && estadoAnterior != EstadoGrupo.Cancelado)
         {
@@ -322,8 +322,8 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
         var hoy = fechaLocal.Hoy();
         foreach (var matricula in activas)
         {
-            matricula.Retirar(hoy, MotivoRetiro.CancelacionGrupo);
-            grupo.LiberarCupo();
+            matricula.Withdraw(hoy, MotivoRetiro.CancelacionGrupo);
+            grupo.ReleaseCupo();
         }
     }
 
@@ -334,7 +334,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
         ?? throw new NotFoundException($"No existe el grupo {id}.");
 
     // RN-07 y RN-08: compara los bloques con los de los otros grupos del mismo periodo que comparten el profesor o el
-    // aula. Los cancelados no cuentan (supuesto 3). El traslape se decide con ReglasHorario, la misma regla de RN-14.
+    // aula. Los cancelados no cuentan (supuesto 3). El traslape se decide con HorarioRules, la misma regla de RN-14.
     private async Task ValidarTraslapesAsync(
         Grupo grupo,
         IReadOnlyCollection<Horario> bloques,
@@ -359,7 +359,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
             .ToListAsync(cancellationToken);
 
         var choque = otros.FirstOrDefault(o => bloques.Any(b =>
-            ReglasHorario.SeTraslapan(b.Dia, b.HoraInicio, b.HoraFin, o.Dia, o.HoraInicio, o.HoraFin)));
+            HorarioRules.Overlap(b.Dia, b.HoraInicio, b.HoraFin, o.Dia, o.HoraInicio, o.HoraFin)));
 
         if (choque is null)
         {

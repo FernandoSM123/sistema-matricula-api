@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Paginacion;
-using Matricula.Domain.Reglas;
+using Matricula.Domain.Rules;
 
 namespace Matricula.Application.Auditoria;
 
@@ -21,7 +21,7 @@ public class AuditoriaService(IAppDbContext db, IFechaLocal fechaLocal)
         var query = db.RegistrosAuditoria;
 
         // El validador ya rechazó los nombres desconocidos; aquí se pasa al nombre exacto para usar el índice.
-        if (ReglasAuditoria.BuscarEntidad(request.Entidad) is { } entidad)
+        if (AuditRules.FindEntity(request.Entidad) is { } entidad)
         {
             query = query.Where(r => r.Entidad == entidad);
         }

@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 using FluentValidation;
-using Matricula.Domain.Reglas;
+using Matricula.Domain.Rules;
 
 namespace Matricula.Application.Auth;
 
@@ -14,7 +14,7 @@ public static class NuevaContrasenaRules
         rule
             .NotEmpty().WithMessage("Indique la nueva contraseña.")
             .MaximumLength(128).WithMessage("La contraseña no puede superar los 128 caracteres.")
-            .Must(PoliticaContrasena.Cumple).WithMessage(PoliticaContrasena.Mensaje);
+            .Must(PasswordPolicy.IsValid).WithMessage(PasswordPolicy.Message);
 
     /// <summary>RN-25: la confirmación debe coincidir con la nueva contraseña.</summary>
     public static IRuleBuilderOptions<T, string> ConfirmacionDe<T>(this IRuleBuilder<T, string> rule, Expression<Func<T, string>> nuevaContrasena) =>

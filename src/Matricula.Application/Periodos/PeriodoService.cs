@@ -107,14 +107,14 @@ public class PeriodoService(IAppDbContext db, IFechaLocal fechaLocal)
         var periodo = await db.Periodos.SingleOrDefaultAsync(p => p.Id == id, cancellationToken)
             ?? throw new NotFoundException($"No existe el periodo {id}.");
 
-        var nombre = Periodo.NormalizarNombre(request.Nombre);
+        var nombre = Periodo.NormalizeNombre(request.Nombre);
         if (nombre != periodo.Nombre
             && await db.Periodos.AnyAsync(p => p.Nombre == nombre && p.Id != id, cancellationToken))
         {
             throw new BusinessRuleException("RN-13", $"Ya existe un periodo con el nombre {nombre}.");
         }
 
-        periodo.ActualizarDatos(
+        periodo.Update(
             request.Nombre,
             request.InicioClases!.Value,
             request.FinClases!.Value,

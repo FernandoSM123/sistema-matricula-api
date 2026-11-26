@@ -1,19 +1,19 @@
-namespace Matricula.Domain.Reglas;
+namespace Matricula.Domain.Rules;
 
 /// <summary>
 /// Reglas puras del registro de errores: recorte de textos, formato del identificador de operación y límite de
 /// conservación (RN-47, RN-49).
 /// </summary>
-public static class ReglasErrores
+public static class ErrorLogRules
 {
-    private const string Puntos = "…";
-    private const int LargoTraceId = 32;
-    private const int LargoSpanId = 16;
+    private const string Ellipsis = "…";
+    private const int TraceIdLength = 32;
+    private const int SpanIdLength = 16;
 
     /// <summary>
     /// Recorta el texto para que mida como máximo <paramref name="maximo"/> caracteres. Si se recorta, termina en "…".
     /// </summary>
-    public static string Truncar(string? texto, int maximo)
+    public static string Truncate(string? texto, int maximo)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(maximo, 1);
 
@@ -22,7 +22,7 @@ public static class ReglasErrores
             return string.Empty;
         }
 
-        return texto.Length <= maximo ? texto : string.Concat(texto.AsSpan(0, maximo - 1), Puntos);
+        return texto.Length <= maximo ? texto : string.Concat(texto.AsSpan(0, maximo - 1), Ellipsis);
     }
 
     /// <summary>
@@ -30,7 +30,7 @@ public static class ReglasErrores
     /// los clientes en los ProblemDetails (<c>00-&lt;trace id&gt;-&lt;span id&gt;-&lt;flags&gt;</c>), o null si el
     /// formato no es válido.
     /// </summary>
-    public static string? NormalizarTraceId(string? valor)
+    public static string? NormalizeTraceId(string? valor)
     {
         if (string.IsNullOrWhiteSpace(valor))
         {
@@ -40,15 +40,15 @@ public static class ReglasErrores
         var texto = valor.Trim();
         string traceId;
 
-        if (texto.Length == LargoTraceId)
+        if (texto.Length == TraceIdLength)
         {
             traceId = texto;
         }
         else
         {
             var partes = texto.Split('-');
-            if (partes is not [{ Length: 2 } version, { Length: LargoTraceId } id, { Length: LargoSpanId } span, { Length: 2 } flags]
-                || !EsHexadecimal(version) || !EsHexadecimal(span) || !EsHexadecimal(flags))
+            if (partes is not [{ Length: 2 } version, { Length: TraceIdLength } id, { Length: SpanIdLength } span, { Length: 2 } flags]
+                || !IsHex(version) || !IsHex(span) || !IsHex(flags))
             {
                 return null;
             }
@@ -57,7 +57,7 @@ public static class ReglasErrores
         }
 
         // W3C declara inválido el trace id de puros ceros.
-        if (!EsHexadecimal(traceId) || traceId.All(c => c == '0'))
+        if (!IsHex(traceId) || traceId.All(c => c == '0'))
         {
             return null;
         }
@@ -68,12 +68,12 @@ public static class ReglasErrores
     }
 
     /// <summary>Fecha antes de la cual un registro de error ya venció (RN-49).</summary>
-    public static DateTimeOffset LimiteRetencion(DateTimeOffset ahora, int diasRetencion)
+    public static DateTimeOffset RetentionLimit(DateTimeOffset ahora, int diasRetencion)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(diasRetencion, 1);
 
         return ahora.AddDays(-diasRetencion);
     }
 
-    private static bool EsHexadecimal(string texto) => texto.All(char.IsAsciiHexDigit);
+    private static bool IsHex(string texto) => texto.All(char.IsAsciiHexDigit);
 }

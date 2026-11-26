@@ -27,13 +27,13 @@ public class AuthService(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var correo = Usuario.NormalizarCorreo(request.Correo);
+        var correo = Usuario.NormalizeCorreo(request.Correo);
         var usuario = await db.Usuarios.SingleOrDefaultAsync(u => u.Correo == correo, cancellationToken);
 
         if (usuario is { Activo: true })
         {
             var temporal = generadorContrasenas.Generar();
-            usuario.AsignarTemporal(hasher.Hashear(temporal), MotivoTemporal.Olvido, timeProvider.GetUtcNow());
+            usuario.SetTemporaryPassword(hasher.Hashear(temporal), MotivoTemporal.Olvido, timeProvider.GetUtcNow());
             await db.SaveChangesAsync(cancellationToken);
 
             await envioCorreos.EnviarTemporalAsync(usuario, temporal, MotivoTemporal.Olvido, cancellationToken);
@@ -58,7 +58,7 @@ public class AuthService(
         var usuario = await CargarUsuarioActualAsync(cancellationToken);
         var ahora = timeProvider.GetUtcNow();
 
-        if (!usuario.TemporalVigente(ahora))
+        if (!usuario.HasValidTemporaryPassword(ahora))
         {
             throw new BusinessRuleException("RN-23", "La contraseña temporal venció. Solicite una nueva.");
         }
@@ -70,7 +70,7 @@ public class AuthService(
 
         ValidarDistintaDeLaActual(usuario, request.NuevaContrasena);
 
-        usuario.EstablecerContrasena(hasher.Hashear(request.NuevaContrasena), ahora);
+        usuario.SetPassword(hasher.Hashear(request.NuevaContrasena), ahora);
         await db.SaveChangesAsync(cancellationToken);
 
         await envioCorreos.EnviarAvisoCambioContrasenaAsync(usuario, cancellationToken);
@@ -95,7 +95,7 @@ public class AuthService(
 
         ValidarDistintaDeLaActual(usuario, request.NuevaContrasena);
 
-        usuario.EstablecerContrasena(hasher.Hashear(request.NuevaContrasena), timeProvider.GetUtcNow());
+        usuario.SetPassword(hasher.Hashear(request.NuevaContrasena), timeProvider.GetUtcNow());
         await db.SaveChangesAsync(cancellationToken);
 
         await envioCorreos.EnviarAvisoCambioContrasenaAsync(usuario, cancellationToken);
@@ -109,7 +109,7 @@ public class AuthService(
     {
         var usuario = await CargarUsuarioActualAsync(cancellationToken);
 
-        usuario.CerrarSesiones();
+        usuario.EndSessions();
         await db.SaveChangesAsync(cancellationToken);
     }
 
@@ -177,7 +177,7 @@ public class AuthService(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var correo = Usuario.NormalizarCorreo(request.Correo);
+        var correo = Usuario.NormalizeCorreo(request.Correo);
         var usuario = await db.Usuarios.SingleOrDefaultAsync(u => u.Correo == correo, cancellationToken)
             ?? throw new UnauthorizedException();
 
@@ -191,19 +191,19 @@ public class AuthService(
             ValidarActiva(usuario);
             if (definitiva == ResultadoVerificacion.CorrectaRequiereRehash)
             {
-                usuario.ActualizarHashContrasena(hasher.Hashear(request.Contrasena));
+                usuario.RehashPassword(hasher.Hashear(request.Contrasena));
             }
 
-            usuario.RegistrarIngresoConDefinitiva(ahora);
+            usuario.RecordLogin(ahora);
             await db.SaveChangesAsync(cancellationToken);
             return await EmitirTokenAsync(usuario, debeCambiarContrasena: false, cancellationToken);
         }
 
-        if (usuario.TemporalVigente(ahora)
+        if (usuario.HasValidTemporaryPassword(ahora)
             && hasher.Verificar(usuario.TempPasswordHash!, request.Contrasena) != ResultadoVerificacion.Incorrecta)
         {
             ValidarActiva(usuario);
-            usuario.RegistrarIngresoConTemporal(ahora);
+            usuario.RecordTemporaryPasswordLogin(ahora);
             await db.SaveChangesAsync(cancellationToken);
             return await EmitirTokenAsync(usuario, debeCambiarContrasena: true, cancellationToken);
         }

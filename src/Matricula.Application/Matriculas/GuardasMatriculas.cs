@@ -2,7 +2,7 @@ using Matricula.Application.Abstractions;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
 using Matricula.Domain.Exceptions;
-using Matricula.Domain.Reglas;
+using Matricula.Domain.Rules;
 using Microsoft.EntityFrameworkCore;
 
 namespace Matricula.Application.Matriculas;
@@ -77,7 +77,7 @@ public static class GuardasMatriculas
         var inicio = periodo.InicioClases;
         var fin = periodo.FinClases;
 
-        // Mismas comparaciones que ReglasPeriodo.ClasesSeTraslapan, expresadas para SQL.
+        // Mismas comparaciones que PeriodoRules.ClasesOverlap, expresadas para SQL.
         var ocupados = await db.Matriculas.AsNoTracking()
             .Where(m => estudianteIds.Contains(m.EstudianteId)
                 && m.Estado == EstadoMatricula.Activa
@@ -93,7 +93,7 @@ public static class GuardasMatriculas
             .ToListAsync(cancellationToken);
 
         return [.. ocupados.Where(o => bloques.Any(b =>
-            ReglasHorario.SeTraslapan(b.Dia, b.HoraInicio, b.HoraFin, o.Dia, o.HoraInicio, o.HoraFin)))];
+            HorarioRules.Overlap(b.Dia, b.HoraInicio, b.HoraFin, o.Dia, o.HoraInicio, o.HoraFin)))];
     }
 
     /// <summary>

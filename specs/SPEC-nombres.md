@@ -4,12 +4,13 @@ Corrección transversal de la API, equivalente a `SPEC-nombres` del SPA. No es u
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/nombres/plan.md) | [Aprobadas](../tasks/nombres/todo.md) | 1/7 tareas |
+| **Aprobada** | [Aprobado](../tasks/nombres/plan.md) | [Aprobadas](../tasks/nombres/todo.md) | 2/7 tareas |
 
 **Historial:**
 - 2026-11-26: v1 en revisión. Parte del análisis de factibilidad hecho a pedido del usuario: el renombre es viable, no toca la BD y solo cambia el contrato en los nombres de los esquemas del OpenAPI (§2.6).
 - 2026-11-26: v1 aprobada por el usuario, que resolvió las tres preguntas abiertas como se proponían (decisiones 4 a 6). Plan y tareas en revisión.
 - 2026-11-26: plan y tareas aprobados. T1 completada: regla en `docs/arquitectura.md` §8.1 y en `AGENTS.md`; línea base del OpenAPI con 55 rutas y 73 esquemas.
+- 2026-11-26: T2 completada, sin cambio de alcance. Los miembros de las reglas, que la spec no listaba, siguen la regla: `HorarioRules.AreValidHours`/`Overlap`; `PeriodoRules.MatriculaInOrder`, `ClasesInOrder`, `MatriculaWithinClases`, `RetiroWithinPeriodo`, `ClasesOverlap`, `AreConsistent` y sus `*Message`; `AuditRules.Mask`, `AuditedEntities`, `FindEntity`, `IsExcluded`, `IsMasked`, `Values`, `Differences`; `ErrorLogRules.Truncate`, `NormalizeTraceId`, `RetentionLimit`; `PasswordPolicy.MinLength`, `Message`, `IsValid`; `LocalDateRules.ToLocalDate`, `ToUtcRange`. Las propiedades `Antes`/`Despues` del cambio auditado no cambian: son las claves del JSON guardado. 1104 pruebas en verde y migración de prueba vacía.
 
 ## Objetivo
 

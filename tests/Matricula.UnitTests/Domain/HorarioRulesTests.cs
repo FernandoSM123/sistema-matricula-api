@@ -1,10 +1,10 @@
 using System.Globalization;
 using Matricula.Domain.Enums;
-using Matricula.Domain.Reglas;
+using Matricula.Domain.Rules;
 
 namespace Matricula.UnitTests.Domain;
 
-public class ReglasHorarioTests
+public class HorarioRulesTests
 {
     private static readonly TimeOnly Ocho = new(8, 0);
     private static readonly TimeOnly Diez = new(10, 0);
@@ -13,9 +13,9 @@ public class ReglasHorarioTests
     [InlineData(1, true)]
     [InlineData(0, false)]
     [InlineData(-1, false)]
-    public void HorasValidas_SegunMinutosRespectoAlInicio_DevuelveLoEsperado(int minutos, bool esperado)
+    public void AreValidHours_SegunMinutosRespectoAlInicio_DevuelveLoEsperado(int minutos, bool esperado)
     {
-        Assert.Equal(esperado, ReglasHorario.HorasValidas(Ocho, Ocho.AddMinutes(minutos)));
+        Assert.Equal(esperado, HorarioRules.AreValidHours(Ocho, Ocho.AddMinutes(minutos)));
     }
 
     [Theory]
@@ -27,9 +27,9 @@ public class ReglasHorarioTests
     [InlineData("10:00", "12:00", false)] // contiguo después
     [InlineData("06:00", "08:00", false)] // contiguo antes
     [InlineData("11:00", "12:00", false)] // separado
-    public void SeTraslapan_MismoDia_DevuelveLoEsperado(string inicio, string fin, bool esperado)
+    public void Overlap_MismoDia_DevuelveLoEsperado(string inicio, string fin, bool esperado)
     {
-        var resultado = ReglasHorario.SeTraslapan(
+        var resultado = HorarioRules.Overlap(
             DiaSemana.Lunes,
             Ocho,
             Diez,
@@ -41,19 +41,19 @@ public class ReglasHorarioTests
     }
 
     [Fact]
-    public void SeTraslapan_MismasHorasEnDiasDistintos_DevuelveFalse()
+    public void Overlap_MismasHorasEnDiasDistintos_DevuelveFalse()
     {
-        Assert.False(ReglasHorario.SeTraslapan(DiaSemana.Lunes, Ocho, Diez, DiaSemana.Martes, Ocho, Diez));
+        Assert.False(HorarioRules.Overlap(DiaSemana.Lunes, Ocho, Diez, DiaSemana.Martes, Ocho, Diez));
     }
 
     [Fact]
-    public void SeTraslapan_OrdenDeLosBloques_NoCambiaElResultado()
+    public void Overlap_OrdenDeLosBloques_NoCambiaElResultado()
     {
         var nueve = new TimeOnly(9, 0);
         var once = new TimeOnly(11, 0);
 
         Assert.Equal(
-            ReglasHorario.SeTraslapan(DiaSemana.Lunes, Ocho, Diez, DiaSemana.Lunes, nueve, once),
-            ReglasHorario.SeTraslapan(DiaSemana.Lunes, nueve, once, DiaSemana.Lunes, Ocho, Diez));
+            HorarioRules.Overlap(DiaSemana.Lunes, Ocho, Diez, DiaSemana.Lunes, nueve, once),
+            HorarioRules.Overlap(DiaSemana.Lunes, nueve, once, DiaSemana.Lunes, Ocho, Diez));
     }
 }

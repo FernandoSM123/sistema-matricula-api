@@ -67,8 +67,8 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
 
         ValidarRetiro(matricula, hoy);
 
-        matricula.Retirar(hoy, MotivoRetiro.RetiroVoluntario);
-        matricula.Grupo.LiberarCupo();
+        matricula.Withdraw(hoy, MotivoRetiro.RetiroVoluntario);
+        matricula.Grupo.ReleaseCupo();
         await GuardarAsync(cancellationToken);
     }
 
@@ -102,13 +102,13 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
         }
 
         await ValidarEstudianteActivoAsync(origen.EstudianteId, cancellationToken);
-        destino.ValidarMovimiento(EsAdministrador());
+        destino.EnsureAllowsMovimiento(EsAdministrador());
         await db.ValidarCursoNoRepetidoAsync(origen.EstudianteId, destino, origen.Id, cancellationToken);
         await db.ValidarSinChoquesAsync(origen.EstudianteId, destino, origen.Id, cancellationToken);
-        destino.OcuparCupo();
+        destino.TakeCupo();
 
-        origen.Retirar(hoy, MotivoRetiro.CambioGrupo);
-        origen.Grupo.LiberarCupo();
+        origen.Withdraw(hoy, MotivoRetiro.CambioGrupo);
+        origen.Grupo.ReleaseCupo();
         var nueva = new MatriculaEntidad(origen.EstudianteId, destino.Id, hoy);
         db.Matriculas.Add(nueva);
 
@@ -126,10 +126,10 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
         }
 
         var esAdministrador = EsAdministrador();
-        matricula.Grupo.ValidarMovimiento(esAdministrador);
+        matricula.Grupo.EnsureAllowsMovimiento(esAdministrador);
 
         var periodo = matricula.Grupo.Periodo;
-        if (!esAdministrador && !periodo.PermiteRetiro(hoy))
+        if (!esAdministrador && !periodo.AllowsRetiro(hoy))
         {
             throw new BusinessRuleException(
                 "RN-10",
@@ -279,8 +279,8 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
         var esAdministrador = EsAdministrador();
         var hoy = fechaLocal.Hoy();
 
-        grupo.ValidarMovimiento(esAdministrador);
-        if (!esAdministrador && !grupo.Periodo.EnRangoMatricula(hoy))
+        grupo.EnsureAllowsMovimiento(esAdministrador);
+        if (!esAdministrador && !grupo.Periodo.IsInMatriculaRange(hoy))
         {
             throw new BusinessRuleException(
                 "RN-04",
@@ -290,7 +290,7 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
 
         await db.ValidarCursoNoRepetidoAsync(estudianteId, grupo, ignorarMatriculaId: null, cancellationToken);
         await db.ValidarSinChoquesAsync(estudianteId, grupo, ignorarMatriculaId: null, cancellationToken);
-        grupo.OcuparCupo();
+        grupo.TakeCupo();
 
         var matricula = new MatriculaEntidad(estudianteId, grupo.Id, hoy);
         db.Matriculas.Add(matricula);
@@ -314,7 +314,7 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
         }
     }
 
-    // Con seguimiento: OcuparCupo y LiberarCupo cambian el grupo, y su xmin detecta otra operación simultánea.
+    // Con seguimiento: TakeCupo y ReleaseCupo cambian el grupo, y su xmin detecta otra operación simultánea.
     private async Task<Grupo> BuscarGrupoAsync(int grupoId, CancellationToken cancellationToken) =>
         await db.Grupos
             .Include(g => g.Horarios)

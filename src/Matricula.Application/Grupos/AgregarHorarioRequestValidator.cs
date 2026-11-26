@@ -1,5 +1,5 @@
 using FluentValidation;
-using Matricula.Domain.Reglas;
+using Matricula.Domain.Rules;
 
 namespace Matricula.Application.Grupos;
 
@@ -16,8 +16,8 @@ public class AgregarHorarioRequestValidator : AbstractValidator<AgregarHorarioRe
 
         // RN-15
         RuleFor(r => r.HoraFin)
-            .Must((r, fin) => ReglasHorario.HorasValidas(r.HoraInicio!.Value, fin!.Value))
-            .WithMessage(ReglasHorario.MensajeHorasValidas)
+            .Must((r, fin) => HorarioRules.AreValidHours(r.HoraInicio!.Value, fin!.Value))
+            .WithMessage(HorarioRules.ValidHoursMessage)
             .When(r => r.HoraInicio.HasValue && r.HoraFin.HasValue);
     }
 }

@@ -42,7 +42,7 @@ public class Matricula : EntidadBase
     /// <summary>
     /// RF-52, RF-53 y RN-12: pasa a Retirada con la fecha y el motivo. El servicio libera el cupo del grupo.
     /// </summary>
-    public void Retirar(DateOnly fecha, MotivoRetiro motivo)
+    public void Withdraw(DateOnly fecha, MotivoRetiro motivo)
     {
         if (Estado == EstadoMatricula.Retirada)
         {

@@ -148,7 +148,7 @@ public partial class DatosPruebaSeedService(
         // (punto 6 de la spec). Anula su temporal, así que el AdminSeed deja de renovarla.
         var administrador = await db.Usuarios
             .FirstAsync(u => u.Rol == Rol.Administrador && u.CreadoPorId == null, cancellationToken);
-        administrador.EstablecerContrasena(hash, ahora);
+        administrador.SetPassword(hash, ahora);
         var administradorId = administrador.Id;
         var personas = new GeneradorPersonas(faker);
 
@@ -161,7 +161,7 @@ public partial class DatosPruebaSeedService(
         if (datos.Profesores.Count > 2)
         {
             datos.ProfesorDesactivado = datos.Profesores[^1];
-            datos.ProfesorDesactivado.Usuario.Desactivar();
+            datos.ProfesorDesactivado.Usuario.Deactivate();
         }
 
         db.Profesores.AddRange(datos.Profesores);
@@ -178,7 +178,7 @@ public partial class DatosPruebaSeedService(
             (int)Math.Round(datos.Estudiantes.Count * ProporcionEstudiantesDesactivados), candidatos.Count);
         foreach (var estudiante in faker.PickRandom(candidatos, cantidadDesactivados))
         {
-            estudiante.Usuario.Desactivar();
+            estudiante.Usuario.Deactivate();
             datos.EstudiantesDesactivados.Add(estudiante);
         }
 
@@ -303,11 +303,11 @@ public partial class DatosPruebaSeedService(
     {
         if (indice == 2)
         {
-            usuario.AsignarTemporal(hash, MotivoTemporal.CuentaNueva, ahora);
+            usuario.SetTemporaryPassword(hash, MotivoTemporal.CuentaNueva, ahora);
         }
         else
         {
-            usuario.EstablecerContrasena(hash, ahora);
+            usuario.SetPassword(hash, ahora);
         }
     }
 

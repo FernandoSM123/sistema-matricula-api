@@ -54,9 +54,9 @@ public partial class AdminSeedService(
                 "Defina 'AdminSeed:ContrasenaTemporal' en user-secrets o en la variable de entorno AdminSeed__ContrasenaTemporal.");
         }
 
-        var correo = Usuario.NormalizarCorreo(_options.Correo);
+        var correo = Usuario.NormalizeCorreo(_options.Correo);
         var usuario = new Usuario(correo, Rol.Administrador, OrigenRegistro.Administrador);
-        usuario.AsignarTemporal(hasher.Hashear(_options.ContrasenaTemporal), MotivoTemporal.CuentaNueva, timeProvider.GetUtcNow());
+        usuario.SetTemporaryPassword(hasher.Hashear(_options.ContrasenaTemporal), MotivoTemporal.CuentaNueva, timeProvider.GetUtcNow());
 
         db.Administradores.Add(new Administrador(usuario, _options.Cedula, _options.Nombre, _options.Apellidos, _options.Telefono));
         await db.SaveChangesAsync(cancellationToken);
@@ -82,7 +82,7 @@ public partial class AdminSeedService(
             return;
         }
 
-        inicial.AsignarTemporal(hasher.Hashear(_options.ContrasenaTemporal), MotivoTemporal.CuentaNueva, timeProvider.GetUtcNow());
+        inicial.SetTemporaryPassword(hasher.Hashear(_options.ContrasenaTemporal), MotivoTemporal.CuentaNueva, timeProvider.GetUtcNow());
         await db.SaveChangesAsync(cancellationToken);
 
         LogTemporalRenovada(logger, correo);

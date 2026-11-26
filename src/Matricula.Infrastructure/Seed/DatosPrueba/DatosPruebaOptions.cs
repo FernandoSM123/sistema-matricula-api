@@ -1,4 +1,4 @@
-using Matricula.Domain.Reglas;
+using Matricula.Domain.Rules;
 
 namespace Matricula.Infrastructure.Seed.DatosPrueba;
 
@@ -39,10 +39,10 @@ public class DatosPruebaOptions
         ValidarRango(errores, nameof(GruposPorPeriodo), GruposPorPeriodo, 0, 200);
         ValidarRango(errores, nameof(MaxMatriculasPorEstudiante), MaxMatriculasPorEstudiante, 0, 6);
 
-        if (!PoliticaContrasena.Cumple(Contrasena))
+        if (!PasswordPolicy.IsValid(Contrasena))
         {
             errores.Add($"La opción '{SectionName}:{nameof(Contrasena)}' es obligatoria y debe cumplir RN-26: "
-                + $"{PoliticaContrasena.Mensaje} Defínala en user-secrets.");
+                + $"{PasswordPolicy.Message} Defínala en user-secrets.");
         }
 
         return errores;

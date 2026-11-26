@@ -16,7 +16,7 @@ public class Aula : EntidadBase
     public Aula(string codigo, string? ubicacion, int capacidad)
     {
         Codigo = string.Empty;
-        ActualizarDatos(codigo, ubicacion, capacidad);
+        Update(codigo, ubicacion, capacidad);
         Activo = true;
     }
 
@@ -28,21 +28,21 @@ public class Aula : EntidadBase
     /// <summary>
     /// Forma canónica del código: en mayúsculas para que RN-13 no distinga capitalización.
     /// </summary>
-    public static string NormalizarCodigo(string codigo)
+    public static string NormalizeCodigo(string codigo)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
         return codigo.Trim().ToUpperInvariant();
     }
 
     /// <summary>Edición por un administrador (RF-40).</summary>
-    public void ActualizarDatos(string codigo, string? ubicacion, int capacidad)
+    public void Update(string codigo, string? ubicacion, int capacidad)
     {
-        Codigo = NormalizarCodigo(codigo);
+        Codigo = NormalizeCodigo(codigo);
         Ubicacion = string.IsNullOrWhiteSpace(ubicacion) ? null : ubicacion.Trim();
         Capacidad = capacidad;
     }
 
-    public void Desactivar() => Activo = false;
+    public void Deactivate() => Activo = false;
 
-    public void Reactivar() => Activo = true;
+    public void Reactivate() => Activo = true;
 }

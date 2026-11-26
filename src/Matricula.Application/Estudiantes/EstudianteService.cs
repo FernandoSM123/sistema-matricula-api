@@ -55,7 +55,7 @@ public class EstudianteService(
         // RN-21. Se valida antes que CuentaService, que respondería RN-13 por el correo. No se dice si el registro
         // existente está inactivo ni se dan sus ids: solo un administrador reactiva (RN-39).
         var cedula = request.Cedula.Trim();
-        var correo = Usuario.NormalizarCorreo(request.Correo);
+        var correo = Usuario.NormalizeCorreo(request.Correo);
         if (await db.Estudiantes.AnyAsync(e => e.Cedula == cedula, cancellationToken)
             || await db.Usuarios.AnyAsync(u => u.Correo == correo, cancellationToken))
         {
@@ -135,7 +135,7 @@ public class EstudianteService(
         }
 
         await cuentaService.CambiarCorreoAsync(estudiante.Usuario, request.Correo, cancellationToken);
-        estudiante.ActualizarDatos(
+        estudiante.Update(
             request.Cedula, request.Nombre, request.Apellidos, request.Telefono, request.FechaNacimiento, request.Direccion);
         await db.SaveChangesAsync(cancellationToken);
 
@@ -164,7 +164,7 @@ public class EstudianteService(
         var estudiante = await db.Estudiantes.SingleOrDefaultAsync(e => e.Id == estudianteId, cancellationToken)
             ?? throw new NotFoundException("El estudiante ya no existe.");
 
-        estudiante.ActualizarContacto(request.Telefono, request.Direccion);
+        estudiante.UpdateContacto(request.Telefono, request.Direccion);
         await db.SaveChangesAsync(cancellationToken);
     }
 

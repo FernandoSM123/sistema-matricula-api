@@ -32,7 +32,7 @@ public class UsuarioService(
         }
 
         var temporal = generadorContrasenas.Generar();
-        usuario.AsignarTemporal(hasher.Hashear(temporal), MotivoTemporal.ReenvioAdministrador, timeProvider.GetUtcNow());
+        usuario.SetTemporaryPassword(hasher.Hashear(temporal), MotivoTemporal.ReenvioAdministrador, timeProvider.GetUtcNow());
         await db.SaveChangesAsync(cancellationToken);
 
         var correoEnviado = await envioCorreos.EnviarTemporalAsync(usuario, temporal, MotivoTemporal.ReenvioAdministrador, cancellationToken);
@@ -70,7 +70,7 @@ public class UsuarioService(
             await ValidarSinMatriculasEnCursoAsync(usuarioId, cancellationToken);
         }
 
-        usuario.Desactivar();
+        usuario.Deactivate();
         await db.SaveChangesAsync(cancellationToken);
     }
 
@@ -107,7 +107,7 @@ public class UsuarioService(
             return;
         }
 
-        usuario.Reactivar();
+        usuario.Reactivate();
         await db.SaveChangesAsync(cancellationToken);
     }
 

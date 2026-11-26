@@ -85,7 +85,7 @@ public class AdministradorService(IAppDbContext db, CuentaService cuentaService)
         }
 
         await cuentaService.CambiarCorreoAsync(administrador.Usuario, request.Correo, cancellationToken);
-        administrador.ActualizarDatos(request.Cedula, request.Nombre, request.Apellidos, request.Telefono);
+        administrador.Update(request.Cedula, request.Nombre, request.Apellidos, request.Telefono);
         await db.SaveChangesAsync(cancellationToken);
 
         return administrador.ToResponse();

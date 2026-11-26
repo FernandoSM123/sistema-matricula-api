@@ -1,6 +1,6 @@
 using Matricula.Domain.Common;
 using Matricula.Domain.Exceptions;
-using Matricula.Domain.Reglas;
+using Matricula.Domain.Rules;
 
 namespace Matricula.Domain.Entities;
 
@@ -24,7 +24,7 @@ public class Periodo : EntidadBase
         DateOnly fechaLimiteRetiro)
     {
         Nombre = string.Empty;
-        ActualizarDatos(nombre, inicioClases, finClases, inicioMatricula, finMatricula, fechaLimiteRetiro);
+        Update(nombre, inicioClases, finClases, inicioMatricula, finMatricula, fechaLimiteRetiro);
     }
 
     public string Nombre { get; private set; }
@@ -37,7 +37,7 @@ public class Periodo : EntidadBase
     /// <summary>
     /// Forma canónica del nombre: en mayúsculas para que RN-13 no distinga capitalización.
     /// </summary>
-    public static string NormalizarNombre(string nombre)
+    public static string NormalizeNombre(string nombre)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nombre);
         return nombre.Trim().ToUpperInvariant();
@@ -47,7 +47,7 @@ public class Periodo : EntidadBase
     /// Edición por un administrador (RF-36). El validador ya rechaza las fechas incoherentes con 400; aquí RN-16 se
     /// comprueba otra vez como invariante.
     /// </summary>
-    public void ActualizarDatos(
+    public void Update(
         string nombre,
         DateOnly inicioClases,
         DateOnly finClases,
@@ -55,9 +55,9 @@ public class Periodo : EntidadBase
         DateOnly finMatricula,
         DateOnly fechaLimiteRetiro)
     {
-        var nombreNormalizado = NormalizarNombre(nombre);
+        var nombreNormalizado = NormalizeNombre(nombre);
 
-        if (!ReglasPeriodo.Coherente(inicioClases, finClases, inicioMatricula, finMatricula, fechaLimiteRetiro))
+        if (!PeriodoRules.AreConsistent(inicioClases, finClases, inicioMatricula, finMatricula, fechaLimiteRetiro))
         {
             throw new BusinessRuleException("RN-16", "Las fechas del periodo no son coherentes.");
         }
@@ -71,8 +71,8 @@ public class Periodo : EntidadBase
     }
 
     /// <summary>RN-04: la matrícula se permite desde su inicio hasta su fin, ambos días incluidos.</summary>
-    public bool EnRangoMatricula(DateOnly fecha) => InicioMatricula <= fecha && fecha <= FinMatricula;
+    public bool IsInMatriculaRange(DateOnly fecha) => InicioMatricula <= fecha && fecha <= FinMatricula;
 
     /// <summary>RN-10: los retiros y cambios de grupo se permiten hasta la fecha límite, incluida.</summary>
-    public bool PermiteRetiro(DateOnly fecha) => fecha <= FechaLimiteRetiro;
+    public bool AllowsRetiro(DateOnly fecha) => fecha <= FechaLimiteRetiro;
 }

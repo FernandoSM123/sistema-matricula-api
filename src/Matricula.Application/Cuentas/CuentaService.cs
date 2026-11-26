@@ -29,7 +29,7 @@ public class CuentaService(
         await ValidarCorreoDisponibleAsync(correo, exceptoUsuarioId: null, cancellationToken);
 
         var usuario = new Usuario(correo, Rol.Estudiante, OrigenRegistro.RegistroPublico);
-        usuario.EstablecerContrasena(hasher.Hashear(contrasena), timeProvider.GetUtcNow());
+        usuario.SetPassword(hasher.Hashear(contrasena), timeProvider.GetUtcNow());
         db.Usuarios.Add(usuario);
 
         return usuario;
@@ -44,7 +44,7 @@ public class CuentaService(
 
         var temporal = generadorContrasenas.Generar();
         var usuario = new Usuario(correo, rol, OrigenRegistro.Administrador, currentUser.UsuarioId);
-        usuario.AsignarTemporal(hasher.Hashear(temporal), MotivoTemporal.CuentaNueva, timeProvider.GetUtcNow());
+        usuario.SetTemporaryPassword(hasher.Hashear(temporal), MotivoTemporal.CuentaNueva, timeProvider.GetUtcNow());
         db.Usuarios.Add(usuario);
 
         return new CuentaNueva(usuario, temporal);
@@ -57,13 +57,13 @@ public class CuentaService(
     {
         ArgumentNullException.ThrowIfNull(usuario);
 
-        if (Usuario.NormalizarCorreo(correo) == usuario.Correo)
+        if (Usuario.NormalizeCorreo(correo) == usuario.Correo)
         {
             return;
         }
 
         await ValidarCorreoDisponibleAsync(correo, usuario.Id, cancellationToken);
-        usuario.CambiarCorreo(correo);
+        usuario.ChangeCorreo(correo);
     }
 
     /// <summary>
@@ -79,7 +79,7 @@ public class CuentaService(
     // RN-13. El índice único de usuario.correo es la red de seguridad ante dos registros simultáneos.
     private async Task ValidarCorreoDisponibleAsync(string correo, int? exceptoUsuarioId, CancellationToken cancellationToken)
     {
-        var normalizado = Usuario.NormalizarCorreo(correo);
+        var normalizado = Usuario.NormalizeCorreo(correo);
         var enUso = await db.Usuarios.AnyAsync(
             u => u.Correo == normalizado && (exceptoUsuarioId == null || u.Id != exceptoUsuarioId), cancellationToken);
 

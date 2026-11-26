@@ -1,16 +1,16 @@
-using Matricula.Domain.Reglas;
+using Matricula.Domain.Rules;
 
 namespace Matricula.UnitTests.Domain;
 
-public class PoliticaContrasenaTests
+public class PasswordPolicyTests
 {
     [Theory]
     [InlineData("Segura123")]
     [InlineData("ABCDEFG1")]
     [InlineData("Ñandú2026")]
-    public void Cumple_ContrasenaValida_DevuelveTrue(string contrasena)
+    public void IsValid_ContrasenaValida_DevuelveTrue(string contrasena)
     {
-        Assert.True(PoliticaContrasena.Cumple(contrasena));
+        Assert.True(PasswordPolicy.IsValid(contrasena));
     }
 
     [Theory]
@@ -20,15 +20,15 @@ public class PoliticaContrasenaTests
     [InlineData("SinNumeros")]
     [InlineData("")]
     [InlineData(null)]
-    public void Cumple_ContrasenaInvalida_DevuelveFalse(string? contrasena)
+    public void IsValid_ContrasenaInvalida_DevuelveFalse(string? contrasena)
     {
-        Assert.False(PoliticaContrasena.Cumple(contrasena));
+        Assert.False(PasswordPolicy.IsValid(contrasena));
     }
 
     [Fact]
-    public void Cumple_DigitoNoAscii_NoCuentaComoNumero()
+    public void IsValid_DigitoNoAscii_NoCuentaComoNumero()
     {
         // "٣" es el 3 arábigo-índico: char.IsDigit lo acepta, pero RN-26 pide un número común.
-        Assert.False(PoliticaContrasena.Cumple("Segura٣٣٣"));
+        Assert.False(PasswordPolicy.IsValid("Segura٣٣٣"));
     }
 }

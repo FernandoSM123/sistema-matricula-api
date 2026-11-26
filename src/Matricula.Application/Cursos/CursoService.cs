@@ -75,14 +75,14 @@ public class CursoService(IAppDbContext db)
         var curso = await BuscarAsync(id, cancellationToken);
 
         // RN-13: aquí un código de un inactivo tampoco se puede usar, y reactivarlo no resolvería el conflicto.
-        var codigo = Curso.NormalizarCodigo(request.Codigo);
+        var codigo = Curso.NormalizeCodigo(request.Codigo);
         if (codigo != curso.Codigo
             && await db.Cursos.AnyAsync(c => c.Codigo == codigo && c.Id != id, cancellationToken))
         {
             throw new BusinessRuleException("RN-13", $"Ya existe un curso con el código {codigo}.");
         }
 
-        curso.ActualizarDatos(
+        curso.Update(
             request.Codigo,
             request.Nombre,
             request.Descripcion,
@@ -105,7 +105,7 @@ public class CursoService(IAppDbContext db)
             await db.ValidarSinGruposActivosAsync(g => g.CursoId == id, $"el curso {curso.Codigo}", cancellationToken);
         }
 
-        curso.Desactivar();
+        curso.Deactivate();
         await db.SaveChangesAsync(cancellationToken);
     }
 
@@ -115,7 +115,7 @@ public class CursoService(IAppDbContext db)
     public async Task ReactivarAsync(int id, CancellationToken cancellationToken)
     {
         var curso = await BuscarAsync(id, cancellationToken);
-        curso.Reactivar();
+        curso.Reactivate();
         await db.SaveChangesAsync(cancellationToken);
     }
 

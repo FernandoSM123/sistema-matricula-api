@@ -1,5 +1,5 @@
 using FluentValidation;
-using Matricula.Domain.Reglas;
+using Matricula.Domain.Rules;
 
 namespace Matricula.Application.Auditoria;
 
@@ -9,9 +9,9 @@ public class ListarAuditoriaRequestValidator : AbstractValidator<ListarAuditoria
     {
         // Supuesto 7: un nombre desconocido es un error y no una lista vacía, que parecería "sin cambios".
         RuleFor(r => r.Entidad)
-            .Must(entidad => ReglasAuditoria.BuscarEntidad(entidad) is not null)
+            .Must(entidad => AuditRules.FindEntity(entidad) is not null)
             .WithMessage(
-                $"La entidad no existe. Valores válidos: {string.Join(", ", ReglasAuditoria.EntidadesAuditadas)}.")
+                $"La entidad no existe. Valores válidos: {string.Join(", ", AuditRules.AuditedEntities)}.")
             .When(r => !string.IsNullOrWhiteSpace(r.Entidad));
 
         RuleFor(r => r.EntidadId)

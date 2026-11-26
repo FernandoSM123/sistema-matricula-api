@@ -1,5 +1,5 @@
 using FluentValidation;
-using Matricula.Domain.Reglas;
+using Matricula.Domain.Rules;
 
 namespace Matricula.Application.Errores;
 
@@ -13,7 +13,7 @@ public class ListarErroresRequestValidator : AbstractValidator<ListarErroresRequ
             .When(r => r.Desde.HasValue && r.Hasta.HasValue);
 
         RuleFor(r => r.TraceId)
-            .Must(traceId => ReglasErrores.NormalizarTraceId(traceId) is not null)
+            .Must(traceId => ErrorLogRules.NormalizeTraceId(traceId) is not null)
             .WithMessage(
                 "El identificador de operación no es válido. Use el traceId del error (00-<32 hex>-<16 hex>-<2 hex>) " +
                 "o sus 32 caracteres hexadecimales.")

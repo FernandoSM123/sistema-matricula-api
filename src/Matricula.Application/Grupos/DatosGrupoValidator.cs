@@ -31,10 +31,10 @@ public abstract class DatosGrupoValidator<T> : AbstractValidator<T>
         // RN-09: el aula depende de la modalidad.
         RuleFor(r => r.AulaId)
             .NotNull().WithMessage("Seleccione el aula: la modalidad presencial e híbrida se imparten en un aula.")
-            .When(r => r.Modalidad.HasValue && Grupo.RequiereAula(r.Modalidad.Value));
+            .When(r => r.Modalidad.HasValue && Grupo.RequiresAula(r.Modalidad.Value));
 
         RuleFor(r => r.AulaId)
             .Null().WithMessage("Un grupo virtual no lleva aula.")
-            .When(r => r.Modalidad.HasValue && !Grupo.RequiereAula(r.Modalidad.Value));
+            .When(r => r.Modalidad.HasValue && !Grupo.RequiresAula(r.Modalidad.Value));
     }
 }

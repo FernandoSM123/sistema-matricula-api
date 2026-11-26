@@ -1,5 +1,5 @@
 using Matricula.Domain.Entities;
-using Matricula.Domain.Reglas;
+using Matricula.Domain.Rules;
 using Matricula.Infrastructure.Seed.DatosPrueba;
 
 namespace Matricula.UnitTests.Seed;
@@ -25,13 +25,13 @@ public class FechasPruebaTests
 
     [Theory]
     [MemberData(nameof(DiasDe2028))]
-    public void Calcular_CualquierDia_PeriodosCoherentesSinTraslapesYConNombresDistintos(DateOnly hoy)
+    public void ToLocalDate_CualquierDia_PeriodosCoherentesSinTraslapesYConNombresDistintos(DateOnly hoy)
     {
         var periodos = FechasPrueba.Calcular(hoy);
         PeriodoPrueba[] todos = [periodos.Pasado, periodos.Vigente, periodos.Futuro];
 
         Assert.All(todos, p => Assert.True(
-            ReglasPeriodo.Coherente(p.InicioClases, p.FinClases, p.InicioMatricula, p.FinMatricula, p.FechaLimiteRetiro),
+            PeriodoRules.AreConsistent(p.InicioClases, p.FinClases, p.InicioMatricula, p.FinMatricula, p.FechaLimiteRetiro),
             $"El periodo {p.Nombre} no cumple RN-16."));
         Assert.False(SeTraslapan(periodos.Pasado, periodos.Vigente));
         Assert.False(SeTraslapan(periodos.Vigente, periodos.Futuro));
@@ -41,23 +41,23 @@ public class FechasPruebaTests
 
     [Theory]
     [MemberData(nameof(DiasDe2028))]
-    public void Calcular_CualquierDia_ElVigentePermiteMatricularYRetirarHoy(DateOnly hoy)
+    public void ToLocalDate_CualquierDia_ElVigentePermiteMatricularYRetirarHoy(DateOnly hoy)
     {
         var vigente = Crear(FechasPrueba.Calcular(hoy).Vigente);
 
-        Assert.True(vigente.EnRangoMatricula(hoy));
-        Assert.True(vigente.PermiteRetiro(hoy));
+        Assert.True(vigente.IsInMatriculaRange(hoy));
+        Assert.True(vigente.AllowsRetiro(hoy));
     }
 
     [Fact]
-    public void Calcular_ElPasadoYaTerminoYElFuturoNoHaEmpezado()
+    public void ToLocalDate_ElPasadoYaTerminoYElFuturoNoHaEmpezado()
     {
         var hoy = new DateOnly(2026, 11, 16);
 
         var periodos = FechasPrueba.Calcular(hoy);
 
         Assert.True(periodos.Pasado.FinClases < hoy);
-        Assert.False(Crear(periodos.Pasado).EnRangoMatricula(hoy));
+        Assert.False(Crear(periodos.Pasado).IsInMatriculaRange(hoy));
         Assert.True(periodos.Futuro.InicioMatricula > hoy);
     }
 
@@ -72,7 +72,7 @@ public class FechasPruebaTests
     }
 
     private static bool SeTraslapan(PeriodoPrueba a, PeriodoPrueba b) =>
-        ReglasPeriodo.ClasesSeTraslapan(a.InicioClases, a.FinClases, b.InicioClases, b.FinClases);
+        PeriodoRules.ClasesOverlap(a.InicioClases, a.FinClases, b.InicioClases, b.FinClases);
 
     private static Periodo Crear(PeriodoPrueba p) =>
         new(p.Nombre, p.InicioClases, p.FinClases, p.InicioMatricula, p.FinMatricula, p.FechaLimiteRetiro);

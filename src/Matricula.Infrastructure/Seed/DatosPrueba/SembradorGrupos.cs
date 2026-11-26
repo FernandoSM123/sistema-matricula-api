@@ -120,7 +120,7 @@ public sealed class SembradorGrupos(Faker faker, DatosSembrados datos, Action<st
         var grupo = new Grupo(NuevoNrc(), curso, asignacion.ProfesorId, periodo.Id, aula?.Id, cupo, modalidad);
         foreach (var franja in asignacion.Franjas)
         {
-            grupo.AgregarHorario(franja.Dia, franja.HoraInicio, franja.HoraFin);
+            grupo.AddHorario(franja.Dia, franja.HoraInicio, franja.HoraFin);
         }
 
         Abrir(grupo, estado);
@@ -151,7 +151,7 @@ public sealed class SembradorGrupos(Faker faker, DatosSembrados datos, Action<st
     {
         if (estadoFinal != EstadoGrupo.Planificado)
         {
-            grupo.CambiarEstado(EstadoGrupo.Abierto);
+            grupo.ChangeEstado(EstadoGrupo.Abierto);
         }
     }
 

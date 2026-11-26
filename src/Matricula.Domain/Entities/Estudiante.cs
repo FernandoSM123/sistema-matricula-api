@@ -34,7 +34,7 @@ public class Estudiante : EntidadBase
         Usuario = usuario;
         FechaRegistro = fechaRegistro;
         Cedula = Nombre = Apellidos = Telefono = string.Empty;
-        ActualizarDatos(cedula, nombre, apellidos, telefono, fechaNacimiento, direccion);
+        Update(cedula, nombre, apellidos, telefono, fechaNacimiento, direccion);
     }
 
     public string Cedula { get; private set; }
@@ -51,7 +51,7 @@ public class Estudiante : EntidadBase
     public Usuario Usuario { get; private set; }
 
     /// <summary>Edición por un administrador (RF-18).</summary>
-    public void ActualizarDatos(
+    public void Update(
         string cedula,
         string nombre,
         string apellidos,
@@ -67,11 +67,11 @@ public class Estudiante : EntidadBase
         Nombre = nombre.Trim();
         Apellidos = apellidos.Trim();
         FechaNacimiento = fechaNacimiento;
-        ActualizarContacto(telefono, direccion);
+        UpdateContacto(telefono, direccion);
     }
 
     /// <summary>Lo único que el propio estudiante puede editar (matriz §2.2).</summary>
-    public void ActualizarContacto(string telefono, string? direccion)
+    public void UpdateContacto(string telefono, string? direccion)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(telefono);
 

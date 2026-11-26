@@ -1,11 +1,11 @@
 using System.Text.Json;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
-using Matricula.Domain.Reglas;
+using Matricula.Domain.Rules;
 
 namespace Matricula.UnitTests.Domain;
 
-public class ReglasAuditoriaTests
+public class AuditRulesTests
 {
     private static KeyValuePair<string, object?> Par(string nombre, object? valor) => new(nombre, valor);
 
@@ -20,9 +20,9 @@ public class ReglasAuditoriaTests
     [InlineData("Usuario", "UltimoIngreso")]
     [InlineData("Usuario", "SecurityStamp")]
     [InlineData("Grupo", "Version")]
-    public void Excluida_PropiedadesTecnicas_DevuelveTrue(string entidad, string propiedad)
+    public void IsExcluded_PropiedadesTecnicas_DevuelveTrue(string entidad, string propiedad)
     {
-        Assert.True(ReglasAuditoria.Excluida(entidad, propiedad));
+        Assert.True(AuditRules.IsExcluded(entidad, propiedad));
     }
 
     [Theory]
@@ -32,15 +32,15 @@ public class ReglasAuditoriaTests
     [InlineData("Usuario", "PasswordHash")]
     [InlineData("Curso", "Version")]
     [InlineData("Estudiante", "SecurityStamp")]
-    public void Excluida_PropiedadesDeNegocio_DevuelveFalse(string entidad, string propiedad)
+    public void IsExcluded_PropiedadesDeNegocio_DevuelveFalse(string entidad, string propiedad)
     {
-        Assert.False(ReglasAuditoria.Excluida(entidad, propiedad));
+        Assert.False(AuditRules.IsExcluded(entidad, propiedad));
     }
 
     [Fact]
-    public void Valores_Creacion_ExcluyeTecnicasYUsaCamelCase()
+    public void Values_Creacion_ExcluyeTecnicasYUsaCamelCase()
     {
-        var json = ReglasAuditoria.Valores(nameof(Curso),
+        var json = AuditRules.Values(nameof(Curso),
         [
             Par("Id", 5),
             Par("Codigo", "PROG-1"),
@@ -55,15 +55,15 @@ public class ReglasAuditoriaTests
     }
 
     [Fact]
-    public void Valores_SinPropiedadesAuditables_DevuelveObjetoVacio()
+    public void Values_SinPropiedadesAuditables_DevuelveObjetoVacio()
     {
-        Assert.Equal("{}", ReglasAuditoria.Valores(nameof(Curso), [Par("Id", 1)]));
+        Assert.Equal("{}", AuditRules.Values(nameof(Curso), [Par("Id", 1)]));
     }
 
     [Fact]
-    public void Valores_EnumsYFechas_SeGuardanComoTextoIso()
+    public void Values_EnumsYFechas_SeGuardanComoTextoIso()
     {
-        var json = ReglasAuditoria.Valores(nameof(Matricula),
+        var json = AuditRules.Values(nameof(Matricula),
         [
             Par("Estado", EstadoMatricula.Activa),
             Par("FechaMatricula", new DateOnly(2026, 11, 10)),
@@ -77,9 +77,9 @@ public class ReglasAuditoriaTests
     }
 
     [Fact]
-    public void Valores_HorasYMarcasDeTiempo_SeGuardanEnIso()
+    public void Values_HorasYMarcasDeTiempo_SeGuardanEnIso()
     {
-        var json = ReglasAuditoria.Valores(nameof(Horario),
+        var json = AuditRules.Values(nameof(Horario),
         [
             Par("HoraInicio", new TimeOnly(8, 30)),
             Par("Marca", new DateTimeOffset(2026, 11, 10, 15, 4, 5, TimeSpan.Zero))
@@ -92,34 +92,34 @@ public class ReglasAuditoriaTests
     [Theory]
     [InlineData("PasswordHash")]
     [InlineData("TempPasswordHash")]
-    public void Valores_SecretoConValor_SeEnmascara(string propiedad)
+    public void Values_SecretoConValor_SeEnmascara(string propiedad)
     {
-        var json = ReglasAuditoria.Valores(nameof(Usuario), [Par(propiedad, "AQAAAAIAAYagAAAAEsecreto")]);
+        var json = AuditRules.Values(nameof(Usuario), [Par(propiedad, "AQAAAAIAAYagAAAAEsecreto")]);
 
         Assert.DoesNotContain("AQAAAA", json, StringComparison.Ordinal);
-        Assert.Equal(ReglasAuditoria.Enmascarado, Leer(json).GetProperty(JsonNamingPolicy.CamelCase.ConvertName(propiedad)).GetString());
+        Assert.Equal(AuditRules.Mask, Leer(json).GetProperty(JsonNamingPolicy.CamelCase.ConvertName(propiedad)).GetString());
     }
 
     [Fact]
-    public void Valores_SecretoSinValor_QuedaNulo()
+    public void Values_SecretoSinValor_QuedaNulo()
     {
-        var json = ReglasAuditoria.Valores(nameof(Usuario), [Par("TempPasswordHash", null)]);
+        var json = AuditRules.Values(nameof(Usuario), [Par("TempPasswordHash", null)]);
 
         Assert.Equal(JsonValueKind.Null, Leer(json).GetProperty("tempPasswordHash").ValueKind);
     }
 
     [Fact]
-    public void Valores_MismoNombreEnOtraEntidad_NoSeEnmascara()
+    public void Values_MismoNombreEnOtraEntidad_NoSeEnmascara()
     {
-        var json = ReglasAuditoria.Valores(nameof(Curso), [Par("PasswordHash", "visible")]);
+        var json = AuditRules.Values(nameof(Curso), [Par("PasswordHash", "visible")]);
 
         Assert.Equal("visible", Leer(json).GetProperty("passwordHash").GetString());
     }
 
     [Fact]
-    public void Diferencias_Modificacion_SoloIncluyeLasQueCambiaron()
+    public void Differences_Modificacion_SoloIncluyeLasQueCambiaron()
     {
-        var json = ReglasAuditoria.Diferencias(nameof(Matricula),
+        var json = AuditRules.Differences(nameof(Matricula),
         [
             new("Estado", EstadoMatricula.Activa, EstadoMatricula.Retirada),
             new("FechaRetiro", null, new DateOnly(2026, 11, 10)),
@@ -137,54 +137,54 @@ public class ReglasAuditoriaTests
     }
 
     [Fact]
-    public void Diferencias_SoloCambiaUltimoIngreso_DevuelveNull()
+    public void Differences_SoloCambiaUltimoIngreso_DevuelveNull()
     {
-        Assert.Null(ReglasAuditoria.Diferencias(nameof(Usuario),
+        Assert.Null(AuditRules.Differences(nameof(Usuario),
             [new("UltimoIngreso", null, DateTimeOffset.UnixEpoch)]));
     }
 
     [Fact]
-    public void Diferencias_SoloCambiaSecurityStamp_DevuelveNull()
+    public void Differences_SoloCambiaSecurityStamp_DevuelveNull()
     {
-        Assert.Null(ReglasAuditoria.Diferencias(nameof(Usuario),
+        Assert.Null(AuditRules.Differences(nameof(Usuario),
             [new("SecurityStamp", "a", "b"), new("FechaModificacion", null, DateTimeOffset.UnixEpoch)]));
     }
 
     [Fact]
-    public void Diferencias_AsignacionAlMismoValor_DevuelveNull()
+    public void Differences_AsignacionAlMismoValor_DevuelveNull()
     {
-        Assert.Null(ReglasAuditoria.Diferencias(nameof(Curso), [new("Nombre", "Excel", "Excel")]));
+        Assert.Null(AuditRules.Differences(nameof(Curso), [new("Nombre", "Excel", "Excel")]));
     }
 
     [Fact]
-    public void Diferencias_CambioDeContrasena_EnmascaraAmbosValores()
+    public void Differences_CambioDeContrasena_EnmascaraAmbosValores()
     {
-        var json = ReglasAuditoria.Diferencias(nameof(Usuario), [new("PasswordHash", "AQAAAAhashViejo", "AQAAAAhashNuevo")]);
+        var json = AuditRules.Differences(nameof(Usuario), [new("PasswordHash", "AQAAAAhashViejo", "AQAAAAhashNuevo")]);
 
         Assert.NotNull(json);
         Assert.DoesNotContain("AQAAAA", json, StringComparison.Ordinal);
         var cambio = Leer(json).GetProperty("passwordHash");
-        Assert.Equal(ReglasAuditoria.Enmascarado, cambio.GetProperty("antes").GetString());
-        Assert.Equal(ReglasAuditoria.Enmascarado, cambio.GetProperty("despues").GetString());
+        Assert.Equal(AuditRules.Mask, cambio.GetProperty("antes").GetString());
+        Assert.Equal(AuditRules.Mask, cambio.GetProperty("despues").GetString());
     }
 
     [Fact]
-    public void Diferencias_TemporalAnulada_MuestraEnmascaradoANulo()
+    public void Differences_TemporalAnulada_MuestraEnmascaradoANulo()
     {
-        var json = ReglasAuditoria.Diferencias(nameof(Usuario), [new("TempPasswordHash", "AQAAAAtemporal", null)]);
+        var json = AuditRules.Differences(nameof(Usuario), [new("TempPasswordHash", "AQAAAAtemporal", null)]);
 
         Assert.NotNull(json);
         var cambio = Leer(json).GetProperty("tempPasswordHash");
-        Assert.Equal(ReglasAuditoria.Enmascarado, cambio.GetProperty("antes").GetString());
+        Assert.Equal(AuditRules.Mask, cambio.GetProperty("antes").GetString());
         Assert.Equal(JsonValueKind.Null, cambio.GetProperty("despues").ValueKind);
     }
 
     [Fact]
-    public void EntidadesAuditadas_SonLasDiezEntidadesDelDominio()
+    public void AuditedEntities_SonLasDiezEntidadesDelDominio()
     {
         Assert.Equal(
             ["Administrador", "Aula", "Curso", "Estudiante", "Grupo", "Horario", "Matricula", "Periodo", "Profesor", "Usuario"],
-            ReglasAuditoria.EntidadesAuditadas);
+            AuditRules.AuditedEntities);
     }
 
     [Theory]
@@ -194,8 +194,8 @@ public class ReglasAuditoriaTests
     [InlineData("RegistroAuditoria", null)]
     [InlineData("Inexistente", null)]
     [InlineData(null, null)]
-    public void BuscarEntidad_SinDistinguirMayusculas_DevuelveElNombreExacto(string? nombre, string? esperado)
+    public void FindEntity_SinDistinguirMayusculas_DevuelveElNombreExacto(string? nombre, string? esperado)
     {
-        Assert.Equal(esperado, ReglasAuditoria.BuscarEntidad(nombre));
+        Assert.Equal(esperado, AuditRules.FindEntity(nombre));
     }
 }

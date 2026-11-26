@@ -7,7 +7,7 @@ namespace Matricula.Infrastructure.Seed.DatosPrueba;
 
 /// <summary>
 /// Matrículas de los periodos pasado y vigente, retiros, el cambio de grupo y los estados finales de los grupos (punto 5
-/// de la spec). Cada matrícula pasa por <see cref="Grupo.OcuparCupo"/> y cada retiro por <see cref="Grupo.LiberarCupo"/>,
+/// de la spec). Cada matrícula pasa por <see cref="Grupo.TakeCupo"/> y cada retiro por <see cref="Grupo.ReleaseCupo"/>,
 /// así <c>CuposOcupados</c> coincide con las matrículas activas. RN-05 y RN-06 los cuida el planificador del periodo.
 /// Solo arma las entidades en memoria; el servicio las agrega y las guarda.
 /// </summary>
@@ -88,8 +88,8 @@ public sealed class SembradorMatriculas(Faker faker, DatosSembrados datos, DateO
             }
 
             var fecha = Entre(anterior.Matricula.FechaMatricula, hoy);
-            anterior.Matricula.Retirar(fecha, MotivoRetiro.CambioGrupo);
-            origen.Grupo.LiberarCupo();
+            anterior.Matricula.Withdraw(fecha, MotivoRetiro.CambioGrupo);
+            origen.Grupo.ReleaseCupo();
             Matricular(anterior.Estudiante, destino, fecha);
             datos.HuboCambioDeGrupo = true;
             return;
@@ -155,15 +155,15 @@ public sealed class SembradorMatriculas(Faker faker, DatosSembrados datos, DateO
                     Retirar(matricula, fecha, MotivoRetiro.CancelacionGrupo);
                 }
 
-                grupo.Grupo.CambiarEstado(EstadoGrupo.Cancelado);
+                grupo.Grupo.ChangeEstado(EstadoGrupo.Cancelado);
                 break;
             case EstadoGrupo.Cerrado:
-                grupo.Grupo.CambiarEstado(EstadoGrupo.Cerrado);
+                grupo.Grupo.ChangeEstado(EstadoGrupo.Cerrado);
                 break;
             case EstadoGrupo.Finalizado:
-                grupo.Grupo.CambiarEstado(EstadoGrupo.Cerrado);
-                grupo.Grupo.CambiarEstado(EstadoGrupo.EnCurso);
-                grupo.Grupo.CambiarEstado(EstadoGrupo.Finalizado);
+                grupo.Grupo.ChangeEstado(EstadoGrupo.Cerrado);
+                grupo.Grupo.ChangeEstado(EstadoGrupo.EnCurso);
+                grupo.Grupo.ChangeEstado(EstadoGrupo.Finalizado);
                 break;
         }
     }
@@ -175,14 +175,14 @@ public sealed class SembradorMatriculas(Faker faker, DatosSembrados datos, DateO
     private void Matricular(Estudiante estudiante, GrupoSembrado grupo, DateOnly fecha)
     {
         datos.Planificadores[grupo.Periodo].RegistrarMatricula(estudiante.Id, grupo.Grupo.CursoId, grupo.Franjas);
-        grupo.Grupo.OcuparCupo();
+        grupo.Grupo.TakeCupo();
         datos.Matriculas.Add(new MatriculaSembrada(new MatriculaEntidad(estudiante.Id, grupo.Grupo.Id, fecha), estudiante, grupo));
     }
 
     private void Retirar(MatriculaSembrada matricula, DateOnly fecha, MotivoRetiro motivo)
     {
-        matricula.Matricula.Retirar(fecha, motivo);
-        matricula.Grupo.Grupo.LiberarCupo();
+        matricula.Matricula.Withdraw(fecha, motivo);
+        matricula.Grupo.Grupo.ReleaseCupo();
         datos.Planificadores[matricula.Grupo.Periodo]
             .LiberarMatricula(matricula.Estudiante.Id, matricula.Grupo.Grupo.CursoId, matricula.Grupo.Franjas);
     }

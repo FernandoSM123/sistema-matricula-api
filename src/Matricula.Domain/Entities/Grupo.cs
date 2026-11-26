@@ -29,7 +29,7 @@ public class Grupo : EntidadBase
         Profesor = null!;
         Periodo = null!;
         Estado = EstadoGrupo.Planificado;
-        AsignarDatos(nrc, cursoId, profesorId, periodoId, aulaId, cupo, modalidad);
+        SetData(nrc, cursoId, profesorId, periodoId, aulaId, cupo, modalidad);
     }
 
     public string Nrc { get; private set; }
@@ -45,7 +45,7 @@ public class Grupo : EntidadBase
     public Modalidad Modalidad { get; private set; }
     public EstadoGrupo Estado { get; private set; }
 
-    /// <summary>Matrículas activas. Cambia solo con <see cref="OcuparCupo"/> y <see cref="LiberarCupo"/>.</summary>
+    /// <summary>Matrículas activas. Cambia solo con <see cref="TakeCupo"/> y <see cref="ReleaseCupo"/>.</summary>
     public int CuposOcupados { get; private set; }
 
     /// <summary>
@@ -59,7 +59,7 @@ public class Grupo : EntidadBase
     public int CuposDisponibles => Cupo - CuposOcupados;
 
     /// <summary>RN-03: una matrícula activa más, si queda cupo.</summary>
-    public void OcuparCupo()
+    public void TakeCupo()
     {
         if (CuposDisponibles <= 0)
         {
@@ -70,7 +70,7 @@ public class Grupo : EntidadBase
     }
 
     /// <summary>Una matrícula activa menos (retiro, cambio de grupo o cancelación).</summary>
-    public void LiberarCupo()
+    public void ReleaseCupo()
     {
         if (CuposOcupados > 0)
         {
@@ -83,7 +83,7 @@ public class Grupo : EntidadBase
     /// aplican las restricciones comunes (supuesto 1 de la spec de matriculas): opera en Planificado, Abierto,
     /// Cerrado y EnCurso. Nadie opera en un grupo Finalizado o Cancelado.
     /// </summary>
-    public void ValidarMovimiento(bool esAdministrador)
+    public void EnsureAllowsMovimiento(bool esAdministrador)
     {
         if (Estado is EstadoGrupo.Finalizado or EstadoGrupo.Cancelado)
         {
@@ -109,20 +109,20 @@ public class Grupo : EntidadBase
     /// <summary>
     /// Forma canónica del NRC: en mayúsculas para que RN-13 no distinga capitalización.
     /// </summary>
-    public static string NormalizarNrc(string nrc)
+    public static string NormalizeNrc(string nrc)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nrc);
         return nrc.Trim().ToUpperInvariant();
     }
 
     /// <summary>Presencial e híbrida se imparten en un aula; virtual no (RN-09).</summary>
-    public static bool RequiereAula(Modalidad modalidad) => modalidad != Modalidad.Virtual;
+    public static bool RequiresAula(Modalidad modalidad) => modalidad != Modalidad.Virtual;
 
     /// <summary>
     /// RF-45. En Planificado se edita todo. En Abierto, Cerrado y EnCurso solo profesor, aula, modalidad y cupo, para
     /// poder reasignar (RF-26, RN-37). Finalizado y Cancelado no se editan. El cupo nunca baja de los ocupados.
     /// </summary>
-    public void ActualizarDatos(
+    public void Update(
         string nrc, int cursoId, int profesorId, int periodoId, int? aulaId, int cupo, Modalidad modalidad)
     {
         if (Estado is EstadoGrupo.Finalizado or EstadoGrupo.Cancelado)
@@ -131,7 +131,7 @@ public class Grupo : EntidadBase
         }
 
         if (Estado != EstadoGrupo.Planificado
-            && (NormalizarNrc(nrc) != Nrc || cursoId != CursoId || periodoId != PeriodoId))
+            && (NormalizeNrc(nrc) != Nrc || cursoId != CursoId || periodoId != PeriodoId))
         {
             throw new BusinessRuleException(
                 "RF-45",
@@ -144,14 +144,14 @@ public class Grupo : EntidadBase
                 "RF-45", $"El cupo no puede ser menor que los {CuposOcupados} cupos ya ocupados.");
         }
 
-        AsignarDatos(nrc, cursoId, profesorId, periodoId, aulaId, cupo, modalidad);
+        SetData(nrc, cursoId, profesorId, periodoId, aulaId, cupo, modalidad);
     }
 
     /// <summary>
     /// RF-47: solo se avanza un paso del flujo normal, o se cancela mientras no haya finalizado. Para abrir hace falta
     /// al menos un bloque de horario. Pedir el estado actual no cambia nada.
     /// </summary>
-    public void CambiarEstado(EstadoGrupo nuevo)
+    public void ChangeEstado(EstadoGrupo nuevo)
     {
         if (nuevo == Estado)
         {
@@ -160,7 +160,7 @@ public class Grupo : EntidadBase
 
         var permitido = nuevo == EstadoGrupo.Cancelado
             ? Estado != EstadoGrupo.Finalizado
-            : nuevo == Siguiente(Estado);
+            : nuevo == Next(Estado);
 
         if (!permitido)
         {
@@ -179,7 +179,7 @@ public class Grupo : EntidadBase
     /// RF-48: agrega un bloque si no se traslapa con otro del mismo grupo (RN-14). No en grupos finalizados o
     /// cancelados.
     /// </summary>
-    public Horario AgregarHorario(DiaSemana dia, TimeOnly horaInicio, TimeOnly horaFin)
+    public Horario AddHorario(DiaSemana dia, TimeOnly horaInicio, TimeOnly horaFin)
     {
         if (Estado is EstadoGrupo.Finalizado or EstadoGrupo.Cancelado)
         {
@@ -187,7 +187,7 @@ public class Grupo : EntidadBase
         }
 
         var horario = new Horario(dia, horaInicio, horaFin);
-        var traslapado = horarios.FirstOrDefault(h => h.SeTraslapaCon(horario));
+        var traslapado = horarios.FirstOrDefault(h => h.OverlapsWith(horario));
         if (traslapado is not null)
         {
             throw new BusinessRuleException(
@@ -204,7 +204,7 @@ public class Grupo : EntidadBase
     /// RF-48: los bloques solo se quitan mientras el grupo está Planificado. Devuelve el bloque quitado, o null si no
     /// es de este grupo. El servicio también debe quitarlo del DbSet: con FK Restrict, EF no borra el huérfano solo.
     /// </summary>
-    public Horario? QuitarHorario(int horarioId)
+    public Horario? RemoveHorario(int horarioId)
     {
         var horario = horarios.FirstOrDefault(h => h.Id == horarioId);
         if (horario is null)
@@ -222,7 +222,7 @@ public class Grupo : EntidadBase
         return horario;
     }
 
-    private static EstadoGrupo? Siguiente(EstadoGrupo estado) => estado switch
+    private static EstadoGrupo? Next(EstadoGrupo estado) => estado switch
     {
         EstadoGrupo.Planificado => EstadoGrupo.Abierto,
         EstadoGrupo.Abierto => EstadoGrupo.Cerrado,
@@ -231,23 +231,23 @@ public class Grupo : EntidadBase
         _ => null
     };
 
-    private void AsignarDatos(
+    private void SetData(
         string nrc, int cursoId, int profesorId, int periodoId, int? aulaId, int cupo, Modalidad modalidad)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(cupo);
 
         // El validador ya responde 400; aquí se comprueba otra vez como invariante.
-        if (RequiereAula(modalidad) && aulaId is null)
+        if (RequiresAula(modalidad) && aulaId is null)
         {
             throw new BusinessRuleException("RN-09", $"Un grupo con modalidad {modalidad} necesita un aula.");
         }
 
-        if (!RequiereAula(modalidad) && aulaId is not null)
+        if (!RequiresAula(modalidad) && aulaId is not null)
         {
             throw new BusinessRuleException("RN-09", "Un grupo virtual no lleva aula.");
         }
 
-        Nrc = NormalizarNrc(nrc);
+        Nrc = NormalizeNrc(nrc);
         CursoId = cursoId;
         ProfesorId = profesorId;
         PeriodoId = periodoId;

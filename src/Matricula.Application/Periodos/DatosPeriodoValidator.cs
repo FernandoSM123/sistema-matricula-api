@@ -1,5 +1,5 @@
 using FluentValidation;
-using Matricula.Domain.Reglas;
+using Matricula.Domain.Rules;
 
 namespace Matricula.Application.Periodos;
 
@@ -23,24 +23,24 @@ public abstract class DatosPeriodoValidator<T> : AbstractValidator<T>
         RuleFor(r => r.FechaLimiteRetiro).NotNull().WithMessage("Ingrese la fecha límite de retiro.");
 
         RuleFor(r => r.FinMatricula)
-            .Must((r, fin) => ReglasPeriodo.MatriculaOrdenada(r.InicioMatricula!.Value, fin!.Value))
-            .WithMessage(ReglasPeriodo.MensajeMatriculaOrdenada)
+            .Must((r, fin) => PeriodoRules.MatriculaInOrder(r.InicioMatricula!.Value, fin!.Value))
+            .WithMessage(PeriodoRules.MatriculaInOrderMessage)
             .When(r => r.InicioMatricula.HasValue && r.FinMatricula.HasValue);
 
         RuleFor(r => r.FinClases)
-            .Must((r, fin) => ReglasPeriodo.ClasesOrdenadas(r.InicioClases!.Value, fin!.Value))
-            .WithMessage(ReglasPeriodo.MensajeClasesOrdenadas)
+            .Must((r, fin) => PeriodoRules.ClasesInOrder(r.InicioClases!.Value, fin!.Value))
+            .WithMessage(PeriodoRules.ClasesInOrderMessage)
             .When(r => r.InicioClases.HasValue && r.FinClases.HasValue);
 
         RuleFor(r => r.FinMatricula)
-            .Must((r, fin) => ReglasPeriodo.MatriculaDentroDeClases(fin!.Value, r.FinClases!.Value))
-            .WithMessage(ReglasPeriodo.MensajeMatriculaDentroDeClases)
+            .Must((r, fin) => PeriodoRules.MatriculaWithinClases(fin!.Value, r.FinClases!.Value))
+            .WithMessage(PeriodoRules.MatriculaWithinClasesMessage)
             .When(r => r.FinMatricula.HasValue && r.FinClases.HasValue);
 
         RuleFor(r => r.FechaLimiteRetiro)
             .Must((r, limite) =>
-                ReglasPeriodo.RetiroDentroDelPeriodo(limite!.Value, r.InicioMatricula!.Value, r.FinClases!.Value))
-            .WithMessage(ReglasPeriodo.MensajeRetiroDentroDelPeriodo)
+                PeriodoRules.RetiroWithinPeriodo(limite!.Value, r.InicioMatricula!.Value, r.FinClases!.Value))
+            .WithMessage(PeriodoRules.RetiroWithinPeriodoMessage)
             .When(r => r.FechaLimiteRetiro.HasValue && r.InicioMatricula.HasValue && r.FinClases.HasValue);
     }
 }

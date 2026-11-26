@@ -113,6 +113,8 @@ Verificaciones que un módulo no pudo hacer por falta de datos o endpoints. Se c
 
     [COR-03](../correcciones/COR-03-contrato-openapi.md) (2026-11-24): las opciones JSON de MVC y de HTTP se configuran en un solo lugar (`OpcionesJson`), con enums como texto y números estrictos, para que el OpenAPI declare `integer` y los valores de cada enum.
 
+    [COR-04](../correcciones/COR-04-nombres-pruebas.md) (2026-11-26): los métodos de prueba pasan a inglés con su descripción en español en el `DisplayName`, y §8.1 de la arquitectura describe la regla de nombres como propia de la API, sin remitir al SPA. Reemplaza §2.8 (métodos) y el supuesto 4 de SPEC-nombres.
+
 15. **Idioma de los nombres** (2026-11-26, corrección `nombres`). El dominio del instituto se nombra en español (entidades y sus propiedades, enums y sus valores, rutas, controllers, carpetas de funcionalidad, mensajes y comentarios) y todo lo técnico en inglés (clases técnicas, métodos, constantes, carpetas técnicas, opciones y sus claves). Los nombres combinados van primero con el dominio (`CursoService`, `CreateCursoRequest`) y los verbos en inglés (`EnrollAsync`). La regla está en `docs/arquitectura.md` §8.1 y las tablas completas de los renombres en [SPEC-nombres](SPEC-nombres.md). No cambian las tablas, el JSON ni las rutas; sí los nombres de los esquemas del OpenAPI y las claves de configuración (ver el README).
 
     **Los documentos históricos conservan los nombres viejos:** las specs, planes y tareas de los módulos ya cerrados y las correcciones COR-01 a COR-03 describen el código como era cuando se escribieron y no se reescriben. Para el nombre actual de algo, ver las tablas de SPEC-nombres.

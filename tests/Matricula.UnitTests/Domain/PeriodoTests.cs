@@ -14,30 +14,30 @@ public class PeriodoTests
     private static Periodo CrearPeriodo(string nombre = "2027-I") =>
         new(nombre, InicioClases, FinClases, InicioMatricula, FinMatricula, LimiteRetiro);
 
-    [Fact]
-    public void Constructor_NombreEnMinusculasConEspacios_LoNormaliza()
+    [Fact(DisplayName = "Un nombre en minúsculas y con espacios se normaliza")]
+    public void Constructor_LowercaseNombreWithSpaces_NormalizesIt()
     {
         var periodo = CrearPeriodo("  2027-i ");
 
         Assert.Equal("2027-I", periodo.Nombre);
     }
 
-    [Fact]
-    public void NormalizeNombre_CapitalizacionDistinta_DevuelveElMismoNombre()
+    [Fact(DisplayName = "Nombres con distinta capitalización se normalizan al mismo valor")]
+    public void NormalizeNombre_DifferentCasing_ReturnsSameNombre()
     {
         Assert.Equal(Periodo.NormalizeNombre("2027-I"), Periodo.NormalizeNombre(" 2027-i "));
     }
 
-    [Theory]
+    [Theory(DisplayName = "Un nombre en blanco lanza una excepción")]
     [InlineData("")]
     [InlineData("   ")]
-    public void NormalizeNombre_NombreEnBlanco_LanzaExcepcion(string nombre)
+    public void NormalizeNombre_BlankNombre_Throws(string nombre)
     {
         Assert.Throws<ArgumentException>(() => Periodo.NormalizeNombre(nombre));
     }
 
-    [Fact]
-    public void Constructor_FechasIncoherentes_LanzaRn16()
+    [Fact(DisplayName = "Crear un periodo con fechas incoherentes lanza RN-16")]
+    public void Constructor_InconsistentDates_ThrowsRn16()
     {
         var excepcion = Assert.Throws<BusinessRuleException>(() =>
             new Periodo("2027-I", FinClases, InicioClases, InicioMatricula, FinMatricula, LimiteRetiro));
@@ -45,8 +45,8 @@ public class PeriodoTests
         Assert.Equal("RN-16", excepcion.Code);
     }
 
-    [Fact]
-    public void Update_DatosNuevos_CambiaTodosLosDatos()
+    [Fact(DisplayName = "Actualizar con datos nuevos cambia todos los datos")]
+    public void Update_NewData_ChangesAllData()
     {
         var periodo = CrearPeriodo();
         var inicioMatricula = new DateOnly(2027, 6, 1);
@@ -65,8 +65,8 @@ public class PeriodoTests
         Assert.Equal(limite, periodo.FechaLimiteRetiro);
     }
 
-    [Fact]
-    public void Update_FechasIncoherentes_LanzaRn16YConservaLosDatos()
+    [Fact(DisplayName = "Actualizar con fechas incoherentes lanza RN-16 y conserva los datos")]
+    public void Update_InconsistentDates_ThrowsRn16AndKeepsData()
     {
         var periodo = CrearPeriodo();
 
@@ -78,29 +78,29 @@ public class PeriodoTests
         Assert.Equal(InicioMatricula, periodo.InicioMatricula);
     }
 
-    [Theory]
+    [Theory(DisplayName = "El rango de matrícula empieza en su fecha de inicio (RN-04)")]
     [InlineData(-1, false)]
     [InlineData(0, true)]
     [InlineData(1, true)]
-    public void IsInMatriculaRange_SegunDiasRespectoAlInicio_DevuelveLoEsperado(int dias, bool esperado)
+    public void IsInMatriculaRange_ByDaysFromStart_ReturnsExpected(int dias, bool esperado)
     {
         Assert.Equal(esperado, CrearPeriodo().IsInMatriculaRange(InicioMatricula.AddDays(dias)));
     }
 
-    [Theory]
+    [Theory(DisplayName = "El rango de matrícula incluye su fecha de fin (RN-04)")]
     [InlineData(-1, true)]
     [InlineData(0, true)]
     [InlineData(1, false)]
-    public void IsInMatriculaRange_SegunDiasRespectoAlFin_DevuelveLoEsperado(int dias, bool esperado)
+    public void IsInMatriculaRange_ByDaysFromEnd_ReturnsExpected(int dias, bool esperado)
     {
         Assert.Equal(esperado, CrearPeriodo().IsInMatriculaRange(FinMatricula.AddDays(dias)));
     }
 
-    [Theory]
+    [Theory(DisplayName = "El retiro se permite hasta la fecha límite inclusive (RN-10)")]
     [InlineData(-1, true)]
     [InlineData(0, true)]
     [InlineData(1, false)]
-    public void AllowsRetiro_SegunDiasRespectoAlLimite_DevuelveLoEsperado(int dias, bool esperado)
+    public void AllowsRetiro_ByDaysFromLimit_ReturnsExpected(int dias, bool esperado)
     {
         Assert.Equal(esperado, CrearPeriodo().AllowsRetiro(LimiteRetiro.AddDays(dias)));
     }

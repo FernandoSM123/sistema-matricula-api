@@ -41,6 +41,7 @@ Corrección transversal de la API, equivalente a `SPEC-nombres` del SPA. No es u
   - `git diff main` de los strings: solo cambian las claves de configuración, los nombres internos de las políticas de rate limit y los nombres de los métodos llamados; los mensajes son los mismos.
   - OpenAPI final: solo los 32 esquemas de §2.6. Migración de prueba vacía. 1104 pruebas en verde.
   - Verificación manual: login, olvido con el correo en smtp4dev, matricular (`201`) y cambiar de grupo (`201`, matrícula 71 → 76), auditoría con las entidades `Matricula` y `Grupo` como antes, y un `500` forzado (columna `aula.ubicacion` renombrada y restaurada) que aparece en `GET /errores` con su `traceId`.
+- 2026-11-26: la corrección [COR-04](../correcciones/COR-04-nombres-pruebas.md) reemplaza §2.8 (métodos) y el supuesto 4: los métodos de prueba pasan a inglés (`Rotate_AlreadyRotatedToken_Throws`) y su descripción en español va en el `DisplayName`. §8.1 de la arquitectura ya no remite al SPA.
 
 ## Objetivo
 

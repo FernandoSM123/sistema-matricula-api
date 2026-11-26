@@ -13,32 +13,32 @@ public class AuditRulesTests
 
     private static List<string> Claves(string json) => [.. Leer(json).EnumerateObject().Select(p => p.Name)];
 
-    [Theory]
+    [Theory(DisplayName = "Las propiedades técnicas se excluyen de la auditoría (RN-46)")]
     [InlineData("Curso", "Id")]
     [InlineData("Curso", "FechaCreacion")]
     [InlineData("Matricula", "FechaModificacion")]
     [InlineData("Usuario", "UltimoIngreso")]
     [InlineData("Usuario", "SecurityStamp")]
     [InlineData("Grupo", "Version")]
-    public void IsExcluded_PropiedadesTecnicas_DevuelveTrue(string entidad, string propiedad)
+    public void IsExcluded_TechnicalProperties_ReturnsTrue(string entidad, string propiedad)
     {
         Assert.True(AuditRules.IsExcluded(entidad, propiedad));
     }
 
-    [Theory]
+    [Theory(DisplayName = "Las propiedades de negocio no se excluyen de la auditoría")]
     [InlineData("Curso", "Nombre")]
     [InlineData("Grupo", "CuposOcupados")]
     [InlineData("Usuario", "Activo")]
     [InlineData("Usuario", "PasswordHash")]
     [InlineData("Curso", "Version")]
     [InlineData("Estudiante", "SecurityStamp")]
-    public void IsExcluded_PropiedadesDeNegocio_DevuelveFalse(string entidad, string propiedad)
+    public void IsExcluded_BusinessProperties_ReturnsFalse(string entidad, string propiedad)
     {
         Assert.False(AuditRules.IsExcluded(entidad, propiedad));
     }
 
-    [Fact]
-    public void Values_Creacion_ExcluyeTecnicasYUsaCamelCase()
+    [Fact(DisplayName = "Los valores de una creación excluyen las propiedades técnicas y usan camelCase")]
+    public void Values_Creation_ExcludesTechnicalAndUsesCamelCase()
     {
         var json = AuditRules.Values(nameof(Curso),
         [
@@ -54,14 +54,14 @@ public class AuditRulesTests
         Assert.Equal(40, Leer(json).GetProperty("duracionHoras").GetInt32());
     }
 
-    [Fact]
-    public void Values_SinPropiedadesAuditables_DevuelveObjetoVacio()
+    [Fact(DisplayName = "Sin propiedades auditables los valores son un objeto vacío")]
+    public void Values_NoAuditableProperties_ReturnsEmptyObject()
     {
         Assert.Equal("{}", AuditRules.Values(nameof(Curso), [Par("Id", 1)]));
     }
 
-    [Fact]
-    public void Values_EnumsYFechas_SeGuardanComoTextoIso()
+    [Fact(DisplayName = "Los enums se guardan como texto y las fechas en formato ISO")]
+    public void Values_EnumsAndDates_StoredAsIsoText()
     {
         var json = AuditRules.Values(nameof(Matricula),
         [
@@ -76,8 +76,8 @@ public class AuditRulesTests
         Assert.Equal(JsonValueKind.Null, raiz.GetProperty("motivoRetiro").ValueKind);
     }
 
-    [Fact]
-    public void Values_HorasYMarcasDeTiempo_SeGuardanEnIso()
+    [Fact(DisplayName = "Las horas y las marcas de tiempo se guardan en formato ISO")]
+    public void Values_TimesAndTimestamps_StoredAsIso()
     {
         var json = AuditRules.Values(nameof(Horario),
         [
@@ -89,10 +89,10 @@ public class AuditRulesTests
         Assert.Equal("2026-11-10T15:04:05+00:00", Leer(json).GetProperty("marca").GetString());
     }
 
-    [Theory]
+    [Theory(DisplayName = "Un secreto con valor se enmascara (RN-44)")]
     [InlineData("PasswordHash")]
     [InlineData("TempPasswordHash")]
-    public void Values_SecretoConValor_SeEnmascara(string propiedad)
+    public void Values_SecretWithValue_IsMasked(string propiedad)
     {
         var json = AuditRules.Values(nameof(Usuario), [Par(propiedad, "AQAAAAIAAYagAAAAEsecreto")]);
 
@@ -100,24 +100,24 @@ public class AuditRulesTests
         Assert.Equal(AuditRules.Mask, Leer(json).GetProperty(JsonNamingPolicy.CamelCase.ConvertName(propiedad)).GetString());
     }
 
-    [Fact]
-    public void Values_SecretoSinValor_QuedaNulo()
+    [Fact(DisplayName = "Un secreto sin valor queda nulo")]
+    public void Values_SecretWithoutValue_StaysNull()
     {
         var json = AuditRules.Values(nameof(Usuario), [Par("TempPasswordHash", null)]);
 
         Assert.Equal(JsonValueKind.Null, Leer(json).GetProperty("tempPasswordHash").ValueKind);
     }
 
-    [Fact]
-    public void Values_MismoNombreEnOtraEntidad_NoSeEnmascara()
+    [Fact(DisplayName = "Una propiedad con el nombre de un secreto en otra entidad no se enmascara")]
+    public void Values_SameNameInOtherEntity_IsNotMasked()
     {
         var json = AuditRules.Values(nameof(Curso), [Par("PasswordHash", "visible")]);
 
         Assert.Equal("visible", Leer(json).GetProperty("passwordHash").GetString());
     }
 
-    [Fact]
-    public void Differences_Modificacion_SoloIncluyeLasQueCambiaron()
+    [Fact(DisplayName = "Una modificación solo incluye las propiedades que cambiaron")]
+    public void Differences_Modification_IncludesOnlyChanged()
     {
         var json = AuditRules.Differences(nameof(Matricula),
         [
@@ -136,28 +136,28 @@ public class AuditRulesTests
         Assert.Equal("2026-11-10", fechaRetiro.GetProperty("despues").GetString());
     }
 
-    [Fact]
-    public void Differences_SoloCambiaUltimoIngreso_DevuelveNull()
+    [Fact(DisplayName = "Si solo cambia el último ingreso no hay diferencias (RN-46)")]
+    public void Differences_OnlyUltimoIngresoChanges_ReturnsNull()
     {
         Assert.Null(AuditRules.Differences(nameof(Usuario),
             [new("UltimoIngreso", null, DateTimeOffset.UnixEpoch)]));
     }
 
-    [Fact]
-    public void Differences_SoloCambiaSecurityStamp_DevuelveNull()
+    [Fact(DisplayName = "Si solo cambia el SecurityStamp no hay diferencias (RN-46)")]
+    public void Differences_OnlySecurityStampChanges_ReturnsNull()
     {
         Assert.Null(AuditRules.Differences(nameof(Usuario),
             [new("SecurityStamp", "a", "b"), new("FechaModificacion", null, DateTimeOffset.UnixEpoch)]));
     }
 
-    [Fact]
-    public void Differences_AsignacionAlMismoValor_DevuelveNull()
+    [Fact(DisplayName = "Asignar el mismo valor no genera diferencias")]
+    public void Differences_AssignmentToSameValue_ReturnsNull()
     {
         Assert.Null(AuditRules.Differences(nameof(Curso), [new("Nombre", "Excel", "Excel")]));
     }
 
-    [Fact]
-    public void Differences_CambioDeContrasena_EnmascaraAmbosValores()
+    [Fact(DisplayName = "Un cambio de contraseña enmascara el valor anterior y el nuevo (RN-44)")]
+    public void Differences_PasswordChange_MasksBothValues()
     {
         var json = AuditRules.Differences(nameof(Usuario), [new("PasswordHash", "AQAAAAhashViejo", "AQAAAAhashNuevo")]);
 
@@ -168,8 +168,8 @@ public class AuditRulesTests
         Assert.Equal(AuditRules.Mask, cambio.GetProperty("despues").GetString());
     }
 
-    [Fact]
-    public void Differences_TemporalAnulada_MuestraEnmascaradoANulo()
+    [Fact(DisplayName = "Al anular la temporal se muestra el paso de enmascarado a nulo")]
+    public void Differences_TemporaryPasswordCleared_ShowsMaskedToNull()
     {
         var json = AuditRules.Differences(nameof(Usuario), [new("TempPasswordHash", "AQAAAAtemporal", null)]);
 
@@ -179,22 +179,22 @@ public class AuditRulesTests
         Assert.Equal(JsonValueKind.Null, cambio.GetProperty("despues").ValueKind);
     }
 
-    [Fact]
-    public void AuditedEntities_SonLasDiezEntidadesDelDominio()
+    [Fact(DisplayName = "Las entidades auditadas son las diez del dominio")]
+    public void AuditedEntities_AreTheTenDomainEntities()
     {
         Assert.Equal(
             ["Administrador", "Aula", "Curso", "Estudiante", "Grupo", "Horario", "Matricula", "Periodo", "Profesor", "Usuario"],
             AuditRules.AuditedEntities);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Buscar una entidad sin distinguir mayúsculas devuelve su nombre exacto")]
     [InlineData("Matricula", "Matricula")]
     [InlineData("matricula", "Matricula")]
     [InlineData(" GRUPO ", "Grupo")]
     [InlineData("RegistroAuditoria", null)]
     [InlineData("Inexistente", null)]
     [InlineData(null, null)]
-    public void FindEntity_SinDistinguirMayusculas_DevuelveElNombreExacto(string? nombre, string? esperado)
+    public void FindEntity_CaseInsensitive_ReturnsExactName(string? nombre, string? esperado)
     {
         Assert.Equal(esperado, AuditRules.FindEntity(nombre));
     }

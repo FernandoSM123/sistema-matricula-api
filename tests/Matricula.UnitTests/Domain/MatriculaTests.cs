@@ -9,8 +9,8 @@ public class MatriculaTests
 {
     private static readonly DateOnly Hoy = new(2027, 2, 15);
 
-    [Fact]
-    public void Constructor_DatosValidos_CreaActivaSinRetiro()
+    [Fact(DisplayName = "Crear una matrícula con datos válidos la deja activa y sin retiro")]
+    public void Constructor_ValidData_CreatesActivaWithoutRetiro()
     {
         var matricula = new MatriculaEntidad(estudianteId: 7, grupoId: 9, Hoy);
 
@@ -22,11 +22,11 @@ public class MatriculaTests
         Assert.Null(matricula.MotivoRetiro);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Retirar una matrícula activa asigna el estado, la fecha y el motivo")]
     [InlineData(MotivoRetiro.RetiroVoluntario)]
     [InlineData(MotivoRetiro.CambioGrupo)]
     [InlineData(MotivoRetiro.CancelacionGrupo)]
-    public void Withdraw_MatriculaActiva_AsignaEstadoFechaYMotivo(MotivoRetiro motivo)
+    public void Withdraw_ActiveMatricula_SetsEstadoFechaAndMotivo(MotivoRetiro motivo)
     {
         var matricula = new MatriculaEntidad(7, 9, Hoy);
         var fecha = Hoy.AddDays(10);
@@ -39,8 +39,8 @@ public class MatriculaTests
         Assert.Equal(Hoy, matricula.FechaMatricula);
     }
 
-    [Fact]
-    public void Withdraw_MatriculaYaRetirada_LanzaRf52YConservaElPrimerRetiro()
+    [Fact(DisplayName = "Retirar una matrícula ya retirada lanza RF-52 y conserva el primer retiro")]
+    public void Withdraw_AlreadyWithdrawnMatricula_ThrowsRf52AndKeepsFirstRetiro()
     {
         var matricula = new MatriculaEntidad(7, 9, Hoy);
         matricula.Withdraw(Hoy.AddDays(1), MotivoRetiro.RetiroVoluntario);

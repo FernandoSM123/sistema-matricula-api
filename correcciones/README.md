@@ -27,3 +27,4 @@ Si un ajuste cambia el alcance de un módulo, también se anota en el historial 
 | [COR-01](COR-01-brechas-frontend.md) | Brechas detectadas al planear el frontend | 2026-11-17 | Cerrado | 3 completados, 1 descartado |
 | [COR-02](COR-02-encabezados-cors.md) | Encabezados de respuesta que el frontend no puede leer por CORS | 2026-11-23 | Cerrado | 2 completados |
 | [COR-03](COR-03-contrato-openapi.md) | El OpenAPI declara mal los números y los enums | 2026-11-24 | Cerrado | 3 completados |
+| [COR-04](COR-04-nombres-pruebas.md) | Nombres de las pruebas unitarias en inglés, con descripción en español | 2026-11-26 | Cerrado | 2 completados |

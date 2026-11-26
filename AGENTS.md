@@ -38,6 +38,7 @@ Entorno: PostgreSQL y smtp4dev instalados localmente; **no se usa Docker** (el `
   - En español, el dominio del instituto: entidades y sus propiedades (columnas y JSON), enums y sus valores, rutas, controllers (dan la ruta), carpetas de funcionalidad, mensajes, comentarios y descripciones de las pruebas.
   - En inglés, todo lo demás: clases técnicas, métodos, constantes, carpetas técnicas, opciones y sus claves.
   - Combinados, primero el dominio y después lo técnico (`CursoService`, `GrupoDetailResponse`, `CreateCursoRequest`); verbos en inglés (`EnrollAsync`, `ChangeGrupoAsync`).
+  - Pruebas: el método en inglés, `Metodo_Escenario_Resultado` (`Rotate_AlreadyRotatedToken_Throws`), y su descripción en español en el `DisplayName` del `[Fact]` o `[Theory]` (COR-04).
 - DTOs de entrada/salida; las entidades nunca salen de Application.
 - Errores como `ProblemDetails` con `code` de la regla (`"RN-05"`); `BusinessRuleException` → 409.
 - `async` + `CancellationToken` de punta a punta; `TimeProvider` en lugar de `DateTime.Now`; `ILocalClock.Today()` para la fecha de hoy (zona de `Institute:TimeZone`), nunca la fecha UTC.

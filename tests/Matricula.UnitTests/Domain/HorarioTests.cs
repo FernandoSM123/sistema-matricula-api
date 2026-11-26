@@ -9,8 +9,8 @@ public class HorarioTests
     private static Horario CrearHorario(DiaSemana dia, int horaInicio, int horaFin) =>
         new(dia, new TimeOnly(horaInicio, 0), new TimeOnly(horaFin, 0));
 
-    [Fact]
-    public void Constructor_DatosValidos_AsignaLosDatos()
+    [Fact(DisplayName = "Crear un bloque con datos válidos asigna sus datos")]
+    public void Constructor_ValidData_AssignsData()
     {
         var horario = CrearHorario(DiaSemana.Miercoles, 18, 21);
 
@@ -19,18 +19,18 @@ public class HorarioTests
         Assert.Equal(new TimeOnly(21, 0), horario.HoraFin);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Un fin que no es posterior al inicio lanza RN-15")]
     [InlineData(10, 10)]
     [InlineData(10, 8)]
-    public void Constructor_FinNoPosteriorAlInicio_LanzaRn15(int horaInicio, int horaFin)
+    public void Constructor_EndNotAfterStart_ThrowsRn15(int horaInicio, int horaFin)
     {
         var excepcion = Assert.Throws<BusinessRuleException>(() => CrearHorario(DiaSemana.Lunes, horaInicio, horaFin));
 
         Assert.Equal("RN-15", excepcion.Code);
     }
 
-    [Fact]
-    public void OverlapsWith_TraslapeParcial_DevuelveTrue()
+    [Fact(DisplayName = "Un traslape parcial se detecta (RN-14)")]
+    public void OverlapsWith_PartialOverlap_ReturnsTrue()
     {
         var a = CrearHorario(DiaSemana.Lunes, 8, 10);
         var b = CrearHorario(DiaSemana.Lunes, 9, 11);
@@ -39,8 +39,8 @@ public class HorarioTests
         Assert.True(b.OverlapsWith(a));
     }
 
-    [Fact]
-    public void OverlapsWith_BloquesContiguos_DevuelveFalse()
+    [Fact(DisplayName = "Dos bloques contiguos no se traslapan")]
+    public void OverlapsWith_ContiguousBlocks_ReturnsFalse()
     {
         var a = CrearHorario(DiaSemana.Lunes, 8, 10);
         var b = CrearHorario(DiaSemana.Lunes, 10, 12);
@@ -48,8 +48,8 @@ public class HorarioTests
         Assert.False(a.OverlapsWith(b));
     }
 
-    [Fact]
-    public void OverlapsWith_DiasDistintos_DevuelveFalse()
+    [Fact(DisplayName = "Dos bloques de días distintos no se traslapan")]
+    public void OverlapsWith_DifferentDays_ReturnsFalse()
     {
         var a = CrearHorario(DiaSemana.Lunes, 8, 10);
         var b = CrearHorario(DiaSemana.Jueves, 8, 10);

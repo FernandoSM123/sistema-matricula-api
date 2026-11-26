@@ -4,7 +4,7 @@ Corrección transversal de la API, equivalente a `SPEC-nombres` del SPA. No es u
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/nombres/plan.md) | [Aprobadas](../tasks/nombres/todo.md) | 6/7 tareas |
+| **Aprobada** | [Aprobado](../tasks/nombres/plan.md) | [Aprobadas](../tasks/nombres/todo.md) | 7/7 tareas |
 
 **Historial:**
 - 2026-11-26: v1 en revisión. Parte del análisis de factibilidad hecho a pedido del usuario: el renombre es viable, no toca la BD y solo cambia el contrato en los nombres de los esquemas del OpenAPI (§2.6).
@@ -35,6 +35,12 @@ Corrección transversal de la API, equivalente a `SPEC-nombres` del SPA. No es u
   - Las claves de user-secrets del entorno de desarrollo se renombraron con `dotnet user-secrets`, sin mostrar sus valores. El README explica el paso manual.
   - Verificado: sin `Jwt:Key` la API no arranca y el error la nombra. Valores inválidos de `Institute:TimeZone`, `ErrorLog:RetentionDays` y `TestData:Cursos` fallan con la clave nueva. Con las claves renombradas arranca, la siembra lee `TestData:Enabled` (BD con datos: no siembra), las cuentas de prueba entran con `TestData:Password`, la depuración usa `ErrorLog:RetentionDays` = 30 y el correo sale con `Smtp:SenderEmail`.
   - BD recreada (`database drop` + `update`, con la aprobación del usuario): la siembra completa crea el administrador inicial, 8 cursos, 5 aulas, 3 periodos, 6 profesores, 30 estudiantes, 15 grupos en todos sus estados y 74 matrículas con cambio de grupo; el admin y las cuentas de prueba entran con `TestData:Password`.
+- 2026-11-26: T7 completada: la corrección queda **completada**, con los 7 criterios de éxito cumplidos.
+  - `docs/arquitectura.md`, `AGENTS.md` y los comentarios de `Matricula.Api.http` usan los nombres y claves nuevos. El mapa suma la decisión 15 (regla de nombres) y la nota de que los documentos históricos conservan los nombres viejos. `SPEC-sesiones` y sus tareas ya usaban los nombres nuevos.
+  - Búsqueda de los nombres viejos en `src/`, `tests/`, `appsettings*.json`, `secrets.example.json`, `AGENTS.md`, `docs/arquitectura.md` y `README.md`: solo quedan palabras en prosa de comentarios y el aviso del README, que nombra las claves viejas a propósito para el paso manual.
+  - `git diff main` de los strings: solo cambian las claves de configuración, los nombres internos de las políticas de rate limit y los nombres de los métodos llamados; los mensajes son los mismos.
+  - OpenAPI final: solo los 32 esquemas de §2.6. Migración de prueba vacía. 1104 pruebas en verde.
+  - Verificación manual: login, olvido con el correo en smtp4dev, matricular (`201`) y cambiar de grupo (`201`, matrícula 71 → 76), auditoría con las entidades `Matricula` y `Grupo` como antes, y un `500` forzado (columna `aula.ubicacion` renombrada y restaurada) que aparece en `GET /errores` con su `traceId`.
 
 ## Objetivo
 

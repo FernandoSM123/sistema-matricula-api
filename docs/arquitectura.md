@@ -39,20 +39,20 @@ Este documento fija las pautas de arquitectura y las buenas prácticas para la A
 - `Enums/`: `EstadoGrupo`, `Modalidad`, `EstadoMatricula`, `Rol`, `NivelCurso`…
 - `Exceptions/`: `BusinessRuleException(code, mensaje)`.
 - Métodos con reglas que solo dependen del propio objeto, por ejemplo:
-  - `Grupo.CambiarEstado()` (transiciones de RF-47)
-  - `Horario.SeTraslapaCon()` (RN-14)
-  - `Periodo.EnRangoMatricula()`
-  - `Matricula.Retirar()`
+  - `Grupo.ChangeEstado()` (transiciones de RF-47)
+  - `Horario.OverlapsWith()` (RN-14)
+  - `Periodo.IsInMatriculaRange()`
+  - `Matricula.Withdraw()`
 
 **Matricula.Application**: aquí vive la lógica de negocio. Depende de Domain y del paquete EF Core, este último solo para usar LINQ asíncrono.
-- `Abstractions/`: las interfaces que implementa Infrastructure: `IAppDbContext`, `IEmailSender`, `ICurrentUser`.
+- `Abstractions/`: las interfaces que implementa Infrastructure: `IAppDbContext`, `IEmailSender`, `ICurrentUser`, `ILocalClock`, `IErrorRecorder`, `ITokenGenerator`, `IPasswordHashService`, `IPasswordGenerator`.
 - `<Funcionalidad>/` (por ejemplo, `Matriculas/`), con:
   - `MatriculaService`: un método por caso de uso.
     - **Consulta y guarda** a través de `IAppDbContext`.
     - **Valida las reglas que necesitan datos** de la BD: cupo, traslapes, duplicados, permisos sobre el recurso.
     - Invoca los métodos del dominio.
     - Envía correos.
-  - DTOs: `MatricularRequest`, `MatriculaResponse`…
+  - DTOs: `EnrollRequest`, `MatriculaResponse`…
   - Validadores de FluentValidation para el formato de los DTOs de entrada.
 - `Common/`: excepciones de aplicación (`NotFoundException`, `ConflictException`, `ForbiddenException`) y paginación.
 - `DependencyInjection.cs`: `AddApplication()` registra los servicios y validadores.
@@ -61,10 +61,10 @@ Este documento fija las pautas de arquitectura y las buenas prácticas para la A
 - `Persistence/AppDbContext.cs`: el `DbContext` de EF Core. Implementa `IAppDbContext`.
 - `Persistence/Configurations/`: un `IEntityTypeConfiguration<T>` por entidad, con el mapeo (tablas, longitudes, índices únicos, relaciones, token de concurrencia `xmin`).
 - `Persistence/Migrations/` e `Interceptors/` (fechas de creación y modificación).
-- `Persistence/Auditoria/`: la captura de los cambios para la auditoría (RF-56), que usa `AppDbContext.SaveChangesAsync` (ver §5.1).
-- `Persistence/Errores/`: el registro de los errores inesperados (RF-58), con un `AppDbContext` de un scope aparte, y la depuración de los antiguos (RN-49) (ver §5.2).
+- `Persistence/Audit/`: la captura de los cambios para la auditoría (RF-56), que usa `AppDbContext.SaveChangesAsync` (ver §5.1).
+- `Persistence/ErrorLog/`: el registro de los errores inesperados (RF-58), con un `AppDbContext` de un scope aparte, y la depuración de los antiguos (RN-49) (ver §5.2).
 - `Email/`: `SmtpEmailSender` (MailKit), que implementa `IEmailSender`.
-- Generador de contraseñas temporales y seed del administrador inicial.
+- `Security/` (generador de contraseñas temporales y hash), `Time/` (fecha local), `Seed/` (administrador inicial) y `Seed/TestData/` (datos de prueba).
 - `DependencyInjection.cs`: `AddInfrastructure()` registra el `DbContext`, el correo y las opciones.
 
 **Matricula.Api**: entrada HTTP. Depende de Application, y de Infrastructure solo para el registro en `Program.cs`.
@@ -83,7 +83,7 @@ Infrastructure implementa las interfaces definidas en Application (inversión de
 
 ### 2.4 Flujo de una petición (ej. matricular)
 1. `MatriculasController` recibe el `POST`. `ValidationFilter` valida el formato del DTO y, si falla, responde `400`.
-2. `MatriculaService.MatricularAsync()` carga el estudiante y el grupo con `IAppDbContext`, valida RN-01 a RN-06 y crea la `Matricula`.
+2. `MatriculaService.EnrollAsync()` carga el estudiante y el grupo con `IAppDbContext`, valida RN-01 a RN-06 y crea la `Matricula`.
 3. `SaveChangesAsync()` persiste los cambios a través de `AppDbContext` en PostgreSQL.
 4. Si una regla falla, se lanza una `BusinessRuleException`, que `GlobalExceptionHandler` convierte en un `409` con `"code": "RN-xx"`.
 
@@ -107,8 +107,8 @@ Infrastructure implementa las interfaces definidas en Application (inversión de
 - **Códigos HTTP coherentes:** `200` · `201` + `Location` al crear · `204` sin contenido · `400` validación · `401` sin sesión · `403` sin permiso o con cambio de contraseña pendiente · `404` · `409` choque con una regla de negocio, un dato duplicado o concurrencia.
 - **Errores con `ProblemDetails` (RFC 9457)** en todas las respuestas, con una extensión `code` que referencie la regla, por ejemplo `"code": "RN-05"`, más un mensaje legible. Esto cubre el requisito de "mensajes claros".
 - **Paginación estándar:** `?page=1&pageSize=20&search=...&incluirInactivos=false&orden=nombre`. La respuesta es `{ items, page, pageSize, totalCount }`. Pon un `pageSize` máximo (por ejemplo, 100).
-- **DTOs separados** para entrada y salida (`CrearGrupoRequest`, `GrupoResponse`, `GrupoDetalleResponse`). **Nunca expongas las entidades.** Haz el mapeo a mano o con métodos de extensión.
-- **Tipos:** `DateOnly` para fechas, `TimeOnly` para las horas del horario, `DateTimeOffset`/UTC para marcas de tiempo. Serializa los enums como string (`JsonStringEnumConverter`) y lee los números en modo estricto (`JsonNumberHandling.Strict`). La configuración vive en `OpcionesJson` y se aplica a las opciones de MVC y a las HTTP (`ConfigureHttpJsonOptions`), porque el generador del OpenAPI lee estas últimas; si difieren, el contrato no coincide con la API (COR-03).
+- **DTOs separados** para entrada y salida (`CreateGrupoRequest`, `GrupoResponse`, `GrupoDetailResponse`). **Nunca expongas las entidades.** Haz el mapeo a mano o con métodos de extensión.
+- **Tipos:** `DateOnly` para fechas, `TimeOnly` para las horas del horario, `DateTimeOffset`/UTC para marcas de tiempo. Serializa los enums como string (`JsonStringEnumConverter`) y lee los números en modo estricto (`JsonNumberHandling.Strict`). La configuración vive en `JsonSettings` y se aplica a las opciones de MVC y a las HTTP (`ConfigureHttpJsonOptions`), porque el generador del OpenAPI lee estas últimas; si difieren, el contrato no coincide con la API (COR-03).
 - Versionado: basta con el prefijo `/api/v1` desde el inicio; no hace falta una librería de versionado.
 
 ### 3.1 Documentación de la API: OpenAPI y Scalar
@@ -136,13 +136,13 @@ Son dos piezas distintas que trabajan juntas.
 ## 4. Buenas prácticas de .NET
 - `<Nullable>enable</Nullable>`, `ImplicitUsings`, y advertencias como errores en un `Directory.Build.props` común. Añade un `.editorconfig`.
 - **Async en todo** y propaga `CancellationToken` desde el controller hasta EF.
-- **Options pattern** para la configuración tipada: `JwtOptions`, `SmtpOptions`, `AdminSeedOptions`, `PasswordPolicyOptions`. Los secretos van en **user-secrets** o en variables de entorno, nunca en `appsettings.json`.
+- **Options pattern** para la configuración tipada: `JwtOptions`, `SmtpOptions`, `AdminSeedOptions`, `InstituteOptions`, `ErrorLogOptions`, `TestDataOptions`. Los secretos van en **user-secrets** o en variables de entorno, nunca en `appsettings.json`.
 - **Manejo global de errores** con `IExceptionHandler` + `AddProblemDetails()`. Excepciones propias y pocas: `NotFoundException`, `BusinessRuleException(code, mensaje)`, `ConflictException` y `ForbiddenException`. Cada una se mapea a un status. *(Alternativa: un `Result<T>`. Las excepciones son más simples para este tamaño.)*
 - **Validación en dos niveles:**
   - FluentValidation revisa el formato del DTO: obligatorios, longitudes, política de contraseña RN-26, `HoraFin > HoraInicio` RN-15 y fechas RN-16.
   - El **servicio** revisa las reglas que necesitan la BD: cupo, traslapes y duplicados.
 - **Tiempo testeable:** inyecta `TimeProvider` en lugar de usar `DateTime.Now`. Lo necesitan los vencimientos de las temporales y las marcas de tiempo, que van en UTC.
-- **Fecha de hoy:** las comparaciones con fechas sin hora (RN-04, RN-10, periodo vigente) usan `IFechaLocal.Hoy()`, que convierte la hora de `TimeProvider` a la zona de `Instituto:ZonaHoraria` (`America/Costa_Rica`). Nunca calcules la fecha de hoy desde UTC: desde las 18:00 en Costa Rica ya sería el día siguiente.
+- **Fecha de hoy:** las comparaciones con fechas sin hora (RN-04, RN-10, periodo vigente) usan `ILocalClock.Today()`, que convierte la hora de `TimeProvider` a la zona de `Institute:TimeZone` (`America/Costa_Rica`). Nunca calcules la fecha de hoy desde UTC: desde las 18:00 en Costa Rica ya sería el día siguiente.
 - Logging con `ILogger<T>` y mensajes estructurados. Serilog es opcional. **Nunca registres contraseñas ni temporales.** El log sigue siendo el respaldo del registro de errores (§5.2): todo error inesperado se escribe primero en el log y después en la tabla.
 - Ciclos de vida en la inyección de dependencias: el `DbContext` y los servicios son `Scoped`; `TimeProvider` y el generador de contraseñas, `Singleton`.
 - Health check (`/health`), CORS configurado para el front y **rate limiting** integrado en `login` y `olvido-contrasena`. La política CORS expone `Retry-After` (del `429`) y `Location` (del `201`), porque el navegador no deja leerlos desde otro origen si no se declaran (COR-02).
@@ -200,7 +200,7 @@ Así la auditoría y el cambio se guardan juntos o no se guarda ninguno (RN-42).
 - **Inmutable (RN-43) a nivel de aplicación:** `IAppDbContext` expone los registros solo como `IQueryable` y no hay endpoints que los modifiquen o eliminen. La base de datos no los protege (ni `REVOKE` ni triggers): en desarrollo la API se conecta como superusuario, que ignora los permisos, y por ahora se acepta que alguien con acceso directo a la BD pueda alterarlos (decisión 11 del mapa).
 - **Índices** para los filtros de RF-57: `(entidad, entidad_id)`, `(usuario_id)` y `(fecha)`.
 - **Consulta:** `AuditoriaService` en Application lee la tabla con `IAppDbContext`, proyecta a un DTO y pagina como los demás listados. El JSON de `Cambios` se devuelve como un objeto, no como texto.
-- **Fechas del filtro:** `desde` y `hasta` son `DateOnly` en la fecha local del instituto (decisión 9 del mapa). El servicio las convierte a un rango UTC `[desde 00:00, hasta + 1 día 00:00)` en la zona de `Instituto:ZonaHoraria`.
+- **Fechas del filtro:** `desde` y `hasta` son `DateOnly` en la fecha local del instituto (decisión 9 del mapa). El servicio las convierte a un rango UTC `[desde 00:00, hasta + 1 día 00:00)` en la zona de `Institute:TimeZone`.
 
 ### 5.2 Registro de errores (RF-58, RF-59, RN-47 a RN-49)
 Complementa el log, no lo reemplaza: los errores inesperados quedan en una tabla que el administrador consulta desde la API y que se relaciona con la auditoría por el identificador de operación. A diferencia de la auditoría, **no** se guarda en la misma transacción que la operación, porque esa transacción es justamente la que falló.
@@ -217,8 +217,8 @@ Complementa el log, no lo reemplaza: los errores inesperados quedan en una tabla
 **Cómo funciona:**
 1. Dos puntos de captura, explícitos:
    - `GlobalExceptionHandler`, en la rama `500`, después del `LogError` que ya existe.
-   - `EnvioCorreos`, en el `catch` del envío, después de su `LogError`.
-2. Ambos llaman a `IRegistroErrores.RegistrarAsync(...)`, una interfaz de Application que implementa Infrastructure.
+   - `EmailDispatcher`, en el `catch` del envío, después de su `LogError`.
+2. Ambos llaman a `IErrorRecorder.RecordAsync(...)`, una interfaz de Application que implementa Infrastructure.
 3. La implementación abre un **scope nuevo** con un `AppDbContext` propio, agrega el `RegistroError` y guarda. Como `RegistroError` no hereda de `EntidadBase`, la auditoría no lo captura.
 4. **Nunca lanza excepciones (RN-48):** usa un timeout corto en lugar del token de la petición, y si algo falla escribe un `LogWarning` y sigue. La respuesta al usuario no cambia.
 
@@ -233,15 +233,15 @@ Complementa el log, no lo reemplaza: los errores inesperados quedan en una tabla
 - **Nunca** se guardan el body, los headers (en especial `Authorization`) ni el query string (RN-47). La cadena de conexión no activa `Include Error Detail`, para que los mensajes de PostgreSQL no traigan valores de las filas.
 - Solo se registran los `500` y los fallos de correo. Los `4xx` son respuestas esperadas y no se registran. Una petición cancelada por el cliente tampoco.
 - `IAppDbContext` expone los registros solo como `IQueryable` (RN-49): Application no puede agregarlos, modificarlos ni eliminarlos.
-- **Depuración (RN-49):** un `BackgroundService` de Infrastructure se ejecuta al arrancar y luego cada 24 horas. Elimina con `ExecuteDeleteAsync` los registros con `Fecha` anterior a hoy − `Errores:DiasRetencion` (90 por defecto). Captura sus propias excepciones y solo las registra en el log, para no detener la aplicación.
+- **Depuración (RN-49):** un `BackgroundService` de Infrastructure (`ErrorLogPurgeService`) se ejecuta al arrancar y luego cada 24 horas. Elimina con `ExecuteDeleteAsync` los registros con `Fecha` anterior a hoy − `ErrorLog:RetentionDays` (90 por defecto). Captura sus propias excepciones y solo las registra en el log, para no detener la aplicación.
 - **Índices:** `(fecha)` para el orden, el filtro por fechas y la depuración, y `(trace_id)` para la búsqueda por operación.
 - Los errores al arrancar (seed, migraciones sin aplicar) quedan solo en el log.
 
 ## 6. Modelo de dominio (nivel de "inteligencia")
 Entidades mayormente simples, con **un poco de comportamiento donde aporta**:
-- `Grupo.CambiarEstado(nuevo)` valida las transiciones de RF-47 (Planificado → Abierto → Cerrado → En curso → Finalizado, y Cancelado desde cualquier estado salvo Finalizado).
-- `Horario.SeTraslapaCon(otro)` implementa RN-14: mismo día y `a.Inicio < b.Fin && b.Inicio < a.Fin`.
-- `Periodo` con métodos `EnRangoMatricula(fecha)` y `PermiteRetiro(fecha)`.
+- `Grupo.ChangeEstado(nuevo)` valida las transiciones de RF-47 (Planificado → Abierto → Cerrado → En curso → Finalizado, y Cancelado desde cualquier estado salvo Finalizado).
+- `Horario.OverlapsWith(otro)` implementa RN-14: mismo día y `a.Inicio < b.Fin && b.Inicio < a.Fin`.
+- `Periodo` con métodos `IsInMatriculaRange(fecha)` y `AllowsRetiro(fecha)`.
 - `Matricula.Retirar(fecha, motivo)`.
 
 Así las reglas puras se prueban con tests unitarios sin BD, y los servicios orquestan.

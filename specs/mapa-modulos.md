@@ -38,7 +38,7 @@
 
 | Corrección | Spec | Plan | Tareas | Avance | Estado |
 |---|---|---|---|---|---|
-| `nombres` | [Aprobada](SPEC-nombres.md) | [Aprobado](../tasks/nombres/plan.md) | [Aprobadas](../tasks/nombres/todo.md) | 6/7 | En implementación |
+| `nombres` | [Aprobada](SPEC-nombres.md) | [Aprobado](../tasks/nombres/plan.md) | [Aprobadas](../tasks/nombres/todo.md) | 7/7 | Completado |
 
 **Estados de un documento** (spec, plan o lista de tareas):
 - **Borrador:** se está escribiendo.
@@ -79,7 +79,7 @@ Verificaciones que un módulo no pudo hacer por falta de datos o endpoints. Se c
 6. **Datos personales de los administradores** (2026-10-19). Los administradores tienen su propia entidad `Administrador` (cédula, nombre, apellidos, teléfono), igual que `Estudiante` y `Profesor`, ligada 1:1 a su `Usuario` (§5.4 y RF-55 de los requerimientos). La cédula es única dentro de cada tabla (`estudiante`, `profesor`, `administrador`), no entre ellas.
 7. **El correo vive solo en `Usuario`** (2026-10-19, RN-31). `Estudiante`, `Profesor` y `Administrador` no tienen columna de correo: lo leen de su cuenta, y editar el correo de la persona actualiza su `Usuario`. Así no hay que sincronizar dos copias.
 8. **El rol de una cuenta no cambia** (2026-10-19, RN-31). No hay cambio de rol en ningún módulo. Si una persona pasa a cumplir otro rol, se le crea una cuenta nueva (con otro correo) y el registro de persona de ese rol; la cuenta anterior se desactiva si deja de cumplirlo. RN-20 y RN-30 ya no mencionan el cambio de rol.
-9. **"Hoy" es la fecha local del instituto** (2026-11-02). Las comparaciones con fechas sin hora (periodo vigente, RN-04, RN-10, fecha de registro, fecha de nacimiento) usan `IFechaLocal.Hoy()`, que aplica la zona de `Instituto:ZonaHoraria` (`America/Costa_Rica`). Ningún módulo calcula la fecha de hoy desde UTC. Las marcas de tiempo siguen en UTC. Se implementa en `catalogos`.
+9. **"Hoy" es la fecha local del instituto** (2026-11-02). Las comparaciones con fechas sin hora (periodo vigente, RN-04, RN-10, fecha de registro, fecha de nacimiento) usan `ILocalClock.Today()` (antes `IFechaLocal.Hoy()`), que aplica la zona de `Institute:TimeZone` (`America/Costa_Rica`). Ningún módulo calcula la fecha de hoy desde UTC. Las marcas de tiempo siguen en UTC. Se implementa en `catalogos`.
 10. **Eliminar un estudiante o profesor elimina también su cuenta** (2026-11-05, RN-35). Solo cuando la persona se puede eliminar por no tener datos relacionados (sin matrículas o sin grupos), y en el mismo guardado, sin cascada. Una cuenta nunca se elimina por sí sola, y la de un administrador nunca. Así no quedan cuentas sin persona (RN-31) y el correo se puede volver a registrar. Se corrigieron RF-14, RF-19, RF-26, RN-35 y la tabla de §4.2. Lo implementa `grupos` para profesores y `matriculas` para estudiantes.
 11. **Auditoría de cambios de datos** (2026-11-10, RF-56, RF-57, RN-42 a RN-46). El punto "Auditoría detallada de cambios" sale de "Fuera del alcance" y pasa a ser el módulo `auditoria`, con estas decisiones:
     - **Solo cambios de datos.** Los eventos que no cambian datos (logins fallidos, logout, envío de correos) quedan fuera del alcance.
@@ -112,3 +112,7 @@ Verificaciones que un módulo no pudo hacer por falta de datos o endpoints. Se c
     [COR-02](../correcciones/COR-02-encabezados-cors.md) (2026-11-23): la política CORS expone `Retry-After` y `Location`, para que el frontend lea la espera de un `429` y la ruta del recurso creado en un `201`.
 
     [COR-03](../correcciones/COR-03-contrato-openapi.md) (2026-11-24): las opciones JSON de MVC y de HTTP se configuran en un solo lugar (`OpcionesJson`), con enums como texto y números estrictos, para que el OpenAPI declare `integer` y los valores de cada enum.
+
+15. **Idioma de los nombres** (2026-11-26, corrección `nombres`). El dominio del instituto se nombra en español (entidades y sus propiedades, enums y sus valores, rutas, controllers, carpetas de funcionalidad, mensajes y comentarios) y todo lo técnico en inglés (clases técnicas, métodos, constantes, carpetas técnicas, opciones y sus claves). Los nombres combinados van primero con el dominio (`CursoService`, `CreateCursoRequest`) y los verbos en inglés (`EnrollAsync`). La regla está en `docs/arquitectura.md` §8.1 y las tablas completas de los renombres en [SPEC-nombres](SPEC-nombres.md). No cambian las tablas, el JSON ni las rutas; sí los nombres de los esquemas del OpenAPI y las claves de configuración (ver el README).
+
+    **Los documentos históricos conservan los nombres viejos:** las specs, planes y tareas de los módulos ya cerrados y las correcciones COR-01 a COR-03 describen el código como era cuando se escribieron y no se reescriben. Para el nombre actual de algo, ver las tablas de SPEC-nombres.

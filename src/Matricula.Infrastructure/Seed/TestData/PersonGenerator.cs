@@ -2,27 +2,27 @@ using System.Globalization;
 using System.Text;
 using Bogus;
 
-namespace Matricula.Infrastructure.Seed.DatosPrueba;
+namespace Matricula.Infrastructure.Seed.TestData;
 
 /// <summary>
 /// Datos personales de prueba (punto 8 de la spec). Bogus genera los textos; las cédulas, teléfonos y correos tienen
 /// formato propio, y su unicidad se garantiza aquí, no por azar. Los textos se recortan a las longitudes de EF.
 /// </summary>
-public sealed class GeneradorPersonas(Faker faker)
+public sealed class PersonGenerator(Faker faker)
 {
-    public const string DominioCorreo = "prueba.test";
+    public const string EmailDomain = "prueba.test";
 
-    private const int MaxNombre = 100;
-    private const int MaxDireccion = 250;
+    private const int MaxNombreLength = 100;
+    private const int MaxDireccionLength = 250;
 
     private readonly HashSet<string> cedulas = [];
     private readonly HashSet<string> correos = [];
     private int secuencia;
 
-    public string Nombre() => Recortar(faker.Name.FirstName(), MaxNombre);
+    public string Nombre() => Truncate(faker.Name.FirstName(), MaxNombreLength);
 
     /// <summary>Dos apellidos, como se usan en Costa Rica.</summary>
-    public string Apellidos() => Recortar($"{faker.Name.LastName()} {faker.Name.LastName()}", MaxNombre);
+    public string Apellidos() => Truncate($"{faker.Name.LastName()} {faker.Name.LastName()}", MaxNombreLength);
 
     /// <summary>9 dígitos con el primero entre 1 y 7, como las cédulas físicas de Costa Rica.</summary>
     public string Cedula()
@@ -46,12 +46,12 @@ public sealed class GeneradorPersonas(Faker faker)
     /// </summary>
     public string Direccion()
     {
-        var (canton, provincia) = faker.PickRandom<(string, string)>(CatalogosPrueba.Cantones);
+        var (canton, provincia) = faker.PickRandom<(string, string)>(SampleCatalogs.Cantones);
         var metros = faker.Random.Number(1, 8) * 50;
-        var punto = faker.PickRandom<string>(CatalogosPrueba.PuntosDeReferencia);
+        var punto = faker.PickRandom<string>(SampleCatalogs.Landmarks);
         var rumbo = faker.PickRandom("norte", "sur", "este", "oeste");
 
-        return Recortar($"{canton}, {provincia}. {metros} m al {rumbo} {punto}", MaxDireccion);
+        return Truncate($"{canton}, {provincia}. {metros} m al {rumbo} {punto}", MaxDireccionLength);
     }
 
     /// <summary>
@@ -61,8 +61,8 @@ public sealed class GeneradorPersonas(Faker faker)
     public string Correo(string nombre, string apellidos, string? fijo = null)
     {
         var correo = fijo is not null
-            ? $"{fijo}@{DominioCorreo}"
-            : $"{Slug(nombre)}.{Slug(apellidos)}.{++secuencia}@{DominioCorreo}";
+            ? $"{fijo}@{EmailDomain}"
+            : $"{Slugify(nombre)}.{Slugify(apellidos)}.{++secuencia}@{EmailDomain}";
 
         if (!correos.Add(correo))
         {
@@ -73,7 +73,7 @@ public sealed class GeneradorPersonas(Faker faker)
     }
 
     /// <summary>Primera palabra en minúsculas, solo con letras ASCII: "José María" → "jose".</summary>
-    public static string Slug(string texto)
+    public static string Slugify(string texto)
     {
         ArgumentNullException.ThrowIfNull(texto);
 
@@ -85,5 +85,5 @@ public sealed class GeneradorPersonas(Faker faker)
         return slug.Length > 0 ? slug : "persona";
     }
 
-    private static string Recortar(string texto, int maximo) => texto.Length <= maximo ? texto : texto[..maximo].TrimEnd();
+    private static string Truncate(string texto, int maximo) => texto.Length <= maximo ? texto : texto[..maximo].TrimEnd();
 }

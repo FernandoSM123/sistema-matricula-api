@@ -47,16 +47,16 @@ public partial class AdminSeedService(
 
     private async Task CreateInitialAdministradorAsync(CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(_options.ContrasenaTemporal))
+        if (string.IsNullOrWhiteSpace(_options.TemporaryPassword))
         {
             throw new InvalidOperationException(
                 "No existe ningún administrador y falta la contraseña temporal del administrador inicial. " +
-                "Defina 'AdminSeed:ContrasenaTemporal' en user-secrets o en la variable de entorno AdminSeed__ContrasenaTemporal.");
+                "Defina 'AdminSeed:TemporaryPassword' en user-secrets o en la variable de entorno AdminSeed__TemporaryPassword.");
         }
 
         var correo = Usuario.NormalizeCorreo(_options.Correo);
         var usuario = new Usuario(correo, Rol.Administrador, OrigenRegistro.Administrador);
-        usuario.SetTemporaryPassword(hasher.Hash(_options.ContrasenaTemporal), MotivoTemporal.CuentaNueva, timeProvider.GetUtcNow());
+        usuario.SetTemporaryPassword(hasher.Hash(_options.TemporaryPassword), MotivoTemporal.CuentaNueva, timeProvider.GetUtcNow());
 
         db.Administradores.Add(new Administrador(usuario, _options.Cedula, _options.Nombre, _options.Apellidos, _options.Telefono));
         await db.SaveChangesAsync(cancellationToken);
@@ -76,13 +76,13 @@ public partial class AdminSeedService(
         }
 
         var correo = inicial.Correo;
-        if (string.IsNullOrWhiteSpace(_options.ContrasenaTemporal))
+        if (string.IsNullOrWhiteSpace(_options.TemporaryPassword))
         {
             LogNoTemporaryPasswordToRenew(logger, correo);
             return;
         }
 
-        inicial.SetTemporaryPassword(hasher.Hash(_options.ContrasenaTemporal), MotivoTemporal.CuentaNueva, timeProvider.GetUtcNow());
+        inicial.SetTemporaryPassword(hasher.Hash(_options.TemporaryPassword), MotivoTemporal.CuentaNueva, timeProvider.GetUtcNow());
         await db.SaveChangesAsync(cancellationToken);
 
         LogTemporaryPasswordRenewed(logger, correo);
@@ -95,6 +95,6 @@ public partial class AdminSeedService(
     private static partial void LogTemporaryPasswordRenewed(ILogger logger, string correo);
 
     [LoggerMessage(Level = LogLevel.Warning,
-        Message = "El administrador inicial {Correo} aún no define su contraseña y no hay 'AdminSeed:ContrasenaTemporal' para renovar su temporal")]
+        Message = "El administrador inicial {Correo} aún no define su contraseña y no hay 'AdminSeed:TemporaryPassword' para renovar su temporal")]
     private static partial void LogNoTemporaryPasswordToRenew(ILogger logger, string correo);
 }

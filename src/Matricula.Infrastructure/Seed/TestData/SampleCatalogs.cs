@@ -1,9 +1,9 @@
-namespace Matricula.Infrastructure.Seed.DatosPrueba;
+namespace Matricula.Infrastructure.Seed.TestData;
 
 /// <summary>
 /// Textos fijos de la siembra: Bogus no genera nombres de cursos plausibles para un instituto (punto 5 de la spec).
 /// </summary>
-public static class CatalogosPrueba
+public static class SampleCatalogs
 {
     /// <summary>Prefijo del código de curso de cada área.</summary>
     public static IReadOnlyList<(string Prefijo, string Nombre)> Cursos { get; } =
@@ -35,7 +35,7 @@ public static class CatalogosPrueba
         ("DIS", "Edición de video"),
     ];
 
-    public static IReadOnlyList<string> Especialidades { get; } =
+    public static IReadOnlyList<string> Specialties { get; } =
     [
         "Informática",
         "Programación",
@@ -76,7 +76,7 @@ public static class CatalogosPrueba
         ("Pococí", "Limón"),
     ];
 
-    public static IReadOnlyList<string> PuntosDeReferencia { get; } =
+    public static IReadOnlyList<string> Landmarks { get; } =
     [
         "de la iglesia católica",
         "de la escuela",
@@ -91,7 +91,7 @@ public static class CatalogosPrueba
     ];
 
     /// <summary>Descripciones de curso; <c>{0}</c> es el nombre del curso, tal cual.</summary>
-    public static IReadOnlyList<string> Descripciones { get; } =
+    public static IReadOnlyList<string> Descriptions { get; } =
     [
         "Curso práctico de {0} orientado al trabajo.",
         "Aprenda {0} con ejercicios y casos reales.",
@@ -101,5 +101,5 @@ public static class CatalogosPrueba
     ];
 
     /// <summary>Sufijos para repetir cursos del catálogo cuando se piden más que los que tiene.</summary>
-    public static IReadOnlyList<string> Sufijos { get; } = ["", " II", " III", " IV", " V", " VI", " VII", " VIII", " IX"];
+    public static IReadOnlyList<string> Suffixes { get; } = ["", " II", " III", " IV", " V", " VI", " VII", " VIII", " IX"];
 }

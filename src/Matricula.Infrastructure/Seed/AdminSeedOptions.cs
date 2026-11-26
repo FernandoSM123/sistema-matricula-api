@@ -13,5 +13,5 @@ public class AdminSeedOptions
     public string Nombre { get; init; } = "John";
     public string Apellidos { get; init; } = "Doe";
     public string Telefono { get; init; } = "00000000";
-    public string? ContrasenaTemporal { get; init; }
+    public string? TemporaryPassword { get; init; }
 }

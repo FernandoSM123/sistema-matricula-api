@@ -6,10 +6,10 @@ namespace Matricula.Api.Security;
 public class JwtOptions
 {
     public const string SectionName = "Jwt";
-    public const int LongitudMinimaClave = 32;
+    public const int MinKeyLength = 32;
 
     public string Issuer { get; init; } = string.Empty;
     public string Audience { get; init; } = string.Empty;
-    public string Clave { get; init; } = string.Empty;
-    public int MinutosVigencia { get; init; } = 60;
+    public string Key { get; init; } = string.Empty;
+    public int AccessTokenMinutes { get; init; } = 60;
 }

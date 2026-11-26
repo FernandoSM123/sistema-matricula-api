@@ -13,7 +13,7 @@ public class SmtpEmailSender(IOptions<SmtpOptions> options) : IEmailSender
     public async Task SendAsync(string recipient, string subject, string htmlBody, CancellationToken cancellationToken = default)
     {
         using var mensaje = new MimeMessage();
-        mensaje.From.Add(new MailboxAddress(_options.NombreRemitente, _options.Remitente));
+        mensaje.From.Add(new MailboxAddress(_options.SenderName, _options.SenderEmail));
         mensaje.To.Add(MailboxAddress.Parse(recipient));
         mensaje.Subject = subject;
         mensaje.Body = new BodyBuilder { HtmlBody = htmlBody }.ToMessageBody();
@@ -22,9 +22,9 @@ public class SmtpEmailSender(IOptions<SmtpOptions> options) : IEmailSender
         var seguridad = _options.UseSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None;
         await cliente.ConnectAsync(_options.Host, _options.Port, seguridad, cancellationToken);
 
-        if (!string.IsNullOrEmpty(_options.Usuario))
+        if (!string.IsNullOrEmpty(_options.User))
         {
-            await cliente.AuthenticateAsync(_options.Usuario, _options.Contrasena ?? string.Empty, cancellationToken);
+            await cliente.AuthenticateAsync(_options.User, _options.Password ?? string.Empty, cancellationToken);
         }
 
         await cliente.SendAsync(mensaje, cancellationToken);

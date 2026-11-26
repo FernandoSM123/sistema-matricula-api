@@ -43,7 +43,7 @@ public partial class ErrorLogPurgeService(
     {
         try
         {
-            var limite = ErrorLogRules.RetentionLimit(timeProvider.GetUtcNow(), opciones.Value.DiasRetencion);
+            var limite = ErrorLogRules.RetentionLimit(timeProvider.GetUtcNow(), opciones.Value.RetentionDays);
 
             await using var scope = scopeFactory.CreateAsyncScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();

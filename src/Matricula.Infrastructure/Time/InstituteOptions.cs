@@ -2,11 +2,11 @@ namespace Matricula.Infrastructure.Time;
 
 public class InstituteOptions
 {
-    public const string SectionName = "Instituto";
+    public const string SectionName = "Institute";
 
     /// <summary>Identificador IANA de la zona horaria, por ejemplo America/Costa_Rica.</summary>
-    public string ZonaHoraria { get; init; } = string.Empty;
+    public string TimeZone { get; init; } = string.Empty;
 
     public bool HasValidTimeZone() =>
-        !string.IsNullOrWhiteSpace(ZonaHoraria) && TimeZoneInfo.TryFindSystemTimeZoneById(ZonaHoraria, out _);
+        !string.IsNullOrWhiteSpace(TimeZone) && TimeZoneInfo.TryFindSystemTimeZoneById(TimeZone, out _);
 }

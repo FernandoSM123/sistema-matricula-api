@@ -16,7 +16,7 @@ public class JwtTokenGenerator(IOptions<JwtOptions> options, TimeProvider timePr
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        return new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Clave));
+        return new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Key));
     }
 
     public GeneratedToken Generate(TokenData datos)
@@ -24,7 +24,7 @@ public class JwtTokenGenerator(IOptions<JwtOptions> options, TimeProvider timePr
         ArgumentNullException.ThrowIfNull(datos);
 
         var ahora = timeProvider.GetUtcNow();
-        var expira = ahora.AddMinutes(_options.MinutosVigencia);
+        var expira = ahora.AddMinutes(_options.AccessTokenMinutes);
 
         var claims = new Dictionary<string, object>
         {

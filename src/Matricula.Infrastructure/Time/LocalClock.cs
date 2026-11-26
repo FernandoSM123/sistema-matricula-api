@@ -6,7 +6,7 @@ namespace Matricula.Infrastructure.Time;
 
 public class LocalClock(TimeProvider timeProvider, IOptions<InstituteOptions> options) : ILocalClock
 {
-    private readonly TimeZoneInfo _zona = TimeZoneInfo.FindSystemTimeZoneById(options.Value.ZonaHoraria);
+    private readonly TimeZoneInfo _zona = TimeZoneInfo.FindSystemTimeZoneById(options.Value.TimeZone);
 
     public DateOnly Today() => LocalDateRules.ToLocalDate(timeProvider.GetUtcNow(), _zona);
 

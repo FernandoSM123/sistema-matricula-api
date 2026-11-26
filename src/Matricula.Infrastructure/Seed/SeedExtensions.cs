@@ -1,4 +1,4 @@
-using Matricula.Infrastructure.Seed.DatosPrueba;
+using Matricula.Infrastructure.Seed.TestData;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Matricula.Infrastructure.Seed;
@@ -22,6 +22,6 @@ public static class SeedExtensions
         this IServiceProvider services, bool esDesarrollo, CancellationToken cancellationToken = default)
     {
         await using var scope = services.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<DatosPruebaSeedService>().RunAsync(esDesarrollo, cancellationToken);
+        await scope.ServiceProvider.GetRequiredService<TestDataSeedService>().RunAsync(esDesarrollo, cancellationToken);
     }
 }

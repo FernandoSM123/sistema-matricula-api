@@ -5,7 +5,7 @@ using Matricula.Infrastructure.Persistence.Audit;
 using Matricula.Infrastructure.Persistence.ErrorLog;
 using Matricula.Infrastructure.Persistence.Interceptors;
 using Matricula.Infrastructure.Seed;
-using Matricula.Infrastructure.Seed.DatosPrueba;
+using Matricula.Infrastructure.Seed.TestData;
 using Matricula.Infrastructure.Security;
 using Matricula.Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
@@ -26,7 +26,7 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(InstituteOptions.SectionName))
             .Validate(
                 options => options.HasValidTimeZone(),
-                "La opción 'Instituto:ZonaHoraria' debe ser una zona horaria válida, por ejemplo America/Costa_Rica.")
+                "La opción 'Institute:TimeZone' debe ser una zona horaria válida, por ejemplo America/Costa_Rica.")
             .ValidateOnStart();
         services.AddSingleton<ILocalClock, LocalClock>();
         services.AddSingleton<IPasswordHashService, PasswordHashService>();
@@ -44,7 +44,7 @@ public static class DependencyInjection
         services.AddScoped<IErrorRecorder, DbErrorRecorder>();
         services.AddOptions<ErrorLogOptions>()
             .Bind(configuration.GetSection(ErrorLogOptions.SectionName))
-            .Validate(options => options.DiasRetencion >= 1, "La opción 'Errores:DiasRetencion' debe ser 1 o mayor.")
+            .Validate(options => options.RetentionDays >= 1, "La opción 'ErrorLog:RetentionDays' debe ser 1 o mayor.")
             .ValidateOnStart();
         services.AddHostedService<ErrorLogPurgeService>();
 
@@ -57,8 +57,8 @@ public static class DependencyInjection
         services.AddScoped<AdminSeedService>();
 
         // Sin ValidateOnStart: las opciones se validan solo cuando la siembra va a ejecutarse (spec datos-prueba).
-        services.AddOptions<DatosPruebaOptions>().Bind(configuration.GetSection(DatosPruebaOptions.SectionName));
-        services.AddScoped<DatosPruebaSeedService>();
+        services.AddOptions<TestDataOptions>().Bind(configuration.GetSection(TestDataOptions.SectionName));
+        services.AddScoped<TestDataSeedService>();
 
         return services;
     }

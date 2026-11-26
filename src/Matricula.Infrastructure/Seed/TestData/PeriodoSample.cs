@@ -1,7 +1,7 @@
-namespace Matricula.Infrastructure.Seed.DatosPrueba;
+namespace Matricula.Infrastructure.Seed.TestData;
 
 /// <summary>Fechas y nombre de un periodo de prueba.</summary>
-public sealed record PeriodoPrueba(
+public sealed record PeriodoSample(
     string Nombre,
     DateOnly InicioClases,
     DateOnly FinClases,

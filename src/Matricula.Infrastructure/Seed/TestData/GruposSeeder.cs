@@ -3,37 +3,37 @@ using Bogus;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
 
-namespace Matricula.Infrastructure.Seed.DatosPrueba;
+namespace Matricula.Infrastructure.Seed.TestData;
 
 /// <summary>
 /// Grupos con sus horarios para los tres periodos (punto 5 de la spec), sin traslapes de profesor ni de aula (punto 7).
 /// Solo arma las entidades en memoria; el servicio las agrega y las guarda.
 /// </summary>
-public sealed class SembradorGrupos(Faker faker, DatosSembrados datos, Action<string> alFaltarEspacio)
+public sealed class GruposSeeder(Faker faker, SeededData datos, Action<string> alFaltarEspacio)
 {
-    private const double ProporcionVirtuales = 0.2;
+    private const double VirtualRatio = 0.2;
 
     private readonly HashSet<string> nrcs = [];
 
-    public void Sembrar(int gruposPorPeriodo)
+    public void Seed(int gruposPorPeriodo)
     {
         var todos = datos.Profesores.Select(p => p.Id).ToList();
-        var activos = datos.Profesores.Where(p => p != datos.ProfesorDesactivado).Select(p => p.Id).ToList();
+        var activos = datos.Profesores.Where(p => p != datos.DeactivatedProfesor).Select(p => p.Id).ToList();
 
         // RN-37: el profesor desactivado no puede tener grupos activos, así que solo enseña en el periodo pasado.
-        SembrarPeriodo(datos.Pasado, gruposPorPeriodo, todos, EstadosPasado);
-        SembrarPeriodo(datos.Vigente, gruposPorPeriodo, activos, EstadosVigente);
-        SembrarPeriodo(datos.Futuro, gruposPorPeriodo, activos, EstadosFuturo);
+        SeedPeriodo(datos.Pasado, gruposPorPeriodo, todos, EstadosPasado);
+        SeedPeriodo(datos.Vigente, gruposPorPeriodo, activos, EstadosVigente);
+        SeedPeriodo(datos.Futuro, gruposPorPeriodo, activos, EstadosFuturo);
     }
 
     /// <summary>
     /// Todos finalizados; uno cancelado si hay 3 o más grupos. Es el tercero creado, así existe aunque falten franjas.
     /// </summary>
-    private static (EstadoGrupo Estado, bool Lleno) EstadosPasado(int indice, int total) =>
+    private static (EstadoGrupo Estado, bool IsFull) EstadosPasado(int indice, int total) =>
         (indice == 2 ? EstadoGrupo.Cancelado : EstadoGrupo.Finalizado, false);
 
     /// <summary>Prioridad de la spec: abierto, abierto lleno, cancelado, planificado, cerrado y el resto abiertos.</summary>
-    private static (EstadoGrupo Estado, bool Lleno) EstadosVigente(int indice, int total) => indice switch
+    private static (EstadoGrupo Estado, bool IsFull) EstadosVigente(int indice, int total) => indice switch
     {
         0 => (EstadoGrupo.Abierto, false),
         1 => (EstadoGrupo.Abierto, true),
@@ -43,17 +43,17 @@ public sealed class SembradorGrupos(Faker faker, DatosSembrados datos, Action<st
         _ => (EstadoGrupo.Abierto, false),
     };
 
-    private static (EstadoGrupo Estado, bool Lleno) EstadosFuturo(int indice, int total) => (EstadoGrupo.Planificado, false);
+    private static (EstadoGrupo Estado, bool IsFull) EstadosFuturo(int indice, int total) => (EstadoGrupo.Planificado, false);
 
-    private void SembrarPeriodo(
+    private void SeedPeriodo(
         Periodo periodo,
         int cantidad,
         IReadOnlyList<int> profesores,
-        Func<int, int, (EstadoGrupo Estado, bool Lleno)> estadoDe)
+        Func<int, int, (EstadoGrupo Estado, bool IsFull)> estadoDe)
     {
-        var planificador = new PlanificadorHorarios(new Random(faker.Random.Int()));
-        datos.Planificadores[periodo] = planificador;
-        var creados = new List<GrupoSembrado>();
+        var planificador = new HorarioPlanner(new Random(faker.Random.Int()));
+        datos.Planners[periodo] = planificador;
+        var creados = new List<GrupoSeed>();
 
         for (var intento = 0; intento < cantidad; intento++)
         {
@@ -64,12 +64,12 @@ public sealed class SembradorGrupos(Faker faker, DatosSembrados datos, Action<st
             var sinHorarios = periodo == datos.Futuro && creados.Count == 0;
 
             var grupo = sinHorarios
-                ? CrearSinHorarios(periodo, profesores, estado)
-                : CrearConHorarios(periodo, profesores, planificador, estado, lleno, creados);
+                ? CreateWithoutHorarios(periodo, profesores, estado)
+                : CreateWithHorarios(periodo, profesores, planificador, estado, lleno, creados);
 
             if (grupo is null)
             {
-                datos.GruposSinEspacio++;
+                datos.GruposWithoutRoom++;
                 alFaltarEspacio(periodo.Nombre);
                 continue;
             }
@@ -80,24 +80,24 @@ public sealed class SembradorGrupos(Faker faker, DatosSembrados datos, Action<st
         datos.Grupos.AddRange(creados);
     }
 
-    private GrupoSembrado? CrearConHorarios(
+    private GrupoSeed? CreateWithHorarios(
         Periodo periodo,
         IReadOnlyList<int> profesores,
-        PlanificadorHorarios planificador,
+        HorarioPlanner planificador,
         EstadoGrupo estado,
         bool lleno,
-        List<GrupoSembrado> creados)
+        List<GrupoSeed> creados)
     {
-        var esVirtual = faker.Random.Double() < ProporcionVirtuales;
+        var esVirtual = faker.Random.Double() < VirtualRatio;
         var aulas = esVirtual ? null : datos.Aulas.Select(a => a.Id).ToList();
-        var bloques = faker.Random.Number(1, PlanificadorHorarios.MaxBloques);
+        var bloques = faker.Random.Number(1, HorarioPlanner.MaxBloques);
 
         // profesor1 da el primer grupo de cada periodo, si cabe: así tiene grupos en el pasado y el vigente (punto 6).
         var profesor1 = datos.Profesores[0].Id;
         var asignacion = (creados.Count == 0 && profesores.Contains(profesor1)
-                ? planificador.IntentarAsignarGrupo(bloques, [profesor1], aulas)
+                ? planificador.TryAssignGrupo(bloques, [profesor1], aulas)
                 : null)
-            ?? planificador.IntentarAsignarGrupo(bloques, profesores, aulas);
+            ?? planificador.TryAssignGrupo(bloques, profesores, aulas);
         if (asignacion is null)
         {
             return null;
@@ -117,22 +117,22 @@ public sealed class SembradorGrupos(Faker faker, DatosSembrados datos, Action<st
         };
         var modalidad = aula is null ? Modalidad.Virtual : faker.PickRandom(Modalidad.Presencial, Modalidad.Hibrida);
 
-        var grupo = new Grupo(NuevoNrc(), curso, asignacion.ProfesorId, periodo.Id, aula?.Id, cupo, modalidad);
-        foreach (var franja in asignacion.Franjas)
+        var grupo = new Grupo(NextNrc(), curso, asignacion.ProfesorId, periodo.Id, aula?.Id, cupo, modalidad);
+        foreach (var franja in asignacion.TimeSlots)
         {
             grupo.AddHorario(franja.Dia, franja.HoraInicio, franja.HoraFin);
         }
 
-        Abrir(grupo, estado);
-        return new GrupoSembrado(grupo, periodo, asignacion.Franjas, estado, lleno);
+        Open(grupo, estado);
+        return new GrupoSeed(grupo, periodo, asignacion.TimeSlots, estado, lleno);
     }
 
     /// <summary>Sin horarios no ocupa franjas, así que no puede traslaparse con ningún otro grupo.</summary>
-    private GrupoSembrado CrearSinHorarios(Periodo periodo, IReadOnlyList<int> profesores, EstadoGrupo estado)
+    private GrupoSeed CreateWithoutHorarios(Periodo periodo, IReadOnlyList<int> profesores, EstadoGrupo estado)
     {
         var aula = faker.PickRandom(datos.Aulas);
         var grupo = new Grupo(
-            NuevoNrc(),
+            NextNrc(),
             faker.PickRandom(datos.Cursos).Id,
             faker.PickRandom<int>(profesores),
             periodo.Id,
@@ -140,14 +140,14 @@ public sealed class SembradorGrupos(Faker faker, DatosSembrados datos, Action<st
             Math.Min(aula.Capacidad, faker.Random.Number(10, 30)),
             Modalidad.Presencial);
 
-        return new GrupoSembrado(grupo, periodo, [], estado, lleno: false);
+        return new GrupoSeed(grupo, periodo, [], estado, isFull: false);
     }
 
     /// <summary>
     /// Los que reciben matrículas se abren ya (RF-47); su estado final (cerrado, cancelado o finalizado) se aplica
     /// después de matricular, como en la operación normal.
     /// </summary>
-    private static void Abrir(Grupo grupo, EstadoGrupo estadoFinal)
+    private static void Open(Grupo grupo, EstadoGrupo estadoFinal)
     {
         if (estadoFinal != EstadoGrupo.Planificado)
         {
@@ -155,7 +155,7 @@ public sealed class SembradorGrupos(Faker faker, DatosSembrados datos, Action<st
         }
     }
 
-    private string NuevoNrc()
+    private string NextNrc()
     {
         string nrc;
         do

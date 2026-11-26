@@ -43,7 +43,7 @@ builder.Services.AddHealthChecks();
 
 // Sin orígenes configurados no se permite ninguno.
 // Retry-After (429) y Location (201) no son legibles desde otro origen si no se exponen (COR-02).
-var origenesPermitidos = builder.Configuration.GetSection("Cors:OrigenesPermitidos").Get<string[]>() ?? [];
+var origenesPermitidos = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
     .WithOrigins(origenesPermitidos)
     .AllowAnyHeader()

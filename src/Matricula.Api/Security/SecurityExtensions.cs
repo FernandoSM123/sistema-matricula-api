@@ -17,9 +17,9 @@ public static class SecurityExtensions
             .Bind(configuration.GetSection(JwtOptions.SectionName))
             .Validate(o => !string.IsNullOrWhiteSpace(o.Issuer) && !string.IsNullOrWhiteSpace(o.Audience),
                 "Configure 'Jwt:Issuer' y 'Jwt:Audience'.")
-            .Validate(o => o.Clave.Length >= JwtOptions.LongitudMinimaClave,
-                $"'Jwt:Clave' debe tener al menos {JwtOptions.LongitudMinimaClave} caracteres. Defínala en user-secrets o en la variable de entorno Jwt__Clave.")
-            .Validate(o => o.MinutosVigencia > 0, "'Jwt:MinutosVigencia' debe ser mayor que cero.")
+            .Validate(o => o.Key.Length >= JwtOptions.MinKeyLength,
+                $"'Jwt:Key' debe tener al menos {JwtOptions.MinKeyLength} caracteres. Defínala en user-secrets o en la variable de entorno Jwt__Key.")
+            .Validate(o => o.AccessTokenMinutes > 0, "'Jwt:AccessTokenMinutes' debe ser mayor que cero.")
             .ValidateOnStart();
 
         services.AddSingleton<ITokenGenerator, JwtTokenGenerator>();

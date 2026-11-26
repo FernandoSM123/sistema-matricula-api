@@ -1,5 +1,5 @@
 using Matricula.Domain.Enums;
-using Matricula.Domain.Reglas;
+using Matricula.Domain.Rules;
 
 namespace Matricula.Domain.Entities;
 
@@ -40,16 +40,16 @@ public class RegistroError
 
         Fecha = fecha;
         Origen = origen;
-        Descripcion = ReglasErrores.Truncar(descripcion, MaxDescripcion);
-        TipoExcepcion = ReglasErrores.Truncar(excepcion.GetType().FullName, MaxTipoExcepcion);
-        Mensaje = ReglasErrores.Truncar(excepcion.Message, MaxMensaje);
+        Descripcion = ErrorLogRules.Truncate(descripcion, MaxDescripcion);
+        TipoExcepcion = ErrorLogRules.Truncate(excepcion.GetType().FullName, MaxTipoExcepcion);
+        Mensaje = ErrorLogRules.Truncate(excepcion.Message, MaxMensaje);
         // Incluye las excepciones internas y el stack trace.
-        Detalle = ReglasErrores.Truncar(excepcion.ToString(), MaxDetalle);
-        Metodo = string.IsNullOrEmpty(metodo) ? null : ReglasErrores.Truncar(metodo, MaxMetodo);
-        Ruta = string.IsNullOrEmpty(ruta) ? null : ReglasErrores.Truncar(ruta, MaxRuta);
+        Detalle = ErrorLogRules.Truncate(excepcion.ToString(), MaxDetalle);
+        Metodo = string.IsNullOrEmpty(metodo) ? null : ErrorLogRules.Truncate(metodo, MaxMetodo);
+        Ruta = string.IsNullOrEmpty(ruta) ? null : ErrorLogRules.Truncate(ruta, MaxRuta);
         UsuarioId = usuarioId;
         UsuarioRol = usuarioRol;
-        TraceId = ReglasErrores.Truncar(traceId, MaxTraceId);
+        TraceId = ErrorLogRules.Truncate(traceId, MaxTraceId);
     }
 
     public long Id { get; private set; }

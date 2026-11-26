@@ -28,17 +28,17 @@ public class CursoTests
     }
 
     [Fact]
-    public void NormalizarCodigo_CapitalizacionDistinta_DevuelveElMismoCodigo()
+    public void NormalizeCodigo_CapitalizacionDistinta_DevuelveElMismoCodigo()
     {
-        Assert.Equal(Curso.NormalizarCodigo("MAT-101"), Curso.NormalizarCodigo(" mat-101 "));
+        Assert.Equal(Curso.NormalizeCodigo("MAT-101"), Curso.NormalizeCodigo(" mat-101 "));
     }
 
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void NormalizarCodigo_CodigoEnBlanco_LanzaExcepcion(string codigo)
+    public void NormalizeCodigo_CodigoEnBlanco_LanzaExcepcion(string codigo)
     {
-        Assert.Throws<ArgumentException>(() => Curso.NormalizarCodigo(codigo));
+        Assert.Throws<ArgumentException>(() => Curso.NormalizeCodigo(codigo));
     }
 
     [Fact]
@@ -62,11 +62,11 @@ public class CursoTests
     }
 
     [Fact]
-    public void ActualizarDatos_DatosNuevos_CambiaTodosLosDatos()
+    public void Update_DatosNuevos_CambiaTodosLosDatos()
     {
         var curso = CrearCurso();
 
-        curso.ActualizarDatos("fis-200", "Física", "Mecánica", 60, 200000.50m, NivelCurso.Avanzado);
+        curso.Update("fis-200", "Física", "Mecánica", 60, 200000.50m, NivelCurso.Avanzado);
 
         Assert.Equal("FIS-200", curso.Codigo);
         Assert.Equal("Física", curso.Nombre);
@@ -77,33 +77,33 @@ public class CursoTests
     }
 
     [Fact]
-    public void ActualizarDatos_CursoInactivo_ConservaElEstado()
+    public void Update_CursoInactivo_ConservaElEstado()
     {
         var curso = CrearCurso();
-        curso.Desactivar();
+        curso.Deactivate();
 
-        curso.ActualizarDatos("MAT-101", "Matemática", null, 40, 0m, NivelCurso.Basico);
+        curso.Update("MAT-101", "Matemática", null, 40, 0m, NivelCurso.Basico);
 
         Assert.False(curso.Activo);
     }
 
     [Fact]
-    public void Desactivar_CursoActivo_LoDejaInactivo()
+    public void Deactivate_CursoActivo_LoDejaInactivo()
     {
         var curso = CrearCurso();
 
-        curso.Desactivar();
+        curso.Deactivate();
 
         Assert.False(curso.Activo);
     }
 
     [Fact]
-    public void Reactivar_CursoInactivo_LoDejaActivo()
+    public void Reactivate_CursoInactivo_LoDejaActivo()
     {
         var curso = CrearCurso();
-        curso.Desactivar();
+        curso.Deactivate();
 
-        curso.Reactivar();
+        curso.Reactivate();
 
         Assert.True(curso.Activo);
     }

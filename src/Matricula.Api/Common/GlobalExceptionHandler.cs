@@ -78,8 +78,8 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
             // sin query string, headers ni body (RN-47). Nunca lanza excepciones (RN-48).
             var metodo = httpContext.Request.Method;
             var ruta = httpContext.Request.Path.Value;
-            await httpContext.RequestServices.GetRequiredService<IRegistroErrores>().RegistrarAsync(
-                new ErrorInesperado(OrigenError.Peticion, $"Error no controlado en {metodo} {ruta}", exception, metodo, ruta));
+            await httpContext.RequestServices.GetRequiredService<IErrorRecorder>().RecordAsync(
+                new UnexpectedError(OrigenError.Peticion, $"Error no controlado en {metodo} {ruta}", exception, metodo, ruta));
         }
         else
         {
@@ -94,9 +94,9 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
             problem.Extensions["code"] = code;
         }
 
-        if (exception is BusinessRuleException { Datos: var datos })
+        if (exception is BusinessRuleException { Extensions: var extensiones })
         {
-            foreach (var (clave, valor) in datos)
+            foreach (var (clave, valor) in extensiones)
             {
                 problem.Extensions[clave] = valor;
             }

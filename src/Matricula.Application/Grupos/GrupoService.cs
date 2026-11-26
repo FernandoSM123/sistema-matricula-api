@@ -1,22 +1,22 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Matricula.Application.Matriculas;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
 using Matricula.Domain.Exceptions;
-using Matricula.Domain.Reglas;
+using Matricula.Domain.Rules;
 using Microsoft.EntityFrameworkCore;
 
 namespace Matricula.Application.Grupos;
 
-public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLocal fechaLocal)
+public class GrupoService(IAppDbContext db, ICurrentUser currentUser, ILocalClock localClock)
 {
     /// <summary>
     /// RF-43 con la visibilidad de RN-18: el profesor solo ve sus grupos y el estudiante solo los Abierto (supuesto 7),
     /// aunque envíen otro filtro. Ordena por inicio de clases (más reciente primero), curso y NRC.
     /// </summary>
-    public Task<PagedResult<GrupoResponse>> ListarAsync(ListarGruposRequest request, CancellationToken cancellationToken)
+    public Task<PagedResult<GrupoResponse>> ListAsync(ListGruposRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -25,14 +25,14 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
         switch (currentUser.Rol)
         {
             case nameof(Rol.Profesor):
-                profesorId = ProfesorActual();
+                profesorId = CurrentProfesorId();
                 break;
             case nameof(Rol.Estudiante):
                 estado = EstadoGrupo.Abierto;
                 break;
         }
 
-        return ConsultarAsync(
+        return QueryPageAsync(
             request, request.CursoId, profesorId, request.PeriodoId, estado, request.Modalidad, cancellationToken);
     }
 
@@ -40,8 +40,8 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
     /// RF-34 (consulta 4): los grupos de un curso. El administrador filtra por cualquier estado; el resto solo ve los
     /// Abierto, también el profesor, que aquí no se limita a los suyos (supuesto 7).
     /// </summary>
-    public async Task<PagedResult<GrupoResponse>> ListarPorCursoAsync(
-        int cursoId, ListarGruposCursoRequest request, CancellationToken cancellationToken)
+    public async Task<PagedResult<GrupoResponse>> ListByCursoAsync(
+        int cursoId, ListGruposCursoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -52,15 +52,15 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
 
         var estado = currentUser.Rol == nameof(Rol.Administrador) ? request.Estado : EstadoGrupo.Abierto;
 
-        return await ConsultarAsync(
+        return await QueryPageAsync(
             request, cursoId, profesorId: null, request.PeriodoId, estado, modalidad: null, cancellationToken);
     }
 
     /// <summary>
     /// RF-27 (consulta 5) para el administrador: los grupos de un profesor, en todos los estados.
     /// </summary>
-    public async Task<PagedResult<GrupoResponse>> ListarDeProfesorAsync(
-        int profesorId, ListarGruposProfesorRequest request, CancellationToken cancellationToken)
+    public async Task<PagedResult<GrupoResponse>> ListByProfesorAsync(
+        int profesorId, ListGruposProfesorRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -69,25 +69,25 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
             throw new NotFoundException($"No existe el profesor {profesorId}.");
         }
 
-        return await ConsultarAsync(
+        return await QueryPageAsync(
             request, cursoId: null, profesorId, request.PeriodoId, estado: null, modalidad: null, cancellationToken);
     }
 
     /// <summary>
     /// RF-27 (consulta 5) para el profesor de la sesión.
     /// </summary>
-    public Task<PagedResult<GrupoResponse>> ListarMisGruposAsync(
-        ListarGruposProfesorRequest request, CancellationToken cancellationToken)
+    public Task<PagedResult<GrupoResponse>> ListMineAsync(
+        ListGruposProfesorRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        return ConsultarAsync(
-            request, cursoId: null, ProfesorActual(), request.PeriodoId, estado: null, modalidad: null, cancellationToken);
+        return QueryPageAsync(
+            request, cursoId: null, CurrentProfesorId(), request.PeriodoId, estado: null, modalidad: null, cancellationToken);
     }
 
     // Filtros comunes de los listados; la visibilidad por rol ya viene aplicada en los parámetros.
-    private Task<PagedResult<GrupoResponse>> ConsultarAsync(
-        PaginacionRequest request,
+    private Task<PagedResult<GrupoResponse>> QueryPageAsync(
+        PageRequest request,
         int? cursoId,
         int? profesorId,
         int? periodoId,
@@ -124,7 +124,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
-            // El NRC se guarda en mayúsculas (Grupo.NormalizarNrc).
+            // El NRC se guarda en mayúsculas (Grupo.NormalizeNrc).
             var termino = request.Search.Trim().ToUpperInvariant();
             query = query.Where(g => g.Nrc.Contains(termino));
         }
@@ -134,7 +134,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
             .ThenBy(g => g.Curso.Nombre)
             .ThenBy(g => g.Nrc)
             .ThenBy(g => g.Id)
-            .Select(GrupoProyecciones.AResponse)
+            .Select(GrupoProjections.ToResponseExpression)
             .ToPagedResultAsync(request, cancellationToken);
     }
 
@@ -142,7 +142,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
     /// RF-42: crea el grupo Planificado y sin horarios. Curso, profesor y aula deben estar activos (RN-17), el cupo no
     /// supera la capacidad del aula (RN-09) y el NRC es único (RN-13).
     /// </summary>
-    public async Task<GrupoDetalleResponse> CrearAsync(CrearGrupoRequest request, CancellationToken cancellationToken)
+    public async Task<GrupoDetailResponse> CreateAsync(CreateGrupoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -152,15 +152,15 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
         var periodoId = request.PeriodoId!.Value;
         var cupo = request.Cupo!.Value;
 
-        await ValidarReferenciasAsync(cursoId, profesorId, periodoId, request.AulaId, cupo, actual: null, cancellationToken);
+        await EnsureReferencesAsync(cursoId, profesorId, periodoId, request.AulaId, cupo, actual: null, cancellationToken);
 
         var grupo = new Grupo(request.Nrc, cursoId, profesorId, periodoId, request.AulaId, cupo, request.Modalidad!.Value);
-        await ValidarNrcDisponibleAsync(grupo.Nrc, grupoId: null, cancellationToken);
+        await EnsureNrcAvailableAsync(grupo.Nrc, grupoId: null, cancellationToken);
 
         db.Grupos.Add(grupo);
         await db.SaveChangesAsync(cancellationToken);
 
-        return await ObtenerAsync(grupo.Id, cancellationToken);
+        return await GetAsync(grupo.Id, cancellationToken);
     }
 
     /// <summary>
@@ -168,12 +168,12 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
     /// RN-09 siempre, RN-13 contra los otros grupos, y RN-07/RN-08 con todos los bloques del grupo y el profesor y aula
     /// que quedan.
     /// </summary>
-    public async Task<GrupoDetalleResponse> ActualizarAsync(
-        int id, ActualizarGrupoRequest request, CancellationToken cancellationToken)
+    public async Task<GrupoDetailResponse> UpdateAsync(
+        int id, UpdateGrupoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var grupo = await BuscarConHorariosAsync(id, cancellationToken);
+        var grupo = await LoadWithHorariosAsync(id, cancellationToken);
 
         // El validador ya exige estos datos.
         var cursoId = request.CursoId!.Value;
@@ -182,14 +182,14 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
         var cupo = request.Cupo!.Value;
 
         // Antes de modificar el grupo: RN-17 compara con las referencias que tenía.
-        await ValidarReferenciasAsync(cursoId, profesorId, periodoId, request.AulaId, cupo, grupo, cancellationToken);
+        await EnsureReferencesAsync(cursoId, profesorId, periodoId, request.AulaId, cupo, grupo, cancellationToken);
 
-        grupo.ActualizarDatos(request.Nrc, cursoId, profesorId, periodoId, request.AulaId, cupo, request.Modalidad!.Value);
-        await ValidarNrcDisponibleAsync(grupo.Nrc, grupo.Id, cancellationToken);
-        await ValidarTraslapesAsync(grupo, grupo.Horarios, grupo.ProfesorId, grupo.AulaId, cancellationToken);
+        grupo.Update(request.Nrc, cursoId, profesorId, periodoId, request.AulaId, cupo, request.Modalidad!.Value);
+        await EnsureNrcAvailableAsync(grupo.Nrc, grupo.Id, cancellationToken);
+        await EnsureNoOverlapsAsync(grupo, grupo.Horarios, grupo.ProfesorId, grupo.AulaId, cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
-        return await ObtenerAsync(id, cancellationToken);
+        return await GetAsync(id, cancellationToken);
     }
 
     /// <summary>
@@ -197,19 +197,19 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
     /// sus grupos y un estudiante el de los Abierto y el de los grupos en que tiene o tuvo una matrícula; otro grupo
     /// existente responde 403.
     /// </summary>
-    public async Task<GrupoDetalleResponse> ObtenerAsync(int id, CancellationToken cancellationToken)
+    public async Task<GrupoDetailResponse> GetAsync(int id, CancellationToken cancellationToken)
     {
         var detalle = await db.Grupos.AsNoTracking()
             .Where(g => g.Id == id)
-            .Select(GrupoProyecciones.ADetalle)
+            .Select(GrupoProjections.ToDetailExpression)
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException($"No existe el grupo {id}.");
 
         var visible = currentUser.Rol switch
         {
-            nameof(Rol.Profesor) => detalle.ProfesorId == ProfesorActual(),
+            nameof(Rol.Profesor) => detalle.ProfesorId == CurrentProfesorId(),
             nameof(Rol.Estudiante) => detalle.Estado == EstadoGrupo.Abierto
-                || await TieneMatriculaAsync(id, cancellationToken),
+                || await HasMatriculaAsync(id, cancellationToken),
             _ => true,
         };
 
@@ -218,11 +218,11 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
             throw new ForbiddenException("No tiene acceso a este grupo.", "RN-18");
         }
 
-        return detalle.OrdenarHorarios();
+        return detalle.SortHorarios();
     }
 
     // Activa o retirada: el estudiante puede revisar el grupo de su historial.
-    private Task<bool> TieneMatriculaAsync(int grupoId, CancellationToken cancellationToken)
+    private Task<bool> HasMatriculaAsync(int grupoId, CancellationToken cancellationToken)
     {
         var estudianteId = currentUser.EstudianteId
             ?? throw new ForbiddenException("Su sesión no identifica a un estudiante. Inicie sesión de nuevo.");
@@ -231,7 +231,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
     }
 
     // Un token emitido antes de que existiera el claim no lo trae: basta con iniciar sesión de nuevo.
-    private int ProfesorActual() =>
+    private int CurrentProfesorId() =>
         currentUser.ProfesorId
         ?? throw new ForbiddenException("Su sesión no identifica a un profesor. Inicie sesión de nuevo.");
 
@@ -240,27 +240,27 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
     /// profesor (RN-07) o la misma aula (RN-08) en el periodo, y que deje con choque a un estudiante matriculado (RN-06,
     /// supuesto 13).
     /// </summary>
-    public async Task<GrupoDetalleResponse> AgregarHorarioAsync(
-        int grupoId, AgregarHorarioRequest request, CancellationToken cancellationToken)
+    public async Task<GrupoDetailResponse> AddHorarioAsync(
+        int grupoId, AddHorarioRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var grupo = await BuscarConHorariosAsync(grupoId, cancellationToken);
-        var horario = grupo.AgregarHorario(request.Dia!.Value, request.HoraInicio!.Value, request.HoraFin!.Value);
-        await ValidarTraslapesAsync(grupo, [horario], grupo.ProfesorId, grupo.AulaId, cancellationToken);
-        await db.ValidarBloquesSinChoquesAsync(grupo, [horario], cancellationToken);
+        var grupo = await LoadWithHorariosAsync(grupoId, cancellationToken);
+        var horario = grupo.AddHorario(request.Dia!.Value, request.HoraInicio!.Value, request.HoraFin!.Value);
+        await EnsureNoOverlapsAsync(grupo, [horario], grupo.ProfesorId, grupo.AulaId, cancellationToken);
+        await db.EnsureBloquesWithoutConflictsAsync(grupo, [horario], cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
-        return await ObtenerAsync(grupoId, cancellationToken);
+        return await GetAsync(grupoId, cancellationToken);
     }
 
     /// <summary>
     /// RF-46 y RN-34: solo un grupo que nunca tuvo matrículas, ni siquiera retiradas; si no, se cancela. Sus bloques se
     /// quitan en el mismo guardado, en cualquier estado y sin cascada (supuesto 9).
     /// </summary>
-    public async Task EliminarAsync(int id, CancellationToken cancellationToken)
+    public async Task DeleteAsync(int id, CancellationToken cancellationToken)
     {
-        var grupo = await BuscarConHorariosAsync(id, cancellationToken);
+        var grupo = await LoadWithHorariosAsync(id, cancellationToken);
 
         if (await db.Matriculas.AnyAsync(m => m.GrupoId == id, cancellationToken))
         {
@@ -278,10 +278,10 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
     /// <summary>
     /// RF-48: solo mientras el grupo está Planificado. Un bloque de otro grupo responde 404.
     /// </summary>
-    public async Task QuitarHorarioAsync(int grupoId, int horarioId, CancellationToken cancellationToken)
+    public async Task RemoveHorarioAsync(int grupoId, int horarioId, CancellationToken cancellationToken)
     {
-        var grupo = await BuscarConHorariosAsync(grupoId, cancellationToken);
-        var horario = grupo.QuitarHorario(horarioId)
+        var grupo = await LoadWithHorariosAsync(grupoId, cancellationToken);
+        var horario = grupo.RemoveHorario(horarioId)
             ?? throw new NotFoundException($"El grupo {grupoId} no tiene el bloque de horario {horarioId}.");
 
         // Con FK Restrict, EF no elimina el bloque solo por sacarlo de la colección.
@@ -293,18 +293,18 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
     /// RF-47: avanza un paso del flujo normal o cancela. Pedir el estado actual no cambia nada. Al cancelar se
     /// retiran las matrículas activas y se liberan sus cupos (RN-12).
     /// </summary>
-    public async Task CambiarEstadoAsync(int grupoId, CambiarEstadoRequest request, CancellationToken cancellationToken)
+    public async Task ChangeEstadoAsync(int grupoId, ChangeEstadoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         // Los horarios se cargan porque abrir un grupo exige al menos un bloque.
-        var grupo = await BuscarConHorariosAsync(grupoId, cancellationToken);
+        var grupo = await LoadWithHorariosAsync(grupoId, cancellationToken);
         var estadoAnterior = grupo.Estado;
-        grupo.CambiarEstado(request.Estado!.Value);
+        grupo.ChangeEstado(request.Estado!.Value);
 
         if (grupo.Estado == EstadoGrupo.Cancelado && estadoAnterior != EstadoGrupo.Cancelado)
         {
-            await RetirarPorCancelacionAsync(grupo, cancellationToken);
+            await WithdrawForCancelacionAsync(grupo, cancellationToken);
         }
 
         // Un solo guardado: estado, retiros y cupos. Si alguien se matricula a la vez, el token de concurrencia del
@@ -313,29 +313,29 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
     }
 
     // RN-12: la cancelación retira todas las matrículas activas, sin revisar la fecha límite de retiro (supuesto 10).
-    private async Task RetirarPorCancelacionAsync(Grupo grupo, CancellationToken cancellationToken)
+    private async Task WithdrawForCancelacionAsync(Grupo grupo, CancellationToken cancellationToken)
     {
         var activas = await db.Matriculas
             .Where(m => m.GrupoId == grupo.Id && m.Estado == EstadoMatricula.Activa)
             .ToListAsync(cancellationToken);
 
-        var hoy = fechaLocal.Hoy();
+        var hoy = localClock.Today();
         foreach (var matricula in activas)
         {
-            matricula.Retirar(hoy, MotivoRetiro.CancelacionGrupo);
-            grupo.LiberarCupo();
+            matricula.Withdraw(hoy, MotivoRetiro.CancelacionGrupo);
+            grupo.ReleaseCupo();
         }
     }
 
-    private async Task<Grupo> BuscarConHorariosAsync(int id, CancellationToken cancellationToken) =>
+    private async Task<Grupo> LoadWithHorariosAsync(int id, CancellationToken cancellationToken) =>
         await db.Grupos
             .Include(g => g.Horarios)
             .SingleOrDefaultAsync(g => g.Id == id, cancellationToken)
         ?? throw new NotFoundException($"No existe el grupo {id}.");
 
     // RN-07 y RN-08: compara los bloques con los de los otros grupos del mismo periodo que comparten el profesor o el
-    // aula. Los cancelados no cuentan (supuesto 3). El traslape se decide con ReglasHorario, la misma regla de RN-14.
-    private async Task ValidarTraslapesAsync(
+    // aula. Los cancelados no cuentan (supuesto 3). El traslape se decide con HorarioRules, la misma regla de RN-14.
+    private async Task EnsureNoOverlapsAsync(
         Grupo grupo,
         IReadOnlyCollection<Horario> bloques,
         int profesorId,
@@ -359,7 +359,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
             .ToListAsync(cancellationToken);
 
         var choque = otros.FirstOrDefault(o => bloques.Any(b =>
-            ReglasHorario.SeTraslapan(b.Dia, b.HoraInicio, b.HoraFin, o.Dia, o.HoraInicio, o.HoraFin)));
+            HorarioRules.Overlap(b.Dia, b.HoraInicio, b.HoraFin, o.Dia, o.HoraInicio, o.HoraFin)));
 
         if (choque is null)
         {
@@ -379,7 +379,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
 
     // RN-17 solo aplica a lo que el grupo empieza a usar: un curso, profesor o aula que ya tenía no se revisa (RN-37
     // impide desactivarlos mientras el grupo esté activo). RN-09 siempre se revisa.
-    private async Task ValidarReferenciasAsync(
+    private async Task EnsureReferencesAsync(
         int cursoId,
         int profesorId,
         int periodoId,
@@ -437,7 +437,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, IFechaLoca
     }
 
     // RN-13. En la edición se excluye el propio grupo.
-    private async Task ValidarNrcDisponibleAsync(string nrc, int? grupoId, CancellationToken cancellationToken)
+    private async Task EnsureNrcAvailableAsync(string nrc, int? grupoId, CancellationToken cancellationToken)
     {
         if (await db.Grupos.AnyAsync(g => g.Nrc == nrc && g.Id != grupoId, cancellationToken))
         {

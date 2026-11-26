@@ -1,6 +1,6 @@
 using Matricula.Api.Common;
-using Matricula.Application.Common.Paginacion;
-using Matricula.Application.Grupos.Consultas;
+using Matricula.Application.Common.Pagination;
+using Matricula.Application.Grupos.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,7 +17,7 @@ public class OfertaAcademicaController(OfertaAcademicaService ofertaService) : A
     [AllowAnonymous]
     [ProducesResponseType<PagedResult<OfertaAcademicaResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<PagedResult<OfertaAcademicaResponse>>> Listar(
-        [FromQuery] ListarOfertaRequest request, CancellationToken cancellationToken) =>
-        Ok(await ofertaService.ListarAsync(request, cancellationToken));
+    public async Task<ActionResult<PagedResult<OfertaAcademicaResponse>>> List(
+        [FromQuery] ListOfertaRequest request, CancellationToken cancellationToken) =>
+        Ok(await ofertaService.ListAsync(request, cancellationToken));
 }

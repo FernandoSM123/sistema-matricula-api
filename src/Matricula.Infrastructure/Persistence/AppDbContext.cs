@@ -1,12 +1,12 @@
 using Matricula.Application.Abstractions;
 using Matricula.Domain.Entities;
-using Matricula.Infrastructure.Persistence.Auditoria;
+using Matricula.Infrastructure.Persistence.Audit;
 using Microsoft.EntityFrameworkCore;
 using MatriculaEntidad = Matricula.Domain.Entities.Matricula;
 
 namespace Matricula.Infrastructure.Persistence;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options, CapturaAuditoria captura)
+public class AppDbContext(DbContextOptions<AppDbContext> options, AuditCapture captura)
     : DbContext(options), IAppDbContext
 {
     // Un DbSet<T> representa una tabla y es el punto de entrada para consultarla o agregarle filas.
@@ -25,8 +25,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CapturaAuditor
     // RegistroAuditoriaConfiguration.
     IQueryable<RegistroAuditoria> IAppDbContext.RegistrosAuditoria => Set<RegistroAuditoria>().AsNoTracking();
 
-    // Igual que la auditoría: Application solo lee los errores (RN-49). Los escriben RegistroErroresEnBd y
-    // DepuracionErrores, en Infrastructure. La entidad entra al modelo por RegistroErrorConfiguration.
+    // Igual que la auditoría: Application solo lee los errores (RN-49). Los escriben DbErrorRecorder y
+    // ErrorLogPurgeService, en Infrastructure. La entidad entra al modelo por RegistroErrorConfiguration.
     IQueryable<RegistroError> IAppDbContext.RegistrosError => Set<RegistroError>().AsNoTracking();
 
     /// <summary>
@@ -36,8 +36,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CapturaAuditor
     public override async Task<int> SaveChangesAsync(
         bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
-        var pendientes = await captura.CapturarAsync(this, cancellationToken);
-        if (pendientes.EstaVacio)
+        var pendientes = await captura.CaptureAsync(this, cancellationToken);
+        if (pendientes.IsEmpty)
         {
             return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
         }
@@ -49,7 +49,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CapturaAuditor
 
         // Siempre acepta los cambios: si no, el segundo guardado volvería a insertar las entidades del primero.
         var filas = await base.SaveChangesAsync(acceptAllChangesOnSuccess: true, cancellationToken);
-        Set<RegistroAuditoria>().AddRange(pendientes.Completar());
+        Set<RegistroAuditoria>().AddRange(pendientes.Complete());
         await base.SaveChangesAsync(acceptAllChangesOnSuccess: true, cancellationToken);
 
         if (transaccion is not null)

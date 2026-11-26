@@ -1,13 +1,13 @@
 using Matricula.Application.Abstractions;
 using Matricula.Infrastructure.Email;
 using Matricula.Infrastructure.Persistence;
-using Matricula.Infrastructure.Persistence.Auditoria;
-using Matricula.Infrastructure.Persistence.Errores;
+using Matricula.Infrastructure.Persistence.Audit;
+using Matricula.Infrastructure.Persistence.ErrorLog;
 using Matricula.Infrastructure.Persistence.Interceptors;
 using Matricula.Infrastructure.Seed;
-using Matricula.Infrastructure.Seed.DatosPrueba;
-using Matricula.Infrastructure.Seguridad;
-using Matricula.Infrastructure.Tiempo;
+using Matricula.Infrastructure.Seed.TestData;
+using Matricula.Infrastructure.Security;
+using Matricula.Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,31 +22,31 @@ public static class DependencyInjection
             ?? throw new InvalidOperationException("Falta la cadena de conexión 'Matricula'.");
 
         services.AddSingleton(TimeProvider.System);
-        services.AddOptions<InstitutoOptions>()
-            .Bind(configuration.GetSection(InstitutoOptions.SectionName))
+        services.AddOptions<InstituteOptions>()
+            .Bind(configuration.GetSection(InstituteOptions.SectionName))
             .Validate(
-                options => options.TieneZonaValida(),
-                "La opción 'Instituto:ZonaHoraria' debe ser una zona horaria válida, por ejemplo America/Costa_Rica.")
+                options => options.HasValidTimeZone(),
+                "La opción 'Institute:TimeZone' debe ser una zona horaria válida, por ejemplo America/Costa_Rica.")
             .ValidateOnStart();
-        services.AddSingleton<IFechaLocal, FechaLocal>();
-        services.AddSingleton<IHasherContrasenas, HasherContrasenas>();
-        services.AddSingleton<IGeneradorContrasenas, GeneradorContrasenas>();
-        services.AddScoped<FechasInterceptor>();
-        services.AddScoped<CapturaAuditoria>();
+        services.AddSingleton<ILocalClock, LocalClock>();
+        services.AddSingleton<IPasswordHashService, PasswordHashService>();
+        services.AddSingleton<IPasswordGenerator, PasswordGenerator>();
+        services.AddScoped<TimestampsInterceptor>();
+        services.AddScoped<AuditCapture>();
 
         services.AddDbContext<AppDbContext>((sp, options) => options
             .UseNpgsql(connectionString)
             // Tablas y columnas en snake_case (estudiante, fecha_creacion), la convención de PostgreSQL:
             // evita tener que poner comillas en los nombres al escribir SQL a mano.
             .UseSnakeCaseNamingConvention()
-            .AddInterceptors(sp.GetRequiredService<FechasInterceptor>()));
+            .AddInterceptors(sp.GetRequiredService<TimestampsInterceptor>()));
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
-        services.AddScoped<IRegistroErrores, RegistroErroresEnBd>();
-        services.AddOptions<ErroresOptions>()
-            .Bind(configuration.GetSection(ErroresOptions.SectionName))
-            .Validate(options => options.DiasRetencion >= 1, "La opción 'Errores:DiasRetencion' debe ser 1 o mayor.")
+        services.AddScoped<IErrorRecorder, DbErrorRecorder>();
+        services.AddOptions<ErrorLogOptions>()
+            .Bind(configuration.GetSection(ErrorLogOptions.SectionName))
+            .Validate(options => options.RetentionDays >= 1, "La opción 'ErrorLog:RetentionDays' debe ser 1 o mayor.")
             .ValidateOnStart();
-        services.AddHostedService<DepuracionErrores>();
+        services.AddHostedService<ErrorLogPurgeService>();
 
         services.AddOptions<SmtpOptions>()
             .Bind(configuration.GetSection(SmtpOptions.SectionName))
@@ -57,8 +57,8 @@ public static class DependencyInjection
         services.AddScoped<AdminSeedService>();
 
         // Sin ValidateOnStart: las opciones se validan solo cuando la siembra va a ejecutarse (spec datos-prueba).
-        services.AddOptions<DatosPruebaOptions>().Bind(configuration.GetSection(DatosPruebaOptions.SectionName));
-        services.AddScoped<DatosPruebaSeedService>();
+        services.AddOptions<TestDataOptions>().Bind(configuration.GetSection(TestDataOptions.SectionName));
+        services.AddScoped<TestDataSeedService>();
 
         return services;
     }

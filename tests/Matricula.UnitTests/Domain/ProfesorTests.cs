@@ -61,12 +61,12 @@ public class ProfesorTests
     }
 
     [Fact]
-    public void ActualizarDatos_CambiaTodosLosDatosPersonales()
+    public void Update_CambiaTodosLosDatosPersonales()
     {
         var profesor = NuevoProfesor();
         var nuevaFecha = new DateOnly(2025, 8, 15);
 
-        profesor.ActualizarDatos(" 2-2222-2222 ", " Ana Lucía ", " Mora Solís ", " 77777777 ", " Programación ", nuevaFecha);
+        profesor.Update(" 2-2222-2222 ", " Ana Lucía ", " Mora Solís ", " 77777777 ", " Programación ", nuevaFecha);
 
         Assert.Equal("2-2222-2222", profesor.Cedula);
         Assert.Equal("Ana Lucía", profesor.Nombre);
@@ -77,11 +77,11 @@ public class ProfesorTests
     }
 
     [Fact]
-    public void ActualizarDatos_EspecialidadEnBlancoYSinFecha_LasQuita()
+    public void Update_EspecialidadEnBlancoYSinFecha_LasQuita()
     {
         var profesor = NuevoProfesor();
 
-        profesor.ActualizarDatos("1-1111-1111", "Ana", "Mora", "88888888", " ", null);
+        profesor.Update("1-1111-1111", "Ana", "Mora", "88888888", " ", null);
 
         Assert.Null(profesor.Especialidad);
         Assert.Null(profesor.FechaContratacion);
@@ -92,13 +92,13 @@ public class ProfesorTests
     [InlineData("1-1111-1111", " ", "Mora", "88888888")]
     [InlineData("1-1111-1111", "Ana", "", "88888888")]
     [InlineData("1-1111-1111", "Ana", "Mora", "  ")]
-    public void ActualizarDatos_DatoObligatorioVacio_LanzaArgumentExceptionYNoCambiaNada(
+    public void Update_DatoObligatorioVacio_LanzaArgumentExceptionYNoCambiaNada(
         string cedula, string nombre, string apellidos, string telefono)
     {
         var profesor = NuevoProfesor();
 
         Assert.Throws<ArgumentException>(() =>
-            profesor.ActualizarDatos(cedula, nombre, apellidos, telefono, "Ofimática", null));
+            profesor.Update(cedula, nombre, apellidos, telefono, "Ofimática", null));
 
         Assert.Equal("1-1111-1111", profesor.Cedula);
         Assert.Equal("Ana", profesor.Nombre);

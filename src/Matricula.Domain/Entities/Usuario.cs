@@ -8,24 +8,24 @@ namespace Matricula.Domain.Entities;
 /// </summary>
 public class Usuario : EntidadBase
 {
-    public static readonly TimeSpan VigenciaTemporal = TimeSpan.FromHours(72);
-    public static readonly TimeSpan VigenciaTemporalOlvido = TimeSpan.FromHours(1);
+    public static readonly TimeSpan TemporaryPasswordLifetime = TimeSpan.FromHours(72);
+    public static readonly TimeSpan ForgotPasswordLifetime = TimeSpan.FromHours(1);
 
     // Para EF Core.
     private Usuario()
     {
         Correo = string.Empty;
-        SecurityStamp = NuevoStamp();
+        SecurityStamp = NewStamp();
     }
 
     public Usuario(string correo, Rol rol, OrigenRegistro origenRegistro, int? creadoPorId = null)
     {
-        Correo = NormalizarCorreo(correo);
+        Correo = NormalizeCorreo(correo);
         Rol = rol;
         OrigenRegistro = origenRegistro;
         CreadoPorId = creadoPorId;
         Activo = true;
-        SecurityStamp = NuevoStamp();
+        SecurityStamp = NewStamp();
     }
 
     public string Correo { get; private set; }
@@ -47,7 +47,7 @@ public class Usuario : EntidadBase
     /// <summary>
     /// Único punto de normalización del correo: login, olvido, registro y edición comparan con este valor.
     /// </summary>
-    public static string NormalizarCorreo(string correo)
+    public static string NormalizeCorreo(string correo)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(correo);
 
@@ -57,36 +57,36 @@ public class Usuario : EntidadBase
     /// <summary>
     /// RN-23 y RN-27: la nueva temporal reemplaza a la anterior y vence a las 72 horas, o a la hora si es por olvido.
     /// </summary>
-    public void AsignarTemporal(string hash, MotivoTemporal motivo, DateTimeOffset ahora)
+    public void SetTemporaryPassword(string hash, MotivoTemporal motivo, DateTimeOffset ahora)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(hash);
 
         TempPasswordHash = hash;
         TempPasswordMotivo = motivo;
-        TempPasswordExpira = ahora + (motivo == MotivoTemporal.Olvido ? VigenciaTemporalOlvido : VigenciaTemporal);
+        TempPasswordExpira = ahora + (motivo == MotivoTemporal.Olvido ? ForgotPasswordLifetime : TemporaryPasswordLifetime);
     }
 
-    public bool TemporalVigente(DateTimeOffset ahora) =>
+    public bool HasValidTemporaryPassword(DateTimeOffset ahora) =>
         TempPasswordHash is not null && TempPasswordExpira > ahora;
 
     /// <summary>
     /// Fija la contraseña definitiva, anula la temporal e invalida los tokens emitidos.
     /// </summary>
-    public void EstablecerContrasena(string hash, DateTimeOffset ahora)
+    public void SetPassword(string hash, DateTimeOffset ahora)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(hash);
 
         PasswordHash = hash;
         FechaCambioContrasena = ahora;
-        AnularTemporal();
-        RegenerarStamp();
+        ClearTemporaryPassword();
+        RegenerateStamp();
     }
 
     /// <summary>
     /// Recalcula el hash de la misma contraseña (parámetros de hash más nuevos). No es un cambio de contraseña:
     /// no cambia la fecha ni el stamp, ni envía aviso.
     /// </summary>
-    public void ActualizarHashContrasena(string hash)
+    public void RehashPassword(string hash)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(hash);
 
@@ -96,44 +96,44 @@ public class Usuario : EntidadBase
     /// <summary>
     /// RF-11 y RN-27: ingresar con la contraseña actual anula la temporal pendiente.
     /// </summary>
-    public void RegistrarIngresoConDefinitiva(DateTimeOffset ahora)
+    public void RecordLogin(DateTimeOffset ahora)
     {
-        AnularTemporal();
+        ClearTemporaryPassword();
         UltimoIngreso = ahora;
     }
 
     /// <summary>
     /// La temporal sigue vigente hasta que se complete el cambio obligatorio o venza.
     /// </summary>
-    public void RegistrarIngresoConTemporal(DateTimeOffset ahora) => UltimoIngreso = ahora;
+    public void RecordTemporaryPasswordLogin(DateTimeOffset ahora) => UltimoIngreso = ahora;
 
-    public void CambiarCorreo(string correo) => Correo = NormalizarCorreo(correo);
+    public void ChangeCorreo(string correo) => Correo = NormalizeCorreo(correo);
 
-    public void Desactivar()
+    public void Deactivate()
     {
         Activo = false;
-        RegenerarStamp();
+        RegenerateStamp();
     }
 
-    public void Reactivar()
+    public void Reactivate()
     {
         Activo = true;
-        RegenerarStamp();
+        RegenerateStamp();
     }
 
     /// <summary>
     /// Logout: invalida todos los tokens emitidos para la cuenta.
     /// </summary>
-    public void CerrarSesiones() => RegenerarStamp();
+    public void EndSessions() => RegenerateStamp();
 
-    private void AnularTemporal()
+    private void ClearTemporaryPassword()
     {
         TempPasswordHash = null;
         TempPasswordExpira = null;
         TempPasswordMotivo = null;
     }
 
-    private void RegenerarStamp() => SecurityStamp = NuevoStamp();
+    private void RegenerateStamp() => SecurityStamp = NewStamp();
 
-    private static string NuevoStamp() => Guid.NewGuid().ToString();
+    private static string NewStamp() => Guid.NewGuid().ToString();
 }

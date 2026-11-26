@@ -1,10 +1,10 @@
 using Matricula.Api.Common;
-using Matricula.Api.Seguridad;
+using Matricula.Api.Security;
 using Matricula.Application.Auth;
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Matricula.Application.Estudiantes;
 using Matricula.Application.Grupos;
-using Matricula.Application.Grupos.Consultas;
+using Matricula.Application.Grupos.Queries;
 using Matricula.Application.Matriculas;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -26,13 +26,13 @@ public class MeController(
     /// estado=Activa, los cursos y grupos en que está matriculado. Filtro por periodo; search busca en el curso y el NRC.
     /// </summary>
     [HttpGet("matriculas")]
-    [Authorize(Policy = Politicas.Estudiante)]
+    [Authorize(Policy = Policies.Estudiante)]
     [ProducesResponseType<PagedResult<MatriculaResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PagedResult<MatriculaResponse>>> MisMatriculas(
-        [FromQuery] ListarMatriculasRequest request, CancellationToken cancellationToken) =>
-        Ok(await matriculaService.ListarMiasAsync(request, cancellationToken));
+    public async Task<ActionResult<PagedResult<MatriculaResponse>>> ListMyMatriculas(
+        [FromQuery] ListMatriculasRequest request, CancellationToken cancellationToken) =>
+        Ok(await matriculaService.ListMineAsync(request, cancellationToken));
 
     /// <summary>
     /// El estudiante de la sesión se matricula en un grupo (RF-51). El grupo debe estar Abierto y dentro del rango de
@@ -40,32 +40,32 @@ public class MeController(
     /// /matriculas/{id}.
     /// </summary>
     [HttpPost("matriculas")]
-    [Authorize(Policy = Politicas.Estudiante)]
+    [Authorize(Policy = Policies.Estudiante)]
     [ProducesResponseType<MatriculaResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<MatriculaResponse>> Matricularme(
-        MatricularPropioRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<MatriculaResponse>> EnrollMe(
+        EnrollMeRequest request, CancellationToken cancellationToken)
     {
-        var matricula = await matriculaService.MatricularPropioAsync(request, cancellationToken);
+        var matricula = await matriculaService.EnrollMeAsync(request, cancellationToken);
         return CreatedAtAction(
-            nameof(MatriculasController.Obtener), "Matriculas", new { id = matricula.Id }, matricula);
+            nameof(MatriculasController.Get), "Matriculas", new { id = matricula.Id }, matricula);
     }
 
     /// <summary>
     /// Grupos del profesor de la sesión en todos los estados (RF-27), con filtro por periodo; search busca en el NRC.
     /// </summary>
     [HttpGet("grupos")]
-    [Authorize(Policy = Politicas.Profesor)]
+    [Authorize(Policy = Policies.Profesor)]
     [ProducesResponseType<PagedResult<GrupoResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PagedResult<GrupoResponse>>> MisGrupos(
-        [FromQuery] ListarGruposProfesorRequest request, CancellationToken cancellationToken) =>
-        Ok(await grupoService.ListarMisGruposAsync(request, cancellationToken));
+    public async Task<ActionResult<PagedResult<GrupoResponse>>> ListMyGrupos(
+        [FromQuery] ListGruposProfesorRequest request, CancellationToken cancellationToken) =>
+        Ok(await grupoService.ListMineAsync(request, cancellationToken));
 
     /// <summary>
     /// Horario semanal de la sesión: para el profesor, sus grupos (RF-28); para el estudiante, los grupos en que tiene
@@ -73,39 +73,39 @@ public class MeController(
     /// pidiendo el periodoId.
     /// </summary>
     [HttpGet("horario")]
-    [Authorize(Policy = Politicas.ProfesorOEstudiante)]
+    [Authorize(Policy = Policies.ProfesorOrEstudiante)]
     [ProducesResponseType<IReadOnlyList<BloqueHorarioResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<IReadOnlyList<BloqueHorarioResponse>>> MiHorario(
+    public async Task<ActionResult<IReadOnlyList<BloqueHorarioResponse>>> GetMyHorario(
         [FromQuery] int? periodoId, CancellationToken cancellationToken) =>
-        Ok(await horarioService.MiHorarioAsync(periodoId, cancellationToken));
+        Ok(await horarioService.GetMyHorarioAsync(periodoId, cancellationToken));
 
     /// <summary>
     /// Perfil propio: datos de la cuenta, rol y datos personales (RF-13).
     /// </summary>
     [HttpGet]
-    [ProducesResponseType<PerfilResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProfileResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PerfilResponse>> Perfil(CancellationToken cancellationToken) =>
-        Ok(await authService.ObtenerPerfilAsync(cancellationToken));
+    public async Task<ActionResult<ProfileResponse>> GetProfile(CancellationToken cancellationToken) =>
+        Ok(await authService.GetProfileAsync(cancellationToken));
 
     /// <summary>
     /// El estudiante edita su teléfono y su dirección. El correo y los demás datos los cambia un administrador.
     /// Devuelve el perfil actualizado.
     /// </summary>
     [HttpPut("datos-contacto")]
-    [Authorize(Policy = Politicas.Estudiante)]
-    [ProducesResponseType<PerfilResponse>(StatusCodes.Status200OK)]
+    [Authorize(Policy = Policies.Estudiante)]
+    [ProducesResponseType<ProfileResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PerfilResponse>> ActualizarDatosContacto(
-        ActualizarContactoRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<ProfileResponse>> UpdateContacto(
+        UpdateContactoRequest request, CancellationToken cancellationToken)
     {
-        await estudianteService.ActualizarContactoAsync(request, cancellationToken);
-        return Ok(await authService.ObtenerPerfilAsync(cancellationToken));
+        await estudianteService.UpdateContactoAsync(request, cancellationToken);
+        return Ok(await authService.GetProfileAsync(cancellationToken));
     }
 }

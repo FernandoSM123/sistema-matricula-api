@@ -32,7 +32,7 @@ public class Profesor : EntidadBase
 
         Usuario = usuario;
         Cedula = Nombre = Apellidos = Telefono = string.Empty;
-        ActualizarDatos(cedula, nombre, apellidos, telefono, especialidad, fechaContratacion);
+        Update(cedula, nombre, apellidos, telefono, especialidad, fechaContratacion);
     }
 
     public string Cedula { get; private set; }
@@ -46,7 +46,7 @@ public class Profesor : EntidadBase
     public Usuario Usuario { get; private set; }
 
     /// <summary>Edición por un administrador (RF-25).</summary>
-    public void ActualizarDatos(
+    public void Update(
         string cedula,
         string nombre,
         string apellidos,

@@ -25,7 +25,7 @@ public class Administrador : EntidadBase
 
         Usuario = usuario;
         Cedula = Nombre = Apellidos = Telefono = string.Empty;
-        ActualizarDatos(cedula, nombre, apellidos, telefono);
+        Update(cedula, nombre, apellidos, telefono);
     }
 
     public string Cedula { get; private set; }
@@ -36,7 +36,7 @@ public class Administrador : EntidadBase
     public int UsuarioId { get; private set; }
     public Usuario Usuario { get; private set; }
 
-    public void ActualizarDatos(string cedula, string nombre, string apellidos, string telefono)
+    public void Update(string cedula, string nombre, string apellidos, string telefono)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(cedula);
         ArgumentException.ThrowIfNullOrWhiteSpace(nombre);

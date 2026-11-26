@@ -23,17 +23,17 @@ public class PeriodoTests
     }
 
     [Fact]
-    public void NormalizarNombre_CapitalizacionDistinta_DevuelveElMismoNombre()
+    public void NormalizeNombre_CapitalizacionDistinta_DevuelveElMismoNombre()
     {
-        Assert.Equal(Periodo.NormalizarNombre("2027-I"), Periodo.NormalizarNombre(" 2027-i "));
+        Assert.Equal(Periodo.NormalizeNombre("2027-I"), Periodo.NormalizeNombre(" 2027-i "));
     }
 
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void NormalizarNombre_NombreEnBlanco_LanzaExcepcion(string nombre)
+    public void NormalizeNombre_NombreEnBlanco_LanzaExcepcion(string nombre)
     {
-        Assert.Throws<ArgumentException>(() => Periodo.NormalizarNombre(nombre));
+        Assert.Throws<ArgumentException>(() => Periodo.NormalizeNombre(nombre));
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public class PeriodoTests
     }
 
     [Fact]
-    public void ActualizarDatos_DatosNuevos_CambiaTodosLosDatos()
+    public void Update_DatosNuevos_CambiaTodosLosDatos()
     {
         var periodo = CrearPeriodo();
         var inicioMatricula = new DateOnly(2027, 6, 1);
@@ -55,7 +55,7 @@ public class PeriodoTests
         var finClases = new DateOnly(2027, 11, 30);
         var limite = new DateOnly(2027, 8, 1);
 
-        periodo.ActualizarDatos("2027-ii", inicioClases, finClases, inicioMatricula, finMatricula, limite);
+        periodo.Update("2027-ii", inicioClases, finClases, inicioMatricula, finMatricula, limite);
 
         Assert.Equal("2027-II", periodo.Nombre);
         Assert.Equal(inicioClases, periodo.InicioClases);
@@ -66,12 +66,12 @@ public class PeriodoTests
     }
 
     [Fact]
-    public void ActualizarDatos_FechasIncoherentes_LanzaRn16YConservaLosDatos()
+    public void Update_FechasIncoherentes_LanzaRn16YConservaLosDatos()
     {
         var periodo = CrearPeriodo();
 
         var excepcion = Assert.Throws<BusinessRuleException>(() =>
-            periodo.ActualizarDatos("OTRO", InicioClases, FinClases, FinMatricula, InicioMatricula, LimiteRetiro));
+            periodo.Update("OTRO", InicioClases, FinClases, FinMatricula, InicioMatricula, LimiteRetiro));
 
         Assert.Equal("RN-16", excepcion.Code);
         Assert.Equal("2027-I", periodo.Nombre);
@@ -82,26 +82,26 @@ public class PeriodoTests
     [InlineData(-1, false)]
     [InlineData(0, true)]
     [InlineData(1, true)]
-    public void EnRangoMatricula_SegunDiasRespectoAlInicio_DevuelveLoEsperado(int dias, bool esperado)
+    public void IsInMatriculaRange_SegunDiasRespectoAlInicio_DevuelveLoEsperado(int dias, bool esperado)
     {
-        Assert.Equal(esperado, CrearPeriodo().EnRangoMatricula(InicioMatricula.AddDays(dias)));
+        Assert.Equal(esperado, CrearPeriodo().IsInMatriculaRange(InicioMatricula.AddDays(dias)));
     }
 
     [Theory]
     [InlineData(-1, true)]
     [InlineData(0, true)]
     [InlineData(1, false)]
-    public void EnRangoMatricula_SegunDiasRespectoAlFin_DevuelveLoEsperado(int dias, bool esperado)
+    public void IsInMatriculaRange_SegunDiasRespectoAlFin_DevuelveLoEsperado(int dias, bool esperado)
     {
-        Assert.Equal(esperado, CrearPeriodo().EnRangoMatricula(FinMatricula.AddDays(dias)));
+        Assert.Equal(esperado, CrearPeriodo().IsInMatriculaRange(FinMatricula.AddDays(dias)));
     }
 
     [Theory]
     [InlineData(-1, true)]
     [InlineData(0, true)]
     [InlineData(1, false)]
-    public void PermiteRetiro_SegunDiasRespectoAlLimite_DevuelveLoEsperado(int dias, bool esperado)
+    public void AllowsRetiro_SegunDiasRespectoAlLimite_DevuelveLoEsperado(int dias, bool esperado)
     {
-        Assert.Equal(esperado, CrearPeriodo().PermiteRetiro(LimiteRetiro.AddDays(dias)));
+        Assert.Equal(esperado, CrearPeriodo().AllowsRetiro(LimiteRetiro.AddDays(dias)));
     }
 }

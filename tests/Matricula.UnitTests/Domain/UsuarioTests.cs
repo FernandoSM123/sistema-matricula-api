@@ -32,41 +32,41 @@ public class UsuarioTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void NormalizarCorreo_Vacio_Lanza(string correo)
+    public void NormalizeCorreo_Vacio_Lanza(string correo)
     {
-        Assert.Throws<ArgumentException>(() => Usuario.NormalizarCorreo(correo));
+        Assert.Throws<ArgumentException>(() => Usuario.NormalizeCorreo(correo));
     }
 
     [Theory]
     [InlineData(MotivoTemporal.CuentaNueva)]
     [InlineData(MotivoTemporal.ReenvioAdministrador)]
-    public void AsignarTemporal_CuentaNuevaOReenvio_VenceEn72Horas(MotivoTemporal motivo)
+    public void SetTemporaryPassword_CuentaNuevaOReenvio_VenceEn72Horas(MotivoTemporal motivo)
     {
         var usuario = NuevoUsuario();
 
-        usuario.AsignarTemporal("hash", motivo, Ahora);
+        usuario.SetTemporaryPassword("hash", motivo, Ahora);
 
         Assert.Equal(Ahora.AddHours(72), usuario.TempPasswordExpira);
         Assert.Equal(motivo, usuario.TempPasswordMotivo);
     }
 
     [Fact]
-    public void AsignarTemporal_PorOlvido_VenceEnUnaHora()
+    public void SetTemporaryPassword_PorOlvido_VenceEnUnaHora()
     {
         var usuario = NuevoUsuario();
 
-        usuario.AsignarTemporal("hash", MotivoTemporal.Olvido, Ahora);
+        usuario.SetTemporaryPassword("hash", MotivoTemporal.Olvido, Ahora);
 
         Assert.Equal(Ahora.AddHours(1), usuario.TempPasswordExpira);
     }
 
     [Fact]
-    public void AsignarTemporal_ConTemporalPrevia_LaReemplaza()
+    public void SetTemporaryPassword_ConTemporalPrevia_LaReemplaza()
     {
         var usuario = NuevoUsuario();
-        usuario.AsignarTemporal("hash-anterior", MotivoTemporal.CuentaNueva, Ahora);
+        usuario.SetTemporaryPassword("hash-anterior", MotivoTemporal.CuentaNueva, Ahora);
 
-        usuario.AsignarTemporal("hash-nuevo", MotivoTemporal.Olvido, Ahora.AddHours(10));
+        usuario.SetTemporaryPassword("hash-nuevo", MotivoTemporal.Olvido, Ahora.AddHours(10));
 
         Assert.Equal("hash-nuevo", usuario.TempPasswordHash);
         Assert.Equal(MotivoTemporal.Olvido, usuario.TempPasswordMotivo);
@@ -74,49 +74,49 @@ public class UsuarioTests
     }
 
     [Fact]
-    public void AsignarTemporal_NoInvalidaLaContrasenaActual()
+    public void SetTemporaryPassword_NoInvalidaLaContrasenaActual()
     {
         var usuario = NuevoUsuario();
-        usuario.EstablecerContrasena("hash-definitiva", Ahora);
+        usuario.SetPassword("hash-definitiva", Ahora);
 
-        usuario.AsignarTemporal("hash-temporal", MotivoTemporal.Olvido, Ahora);
+        usuario.SetTemporaryPassword("hash-temporal", MotivoTemporal.Olvido, Ahora);
 
         Assert.Equal("hash-definitiva", usuario.PasswordHash);
     }
 
     [Fact]
-    public void TemporalVigente_AntesDelVencimiento_DevuelveTrue()
+    public void HasValidTemporaryPassword_AntesDelVencimiento_DevuelveTrue()
     {
         var usuario = NuevoUsuario();
-        usuario.AsignarTemporal("hash", MotivoTemporal.Olvido, Ahora);
+        usuario.SetTemporaryPassword("hash", MotivoTemporal.Olvido, Ahora);
 
-        Assert.True(usuario.TemporalVigente(Ahora.AddMinutes(59)));
+        Assert.True(usuario.HasValidTemporaryPassword(Ahora.AddMinutes(59)));
     }
 
     [Fact]
-    public void TemporalVigente_EnElVencimientoODespues_DevuelveFalse()
+    public void HasValidTemporaryPassword_EnElVencimientoODespues_DevuelveFalse()
     {
         var usuario = NuevoUsuario();
-        usuario.AsignarTemporal("hash", MotivoTemporal.Olvido, Ahora);
+        usuario.SetTemporaryPassword("hash", MotivoTemporal.Olvido, Ahora);
 
-        Assert.False(usuario.TemporalVigente(Ahora.AddHours(1)));
-        Assert.False(usuario.TemporalVigente(Ahora.AddHours(2)));
+        Assert.False(usuario.HasValidTemporaryPassword(Ahora.AddHours(1)));
+        Assert.False(usuario.HasValidTemporaryPassword(Ahora.AddHours(2)));
     }
 
     [Fact]
-    public void TemporalVigente_SinTemporal_DevuelveFalse()
+    public void HasValidTemporaryPassword_SinTemporal_DevuelveFalse()
     {
-        Assert.False(NuevoUsuario().TemporalVigente(Ahora));
+        Assert.False(NuevoUsuario().HasValidTemporaryPassword(Ahora));
     }
 
     [Fact]
-    public void EstablecerContrasena_AnulaLaTemporalFijaLaFechaYCambiaElStamp()
+    public void SetPassword_AnulaLaTemporalFijaLaFechaYCambiaElStamp()
     {
         var usuario = NuevoUsuario();
-        usuario.AsignarTemporal("hash-temporal", MotivoTemporal.CuentaNueva, Ahora);
+        usuario.SetTemporaryPassword("hash-temporal", MotivoTemporal.CuentaNueva, Ahora);
         var stampAnterior = usuario.SecurityStamp;
 
-        usuario.EstablecerContrasena("hash-definitiva", Ahora.AddMinutes(5));
+        usuario.SetPassword("hash-definitiva", Ahora.AddMinutes(5));
 
         Assert.Equal("hash-definitiva", usuario.PasswordHash);
         Assert.Null(usuario.TempPasswordHash);
@@ -127,13 +127,13 @@ public class UsuarioTests
     }
 
     [Fact]
-    public void ActualizarHashContrasena_CambiaElHashSinCambiarStampNiFecha()
+    public void RehashPassword_CambiaElHashSinCambiarStampNiFecha()
     {
         var usuario = NuevoUsuario();
-        usuario.EstablecerContrasena("hash-v2", Ahora);
+        usuario.SetPassword("hash-v2", Ahora);
         var stamp = usuario.SecurityStamp;
 
-        usuario.ActualizarHashContrasena("hash-v3");
+        usuario.RehashPassword("hash-v3");
 
         Assert.Equal("hash-v3", usuario.PasswordHash);
         Assert.Equal(stamp, usuario.SecurityStamp);
@@ -141,75 +141,75 @@ public class UsuarioTests
     }
 
     [Fact]
-    public void RegistrarIngresoConDefinitiva_AnulaLaTemporalPendienteSinCambiarElStamp()
+    public void RecordLogin_AnulaLaTemporalPendienteSinCambiarElStamp()
     {
         var usuario = NuevoUsuario();
-        usuario.EstablecerContrasena("hash-definitiva", Ahora);
-        usuario.AsignarTemporal("hash-temporal", MotivoTemporal.Olvido, Ahora);
+        usuario.SetPassword("hash-definitiva", Ahora);
+        usuario.SetTemporaryPassword("hash-temporal", MotivoTemporal.Olvido, Ahora);
         var stamp = usuario.SecurityStamp;
 
-        usuario.RegistrarIngresoConDefinitiva(Ahora.AddMinutes(10));
+        usuario.RecordLogin(Ahora.AddMinutes(10));
 
         Assert.Null(usuario.TempPasswordHash);
-        Assert.False(usuario.TemporalVigente(Ahora.AddMinutes(10)));
+        Assert.False(usuario.HasValidTemporaryPassword(Ahora.AddMinutes(10)));
         Assert.Equal(Ahora.AddMinutes(10), usuario.UltimoIngreso);
         Assert.Equal(stamp, usuario.SecurityStamp);
     }
 
     [Fact]
-    public void RegistrarIngresoConTemporal_ConservaLaTemporal()
+    public void RecordTemporaryPasswordLogin_ConservaLaTemporal()
     {
         var usuario = NuevoUsuario();
-        usuario.AsignarTemporal("hash-temporal", MotivoTemporal.CuentaNueva, Ahora);
+        usuario.SetTemporaryPassword("hash-temporal", MotivoTemporal.CuentaNueva, Ahora);
 
-        usuario.RegistrarIngresoConTemporal(Ahora.AddMinutes(1));
+        usuario.RecordTemporaryPasswordLogin(Ahora.AddMinutes(1));
 
         Assert.Equal("hash-temporal", usuario.TempPasswordHash);
         Assert.Equal(Ahora.AddMinutes(1), usuario.UltimoIngreso);
     }
 
     [Fact]
-    public void CambiarCorreo_LoNormaliza()
+    public void ChangeCorreo_LoNormaliza()
     {
         var usuario = NuevoUsuario();
 
-        usuario.CambiarCorreo(" Nuevo@Instituto.Local");
+        usuario.ChangeCorreo(" Nuevo@Instituto.Local");
 
         Assert.Equal("nuevo@instituto.local", usuario.Correo);
     }
 
     [Fact]
-    public void Desactivar_MarcaInactivoYCambiaElStamp()
+    public void Deactivate_MarcaInactivoYCambiaElStamp()
     {
         var usuario = NuevoUsuario();
         var stampAnterior = usuario.SecurityStamp;
 
-        usuario.Desactivar();
+        usuario.Deactivate();
 
         Assert.False(usuario.Activo);
         Assert.NotEqual(stampAnterior, usuario.SecurityStamp);
     }
 
     [Fact]
-    public void Reactivar_MarcaActivoYCambiaElStamp()
+    public void Reactivate_MarcaActivoYCambiaElStamp()
     {
         var usuario = NuevoUsuario();
-        usuario.Desactivar();
+        usuario.Deactivate();
         var stampAnterior = usuario.SecurityStamp;
 
-        usuario.Reactivar();
+        usuario.Reactivate();
 
         Assert.True(usuario.Activo);
         Assert.NotEqual(stampAnterior, usuario.SecurityStamp);
     }
 
     [Fact]
-    public void CerrarSesiones_CambiaElStamp()
+    public void EndSessions_CambiaElStamp()
     {
         var usuario = NuevoUsuario();
         var stampAnterior = usuario.SecurityStamp;
 
-        usuario.CerrarSesiones();
+        usuario.EndSessions();
 
         Assert.NotEqual(stampAnterior, usuario.SecurityStamp);
     }

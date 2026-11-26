@@ -1,0 +1,16 @@
+using Matricula.Domain.Enums;
+
+namespace Matricula.Application.Abstractions;
+
+/// <summary>
+/// Lo que viaja en el token. <see cref="DebeCambiarContrasena"/> marca un ingreso con temporal (RN-24).
+/// <see cref="EstudianteId"/> solo lo tienen las cuentas de estudiante y <see cref="ProfesorId"/> las de profesor (RN-18).
+/// </summary>
+public record TokenData(
+    int UsuarioId,
+    string Correo,
+    Rol Rol,
+    string SecurityStamp,
+    bool DebeCambiarContrasena,
+    int? EstudianteId,
+    int? ProfesorId);

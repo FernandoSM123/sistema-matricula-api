@@ -24,19 +24,23 @@ dotnet ef database drop --force --project src/Matricula.Infrastructure --startup
 dotnet ef database update --project src/Matricula.Infrastructure --startup-project src/Matricula.Api
 ```
 
-Datos de prueba (solo `Development`): `DatosPrueba:Habilitado` y `DatosPrueba:Contrasena` en user-secrets; solo siembran sobre una BD sin datos de negocio. Detalle en `README.md` y `specs/SPEC-datos-prueba.md`.
+Datos de prueba (solo `Development`): `TestData:Enabled` y `TestData:Password` en user-secrets; solo siembran sobre una BD sin datos de negocio. Detalle en `README.md` y `specs/SPEC-datos-prueba.md`.
 
 Entorno: PostgreSQL y smtp4dev instalados localmente; **no se usa Docker** (el `docker-compose.yml` es solo una alternativa opcional).
 
 ## Estructura
-`src/Matricula.Domain` → entidades, enums, reglas puras · `src/Matricula.Application` → servicios por funcionalidad, DTOs, validadores · `src/Matricula.Infrastructure` → EF Core, correo, seed (`Seed/`: administrador inicial; `Seed/DatosPrueba/`: datos de prueba con Bogus) · `src/Matricula.Api` → controllers, middleware. Dependencias: `Api → Application → Domain`, `Infrastructure → Application`.
+`src/Matricula.Domain` → entidades, enums, reglas puras · `src/Matricula.Application` → servicios por funcionalidad, DTOs, validadores · `src/Matricula.Infrastructure` → EF Core, correo, seed (`Seed/`: administrador inicial; `Seed/TestData/`: datos de prueba con Bogus) · `src/Matricula.Api` → controllers, middleware. Dependencias: `Api → Application → Domain`, `Infrastructure → Application`.
 
 ## Límites
 **Siempre**
-- Seguir `docs/arquitectura.md`; nombres de dominio en español sin tildes ni ñ, sufijos técnicos en inglés.
+- Seguir `docs/arquitectura.md`.
+- Nombres (§8.1 de la arquitectura), siempre sin tildes ni ñ:
+  - En español, el dominio del instituto: entidades y sus propiedades (columnas y JSON), enums y sus valores, rutas, controllers (dan la ruta), carpetas de funcionalidad, mensajes, comentarios y descripciones de las pruebas.
+  - En inglés, todo lo demás: clases técnicas, métodos, constantes, carpetas técnicas, opciones y sus claves.
+  - Combinados, primero el dominio y después lo técnico (`CursoService`, `GrupoDetailResponse`, `CreateCursoRequest`); verbos en inglés (`EnrollAsync`, `ChangeGrupoAsync`).
 - DTOs de entrada/salida; las entidades nunca salen de Application.
 - Errores como `ProblemDetails` con `code` de la regla (`"RN-05"`); `BusinessRuleException` → 409.
-- `async` + `CancellationToken` de punta a punta; `TimeProvider` en lugar de `DateTime.Now`; `IFechaLocal.Hoy()` para la fecha de hoy (zona de `Instituto:ZonaHoraria`), nunca la fecha UTC.
+- `async` + `CancellationToken` de punta a punta; `TimeProvider` en lugar de `DateTime.Now`; `ILocalClock.Today()` para la fecha de hoy (zona de `Institute:TimeZone`), nunca la fecha UTC.
 - Tests: **por el momento solo pruebas unitarias** de las reglas puras del dominio (sin BD). Servicios y endpoints se verifican manualmente con Scalar, `Matricula.Api.http` y smtp4dev.
 - `dotnet build` sin warnings y las pruebas unitarias en verde antes de dar una tarea por terminada.
 
@@ -46,15 +50,16 @@ Entorno: PostgreSQL y smtp4dev instalados localmente; **no se usa Docker** (el `
 - Añadir paquetes NuGet o servicios nuevos.
 - Cambiar el esquema de BD fuera de lo que define una spec aprobada.
 - Cambiar una regla de negocio o interpretar un requerimiento ambiguo.
+- El nombre o el idioma de algo, cuando la regla de nombres no lo deja claro.
 
 **Nunca**
 - Exponer entidades en controllers ni usar `DbContext` desde controllers.
 - `EnsureCreated`, eliminación en cascada, filtros globales de "Activo", proveedor InMemory o SQLite en tests.
 - Apuntar las pruebas a la BD de desarrollo `matricula`, ni agregar dependencias que requieran Docker (Testcontainers).
 - MediatR, AutoMapper, repositorios genéricos o Clean Architecture/DDD completos.
-- Escribir con `ExecuteUpdate`, `ExecuteDelete`, SQL manual o el `SaveChanges` síncrono: se saltan la auditoría (RN-42). Toda escritura pasa por el change tracker y `SaveChangesAsync`. **Única excepción:** `ExecuteDeleteAsync` en `DepuracionErrores`, para depurar `registro_error` (RN-49), que no se audita. No se extiende a ninguna otra tabla ni operación.
+- Escribir con `ExecuteUpdate`, `ExecuteDelete`, SQL manual o el `SaveChanges` síncrono: se saltan la auditoría (RN-42). Toda escritura pasa por el change tracker y `SaveChangesAsync`. **Única excepción:** `ExecuteDeleteAsync` en `ErrorLogPurgeService`, para depurar `registro_error` (RN-49), que no se audita. No se extiende a ninguna otra tabla ni operación.
 - Registrar la auditoría a mano desde un servicio, o modificar o eliminar registros de auditoría (RN-43): la captura es automática en `AppDbContext.SaveChangesAsync`.
-- Guardar en el registro de errores el body, los headers (en especial `Authorization`) o el query string de una petición (RN-47); registrar errores con el `AppDbContext` de la petición, en lugar de uno de un scope aparte; o dejar que una excepción del registro o de la depuración llegue al usuario o detenga la API (RN-48). Los errores se registran solo con `IRegistroErrores`, desde `GlobalExceptionHandler` y `EnvioCorreos`.
+- Guardar en el registro de errores el body, los headers (en especial `Authorization`) o el query string de una petición (RN-47); registrar errores con el `AppDbContext` de la petición, en lugar de uno de un scope aparte; o dejar que una excepción del registro o de la depuración llegue al usuario o detenga la API (RN-48). Los errores se registran solo con `IErrorRecorder`, desde `GlobalExceptionHandler` y `EmailDispatcher`.
 - Guardar o registrar en logs contraseñas o temporales; poner secretos en `appsettings*.json` (usar user-secrets).
 
 ## Flujo de trabajo

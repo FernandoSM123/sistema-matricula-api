@@ -1,6 +1,6 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
-using Matricula.Application.Correos;
+using Matricula.Application.Email;
 using Matricula.Application.Grupos;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
@@ -14,29 +14,29 @@ namespace Matricula.Application.Cuentas;
 /// </summary>
 public class UsuarioService(
     IAppDbContext db,
-    IHasherContrasenas hasher,
-    IGeneradorContrasenas generadorContrasenas,
-    EnvioCorreos envioCorreos,
+    IPasswordHashService hasher,
+    IPasswordGenerator passwordGenerator,
+    EmailDispatcher emailDispatcher,
     TimeProvider timeProvider,
-    IFechaLocal fechaLocal)
+    ILocalClock localClock)
 {
     /// <summary>
     /// RF-12: nueva temporal de 72 horas que reemplaza a la anterior (RN-23, RN-27). No a cuentas inactivas (RN-29).
     /// </summary>
-    public async Task<ReenvioTemporalResponse> ReenviarTemporalAsync(int usuarioId, CancellationToken cancellationToken)
+    public async Task<ResendTemporaryPasswordResponse> ResendTemporaryPasswordAsync(int usuarioId, CancellationToken cancellationToken)
     {
-        var usuario = await CargarAsync(usuarioId, cancellationToken);
+        var usuario = await LoadAsync(usuarioId, cancellationToken);
         if (!usuario.Activo)
         {
             throw new BusinessRuleException("RN-29", "La cuenta está desactivada y no puede recibir contraseñas temporales. Reactívela primero.");
         }
 
-        var temporal = generadorContrasenas.Generar();
-        usuario.AsignarTemporal(hasher.Hashear(temporal), MotivoTemporal.ReenvioAdministrador, timeProvider.GetUtcNow());
+        var temporal = passwordGenerator.Generate();
+        usuario.SetTemporaryPassword(hasher.Hash(temporal), MotivoTemporal.ReenvioAdministrador, timeProvider.GetUtcNow());
         await db.SaveChangesAsync(cancellationToken);
 
-        var correoEnviado = await envioCorreos.EnviarTemporalAsync(usuario, temporal, MotivoTemporal.ReenvioAdministrador, cancellationToken);
-        return new ReenvioTemporalResponse(correoEnviado);
+        var correoEnviado = await emailDispatcher.SendTemporaryPasswordAsync(usuario, temporal, MotivoTemporal.ReenvioAdministrador, cancellationToken);
+        return new ResendTemporaryPasswordResponse(correoEnviado);
     }
 
     /// <summary>
@@ -44,9 +44,9 @@ public class UsuarioService(
     /// activo (RN-30). A un profesor con grupos activos no (RN-37), ni a un estudiante con matrículas activas en un
     /// periodo en curso (RN-36).
     /// </summary>
-    public async Task DesactivarAsync(int usuarioId, CancellationToken cancellationToken)
+    public async Task DeactivateAsync(int usuarioId, CancellationToken cancellationToken)
     {
-        var usuario = await CargarAsync(usuarioId, cancellationToken);
+        var usuario = await LoadAsync(usuarioId, cancellationToken);
         if (!usuario.Activo)
         {
             return;
@@ -61,24 +61,24 @@ public class UsuarioService(
         // Aquí y no en ProfesorService, para que aplique también a /usuarios/{id}/desactivar.
         if (usuario.Rol == Rol.Profesor)
         {
-            await db.ValidarSinGruposActivosAsync(
+            await db.EnsureNoActiveGruposAsync(
                 g => g.Profesor.UsuarioId == usuarioId, "al profesor", cancellationToken);
         }
 
         if (usuario.Rol == Rol.Estudiante)
         {
-            await ValidarSinMatriculasEnCursoAsync(usuarioId, cancellationToken);
+            await EnsureNoCurrentMatriculasAsync(usuarioId, cancellationToken);
         }
 
-        usuario.Desactivar();
+        usuario.Deactivate();
         await db.SaveChangesAsync(cancellationToken);
     }
 
     // RN-36 (supuesto 12): ninguna matrícula activa en un periodo en curso (InicioMatricula ≤ hoy ≤ FinClases), sea o
     // no el vigente.
-    private async Task ValidarSinMatriculasEnCursoAsync(int usuarioId, CancellationToken cancellationToken)
+    private async Task EnsureNoCurrentMatriculasAsync(int usuarioId, CancellationToken cancellationToken)
     {
-        var hoy = fechaLocal.Hoy();
+        var hoy = localClock.Today();
         var activas = await db.Matriculas.CountAsync(
             m => m.Estudiante.UsuarioId == usuarioId
                 && m.Estado == EstadoMatricula.Activa
@@ -99,19 +99,19 @@ public class UsuarioService(
     /// <summary>
     /// RF-14 y RN-39: un registro inactivo se reactiva, no se vuelve a crear.
     /// </summary>
-    public async Task ReactivarAsync(int usuarioId, CancellationToken cancellationToken)
+    public async Task ReactivateAsync(int usuarioId, CancellationToken cancellationToken)
     {
-        var usuario = await CargarAsync(usuarioId, cancellationToken);
+        var usuario = await LoadAsync(usuarioId, cancellationToken);
         if (usuario.Activo)
         {
             return;
         }
 
-        usuario.Reactivar();
+        usuario.Reactivate();
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task<Usuario> CargarAsync(int usuarioId, CancellationToken cancellationToken) =>
+    private async Task<Usuario> LoadAsync(int usuarioId, CancellationToken cancellationToken) =>
         await db.Usuarios.SingleOrDefaultAsync(u => u.Id == usuarioId, cancellationToken)
         ?? throw new NotFoundException($"No existe el usuario {usuarioId}.");
 }

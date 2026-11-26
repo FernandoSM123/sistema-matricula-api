@@ -1,6 +1,6 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Matricula.Application.Cuentas;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
@@ -15,12 +15,12 @@ public class ProfesorService(IAppDbContext db, CuentaService cuentaService, Usua
     /// RF-03 y RF-22: crea la cuenta (rol Profesor, temporal de 72 horas) y el registro del profesor en un solo
     /// guardado, y después envía la temporal.
     /// </summary>
-    public async Task<ProfesorRegistradoResponse> RegistrarAsync(RegistrarProfesorRequest request, CancellationToken cancellationToken)
+    public async Task<ProfesorCreatedResponse> CreateAsync(CreateProfesorRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        await ValidarCedulaDisponibleAsync(request.Cedula, cancellationToken);
-        var cuenta = await cuentaService.CrearCuentaConTemporalAsync(request.Correo, Rol.Profesor, cancellationToken);
+        await EnsureCedulaAvailableAsync(request.Cedula, cancellationToken);
+        var cuenta = await cuentaService.CreateWithTemporaryPasswordAsync(request.Correo, Rol.Profesor, cancellationToken);
 
         var profesor = new Profesor(
             cuenta.Usuario,
@@ -33,14 +33,14 @@ public class ProfesorService(IAppDbContext db, CuentaService cuentaService, Usua
         db.Profesores.Add(profesor);
         await db.SaveChangesAsync(cancellationToken);
 
-        var correoEnviado = await cuentaService.EnviarTemporalAsync(cuenta, cancellationToken);
-        return new ProfesorRegistradoResponse(profesor.ToResponse(), correoEnviado);
+        var correoEnviado = await cuentaService.SendTemporaryPasswordAsync(cuenta, cancellationToken);
+        return new ProfesorCreatedResponse(profesor.ToResponse(), correoEnviado);
     }
 
     /// <summary>
     /// RF-23: listado paginado, solo activos salvo que se pidan los inactivos (RN-41).
     /// </summary>
-    public Task<PagedResult<ProfesorResponse>> ListarAsync(ListarProfesoresRequest request, CancellationToken cancellationToken)
+    public Task<PagedResult<ProfesorResponse>> ListAsync(ListProfesoresRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -68,14 +68,14 @@ public class ProfesorService(IAppDbContext db, CuentaService cuentaService, Usua
             .OrderBy(p => p.Apellidos)
             .ThenBy(p => p.Nombre)
             .ThenBy(p => p.Id)
-            .Select(ProfesorProyecciones.AResponse)
+            .Select(ProfesorProjections.ToResponseExpression)
             .ToPagedResultAsync(request, cancellationToken);
     }
 
     /// <summary>
     /// RF-25: datos personales y correo de un profesor. El correo se cambia en la cuenta (RN-31).
     /// </summary>
-    public async Task<ProfesorResponse> ActualizarAsync(int id, ActualizarProfesorRequest request, CancellationToken cancellationToken)
+    public async Task<ProfesorResponse> UpdateAsync(int id, UpdateProfesorRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -91,18 +91,18 @@ public class ProfesorService(IAppDbContext db, CuentaService cuentaService, Usua
             throw new BusinessRuleException("RN-13", $"Ya existe un profesor con la cédula {cedula}.");
         }
 
-        await cuentaService.CambiarCorreoAsync(profesor.Usuario, request.Correo, cancellationToken);
-        profesor.ActualizarDatos(
+        await cuentaService.ChangeCorreoAsync(profesor.Usuario, request.Correo, cancellationToken);
+        profesor.Update(
             request.Cedula, request.Nombre, request.Apellidos, request.Telefono, request.Especialidad, request.FechaContratacion);
         await db.SaveChangesAsync(cancellationToken);
 
         return profesor.ToResponse();
     }
 
-    public async Task<ProfesorResponse> ObtenerAsync(int id, CancellationToken cancellationToken) =>
+    public async Task<ProfesorResponse> GetAsync(int id, CancellationToken cancellationToken) =>
         await db.Profesores.AsNoTracking()
             .Where(p => p.Id == id)
-            .Select(ProfesorProyecciones.AResponse)
+            .Select(ProfesorProjections.ToResponseExpression)
             .SingleOrDefaultAsync(cancellationToken)
         ?? throw new NotFoundException($"No existe el profesor {id}.");
 
@@ -110,21 +110,21 @@ public class ProfesorService(IAppDbContext db, CuentaService cuentaService, Usua
     /// RF-26 y RN-38: el estado del profesor es el de su cuenta, así que se desactiva la cuenta. El módulo grupos
     /// añade RN-37 en UsuarioService, que aplica también a /usuarios/{id}/desactivar.
     /// </summary>
-    public async Task DesactivarAsync(int id, CancellationToken cancellationToken) =>
-        await usuarioService.DesactivarAsync(await ObtenerUsuarioIdAsync(id, cancellationToken), cancellationToken);
+    public async Task DeactivateAsync(int id, CancellationToken cancellationToken) =>
+        await usuarioService.DeactivateAsync(await GetUsuarioIdAsync(id, cancellationToken), cancellationToken);
 
     /// <summary>
     /// RF-26, RN-38 y RN-39: un profesor que regresa se reactiva, no se registra de nuevo.
     /// </summary>
-    public async Task ReactivarAsync(int id, CancellationToken cancellationToken) =>
-        await usuarioService.ReactivarAsync(await ObtenerUsuarioIdAsync(id, cancellationToken), cancellationToken);
+    public async Task ReactivateAsync(int id, CancellationToken cancellationToken) =>
+        await usuarioService.ReactivateAsync(await GetUsuarioIdAsync(id, cancellationToken), cancellationToken);
 
     /// <summary>
     /// RF-26 y RN-34: solo un profesor que nunca tuvo grupos, ni siquiera cancelados; si no, se desactiva. Su cuenta se
     /// elimina con él en el mismo guardado (RN-35, decisión 10 del mapa), así no queda una cuenta sin persona (RN-31) y
     /// el correo se puede volver a registrar. Sus tokens dejan de valer porque la cuenta ya no existe.
     /// </summary>
-    public async Task EliminarAsync(int id, CancellationToken cancellationToken)
+    public async Task DeleteAsync(int id, CancellationToken cancellationToken)
     {
         var profesor = await db.Profesores
             .Include(p => p.Usuario)
@@ -144,7 +144,7 @@ public class ProfesorService(IAppDbContext db, CuentaService cuentaService, Usua
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task<int> ObtenerUsuarioIdAsync(int id, CancellationToken cancellationToken)
+    private async Task<int> GetUsuarioIdAsync(int id, CancellationToken cancellationToken)
     {
         var usuarioId = await db.Profesores.AsNoTracking()
             .Where(p => p.Id == id)
@@ -155,7 +155,7 @@ public class ProfesorService(IAppDbContext db, CuentaService cuentaService, Usua
     }
 
     // RN-13 (cédula única entre profesores) y RN-39 (un inactivo se reactiva, no se registra de nuevo).
-    private async Task ValidarCedulaDisponibleAsync(string cedula, CancellationToken cancellationToken)
+    private async Task EnsureCedulaAvailableAsync(string cedula, CancellationToken cancellationToken)
     {
         var buscada = cedula.Trim();
         var existente = await db.Profesores.AsNoTracking()

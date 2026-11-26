@@ -1,9 +1,9 @@
 using Matricula.Api.Common;
-using Matricula.Api.Seguridad;
+using Matricula.Api.Security;
 using Matricula.Application.Auth;
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Matricula.Application.Estudiantes;
-using Matricula.Application.Grupos.Consultas;
+using Matricula.Application.Grupos.Queries;
 using Matricula.Application.Matriculas;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace Matricula.Api.Controllers;
 
-[Authorize(Policy = Politicas.Administrador)]
+[Authorize(Policy = Policies.Administrador)]
 public class EstudiantesController(
     EstudianteService estudianteService,
     MatriculaService matriculaService,
@@ -24,9 +24,9 @@ public class EstudiantesController(
     [HttpGet("{id:int}/horario")]
     [ProducesResponseType<IReadOnlyList<BloqueHorarioResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<IReadOnlyList<BloqueHorarioResponse>>> Horario(
+    public async Task<ActionResult<IReadOnlyList<BloqueHorarioResponse>>> GetHorario(
         int id, [FromQuery] int? periodoId, CancellationToken cancellationToken) =>
-        Ok(await horarioService.HorarioEstudianteAsync(id, periodoId, cancellationToken));
+        Ok(await horarioService.GetEstudianteHorarioAsync(id, periodoId, cancellationToken));
 
     /// <summary>
     /// Matrículas de un estudiante (RF-20, RF-54): sin estado es su historial de matrículas y retiros; con
@@ -35,25 +35,25 @@ public class EstudiantesController(
     [HttpGet("{id:int}/matriculas")]
     [ProducesResponseType<PagedResult<MatriculaResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PagedResult<MatriculaResponse>>> Matriculas(
-        int id, [FromQuery] ListarMatriculasRequest request, CancellationToken cancellationToken) =>
-        Ok(await matriculaService.ListarDeEstudianteAsync(id, request, cancellationToken));
+    public async Task<ActionResult<PagedResult<MatriculaResponse>>> ListMatriculas(
+        int id, [FromQuery] ListMatriculasRequest request, CancellationToken cancellationToken) =>
+        Ok(await matriculaService.ListByEstudianteAsync(id, request, cancellationToken));
 
     /// <summary>
     /// Registra un estudiante por un administrador (RF-02). La temporal se envía a su correo y nunca aparece en
     /// la respuesta; con correoEnviado en false se puede reenviar.
     /// </summary>
     [HttpPost]
-    [ProducesResponseType<EstudianteRegistradoResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<EstudianteCreatedResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<EstudianteRegistradoResponse>> Registrar(
-        RegistrarEstudianteRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<EstudianteCreatedResponse>> Create(
+        CreateEstudianteRequest request, CancellationToken cancellationToken)
     {
-        var registrado = await estudianteService.RegistrarAsync(request, cancellationToken);
-        return CreatedAtAction(nameof(Obtener), new { id = registrado.Estudiante.Id }, registrado);
+        var registrado = await estudianteService.CreateAsync(request, cancellationToken);
+        return CreatedAtAction(nameof(Get), new { id = registrado.Estudiante.Id }, registrado);
     }
 
     /// <summary>
@@ -62,15 +62,15 @@ public class EstudiantesController(
     /// </summary>
     [HttpPost("registro")]
     [AllowAnonymous]
-    [EnableRateLimiting(LimitesPeticiones.RegistroEstudiante)]
-    [ProducesResponseType<MensajeResponse>(StatusCodes.Status201Created)]
+    [EnableRateLimiting(RateLimitPolicies.SignUp)]
+    [ProducesResponseType<MessageResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
-    public async Task<ActionResult<MensajeResponse>> RegistroPublico(
-        RegistroPublicoRequest request, CancellationToken cancellationToken) =>
+    public async Task<ActionResult<MessageResponse>> SignUp(
+        SignUpRequest request, CancellationToken cancellationToken) =>
         // Sin Location: el visitante no puede consultar el recurso creado.
-        StatusCode(StatusCodes.Status201Created, await estudianteService.RegistrarPublicoAsync(request, cancellationToken));
+        StatusCode(StatusCodes.Status201Created, await estudianteService.SignUpAsync(request, cancellationToken));
 
     /// <summary>
     /// Lista los estudiantes (RF-16). Por defecto solo los activos; search busca en nombre, apellidos, cédula
@@ -78,9 +78,9 @@ public class EstudiantesController(
     /// </summary>
     [HttpGet]
     [ProducesResponseType<PagedResult<EstudianteResponse>>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<PagedResult<EstudianteResponse>>> Listar(
-        [FromQuery] ListarEstudiantesRequest request, CancellationToken cancellationToken) =>
-        Ok(await estudianteService.ListarAsync(request, cancellationToken));
+    public async Task<ActionResult<PagedResult<EstudianteResponse>>> List(
+        [FromQuery] ListEstudiantesRequest request, CancellationToken cancellationToken) =>
+        Ok(await estudianteService.ListAsync(request, cancellationToken));
 
     /// <summary>
     /// Modifica los datos personales y el correo de un estudiante (RF-18). La fecha de registro no cambia.
@@ -90,9 +90,9 @@ public class EstudiantesController(
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<EstudianteResponse>> Actualizar(
-        int id, ActualizarEstudianteRequest request, CancellationToken cancellationToken) =>
-        Ok(await estudianteService.ActualizarAsync(id, request, cancellationToken));
+    public async Task<ActionResult<EstudianteResponse>> Update(
+        int id, UpdateEstudianteRequest request, CancellationToken cancellationToken) =>
+        Ok(await estudianteService.UpdateAsync(id, request, cancellationToken));
 
     /// <summary>
     /// Desactiva al estudiante y su cuenta (RF-19, RN-38): no puede ingresar y sus sesiones se cierran. Con matrículas
@@ -102,9 +102,9 @@ public class EstudiantesController(
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Desactivar(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Deactivate(int id, CancellationToken cancellationToken)
     {
-        await estudianteService.DesactivarAsync(id, cancellationToken);
+        await estudianteService.DeactivateAsync(id, cancellationToken);
         return NoContent();
     }
 
@@ -116,9 +116,9 @@ public class EstudiantesController(
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Eliminar(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        await estudianteService.EliminarAsync(id, cancellationToken);
+        await estudianteService.DeleteAsync(id, cancellationToken);
         return NoContent();
     }
 
@@ -128,9 +128,9 @@ public class EstudiantesController(
     [HttpPost("{id:int}/reactivar")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Reactivar(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Reactivate(int id, CancellationToken cancellationToken)
     {
-        await estudianteService.ReactivarAsync(id, cancellationToken);
+        await estudianteService.ReactivateAsync(id, cancellationToken);
         return NoContent();
     }
 
@@ -140,6 +140,6 @@ public class EstudiantesController(
     [HttpGet("{id:int}")]
     [ProducesResponseType<EstudianteResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<EstudianteResponse>> Obtener(int id, CancellationToken cancellationToken) =>
-        Ok(await estudianteService.ObtenerAsync(id, cancellationToken));
+    public async Task<ActionResult<EstudianteResponse>> Get(int id, CancellationToken cancellationToken) =>
+        Ok(await estudianteService.GetAsync(id, cancellationToken));
 }

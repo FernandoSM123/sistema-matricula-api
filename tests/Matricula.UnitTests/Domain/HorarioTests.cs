@@ -30,30 +30,30 @@ public class HorarioTests
     }
 
     [Fact]
-    public void SeTraslapaCon_TraslapeParcial_DevuelveTrue()
+    public void OverlapsWith_TraslapeParcial_DevuelveTrue()
     {
         var a = CrearHorario(DiaSemana.Lunes, 8, 10);
         var b = CrearHorario(DiaSemana.Lunes, 9, 11);
 
-        Assert.True(a.SeTraslapaCon(b));
-        Assert.True(b.SeTraslapaCon(a));
+        Assert.True(a.OverlapsWith(b));
+        Assert.True(b.OverlapsWith(a));
     }
 
     [Fact]
-    public void SeTraslapaCon_BloquesContiguos_DevuelveFalse()
+    public void OverlapsWith_BloquesContiguos_DevuelveFalse()
     {
         var a = CrearHorario(DiaSemana.Lunes, 8, 10);
         var b = CrearHorario(DiaSemana.Lunes, 10, 12);
 
-        Assert.False(a.SeTraslapaCon(b));
+        Assert.False(a.OverlapsWith(b));
     }
 
     [Fact]
-    public void SeTraslapaCon_DiasDistintos_DevuelveFalse()
+    public void OverlapsWith_DiasDistintos_DevuelveFalse()
     {
         var a = CrearHorario(DiaSemana.Lunes, 8, 10);
         var b = CrearHorario(DiaSemana.Jueves, 8, 10);
 
-        Assert.False(a.SeTraslapaCon(b));
+        Assert.False(a.OverlapsWith(b));
     }
 }

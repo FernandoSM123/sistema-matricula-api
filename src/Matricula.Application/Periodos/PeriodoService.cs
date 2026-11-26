@@ -1,18 +1,18 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Matricula.Application.Periodos;
 
-public class PeriodoService(IAppDbContext db, IFechaLocal fechaLocal)
+public class PeriodoService(IAppDbContext db, ILocalClock localClock)
 {
     /// <summary>
     /// RF-35: registra un periodo. Las fechas ya las exige el validador, y los periodos pueden traslaparse.
     /// </summary>
-    public async Task<PeriodoResponse> RegistrarAsync(RegistrarPeriodoRequest request, CancellationToken cancellationToken)
+    public async Task<PeriodoResponse> CreateAsync(CreatePeriodoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -38,7 +38,7 @@ public class PeriodoService(IAppDbContext db, IFechaLocal fechaLocal)
     /// <summary>
     /// RF-36: listado paginado, con los más recientes primero.
     /// </summary>
-    public Task<PagedResult<PeriodoResponse>> ListarAsync(ListarPeriodosRequest request, CancellationToken cancellationToken)
+    public Task<PagedResult<PeriodoResponse>> ListAsync(ListPeriodosRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -55,14 +55,14 @@ public class PeriodoService(IAppDbContext db, IFechaLocal fechaLocal)
         return query
             .OrderByDescending(p => p.InicioClases)
             .ThenBy(p => p.Id)
-            .Select(PeriodoProyecciones.AResponse)
+            .Select(PeriodoProjections.ToResponseExpression)
             .ToPagedResultAsync(request, cancellationToken);
     }
 
-    public async Task<PeriodoResponse> ObtenerAsync(int id, CancellationToken cancellationToken) =>
+    public async Task<PeriodoResponse> GetAsync(int id, CancellationToken cancellationToken) =>
         await db.Periodos.AsNoTracking()
             .Where(p => p.Id == id)
-            .Select(PeriodoProyecciones.AResponse)
+            .Select(PeriodoProjections.ToResponseExpression)
             .SingleOrDefaultAsync(cancellationToken)
         ?? throw new NotFoundException($"No existe el periodo {id}.");
 
@@ -70,14 +70,14 @@ public class PeriodoService(IAppDbContext db, IFechaLocal fechaLocal)
     /// RF-38: vigente es el periodo con InicioMatricula ≤ hoy ≤ FinClases. Los periodos pueden traslaparse: gana el de
     /// matrícula más reciente y, si coinciden, el de mayor id.
     /// </summary>
-    public async Task<PeriodoResponse> ObtenerVigenteAsync(CancellationToken cancellationToken)
+    public async Task<PeriodoResponse> GetVigenteAsync(CancellationToken cancellationToken)
     {
-        var id = await ObtenerIdVigenteAsync(cancellationToken)
+        var id = await GetVigenteIdAsync(cancellationToken)
             ?? throw new NotFoundException("No hay un periodo vigente.");
 
         return await db.Periodos.AsNoTracking()
             .Where(p => p.Id == id)
-            .Select(PeriodoProyecciones.AResponse)
+            .Select(PeriodoProjections.ToResponseExpression)
             .SingleAsync(cancellationToken);
     }
 
@@ -85,9 +85,9 @@ public class PeriodoService(IAppDbContext db, IFechaLocal fechaLocal)
     /// Id del periodo vigente, o null si no hay. Para las consultas de otros módulos que lo usan por defecto (la oferta
     /// académica, el horario semanal y la ocupación de un aula).
     /// </summary>
-    public async Task<int?> ObtenerIdVigenteAsync(CancellationToken cancellationToken)
+    public async Task<int?> GetVigenteIdAsync(CancellationToken cancellationToken)
     {
-        var hoy = fechaLocal.Hoy();
+        var hoy = localClock.Today();
 
         return await db.Periodos.AsNoTracking()
             .Where(p => p.InicioMatricula <= hoy && hoy <= p.FinClases)
@@ -100,21 +100,21 @@ public class PeriodoService(IAppDbContext db, IFechaLocal fechaLocal)
     /// <summary>
     /// RF-36: también se editan periodos pasados. Las fechas ya las exige el validador.
     /// </summary>
-    public async Task<PeriodoResponse> ActualizarAsync(int id, ActualizarPeriodoRequest request, CancellationToken cancellationToken)
+    public async Task<PeriodoResponse> UpdateAsync(int id, UpdatePeriodoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         var periodo = await db.Periodos.SingleOrDefaultAsync(p => p.Id == id, cancellationToken)
             ?? throw new NotFoundException($"No existe el periodo {id}.");
 
-        var nombre = Periodo.NormalizarNombre(request.Nombre);
+        var nombre = Periodo.NormalizeNombre(request.Nombre);
         if (nombre != periodo.Nombre
             && await db.Periodos.AnyAsync(p => p.Nombre == nombre && p.Id != id, cancellationToken))
         {
             throw new BusinessRuleException("RN-13", $"Ya existe un periodo con el nombre {nombre}.");
         }
 
-        periodo.ActualizarDatos(
+        periodo.Update(
             request.Nombre,
             request.InicioClases!.Value,
             request.FinClases!.Value,
@@ -130,7 +130,7 @@ public class PeriodoService(IAppDbContext db, IFechaLocal fechaLocal)
     /// RF-37 y RN-34: solo un periodo sin grupos, ni siquiera cancelados. Los periodos no se desactivan: uno con grupos
     /// se corrige o se conserva como historial.
     /// </summary>
-    public async Task EliminarAsync(int id, CancellationToken cancellationToken)
+    public async Task DeleteAsync(int id, CancellationToken cancellationToken)
     {
         var periodo = await db.Periodos.SingleOrDefaultAsync(p => p.Id == id, cancellationToken)
             ?? throw new NotFoundException($"No existe el periodo {id}.");

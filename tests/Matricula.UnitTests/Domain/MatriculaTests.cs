@@ -26,12 +26,12 @@ public class MatriculaTests
     [InlineData(MotivoRetiro.RetiroVoluntario)]
     [InlineData(MotivoRetiro.CambioGrupo)]
     [InlineData(MotivoRetiro.CancelacionGrupo)]
-    public void Retirar_MatriculaActiva_AsignaEstadoFechaYMotivo(MotivoRetiro motivo)
+    public void Withdraw_MatriculaActiva_AsignaEstadoFechaYMotivo(MotivoRetiro motivo)
     {
         var matricula = new MatriculaEntidad(7, 9, Hoy);
         var fecha = Hoy.AddDays(10);
 
-        matricula.Retirar(fecha, motivo);
+        matricula.Withdraw(fecha, motivo);
 
         Assert.Equal(EstadoMatricula.Retirada, matricula.Estado);
         Assert.Equal(fecha, matricula.FechaRetiro);
@@ -40,13 +40,13 @@ public class MatriculaTests
     }
 
     [Fact]
-    public void Retirar_MatriculaYaRetirada_LanzaRf52YConservaElPrimerRetiro()
+    public void Withdraw_MatriculaYaRetirada_LanzaRf52YConservaElPrimerRetiro()
     {
         var matricula = new MatriculaEntidad(7, 9, Hoy);
-        matricula.Retirar(Hoy.AddDays(1), MotivoRetiro.RetiroVoluntario);
+        matricula.Withdraw(Hoy.AddDays(1), MotivoRetiro.RetiroVoluntario);
 
         var excepcion = Assert.Throws<BusinessRuleException>(
-            () => matricula.Retirar(Hoy.AddDays(2), MotivoRetiro.CancelacionGrupo));
+            () => matricula.Withdraw(Hoy.AddDays(2), MotivoRetiro.CancelacionGrupo));
 
         Assert.Equal("RF-52", excepcion.Code);
         Assert.Equal(Hoy.AddDays(1), matricula.FechaRetiro);

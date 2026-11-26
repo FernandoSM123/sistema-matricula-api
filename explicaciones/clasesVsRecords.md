@@ -13,14 +13,14 @@ Tu carpeta `Administradores` usa cada una justo para eso.
 
 | Archivo | Tipo | Por qué |
 |---|---|---|
-| `RegistrarAdministradorRequest` | `record` | Datos que llegan del cliente; no se modifican |
-| `ActualizarAdministradorRequest` | `record` | Igual |
+| `CreateAdministradorRequest` | `record` | Datos que llegan del cliente; no se modifican |
+| `UpdateAdministradorRequest` | `record` | Igual |
 | `AdministradorResponse` | `record` | Datos que se devuelven; no se modifican |
-| `AdministradorRegistradoResponse` | `record` | Igual |
-| `ListarAdministradoresRequest` | `class` | Hereda de `PaginacionRequest`, que es una clase ([ver sección 3](#3-el-caso-de-listaradministradoresrequest)) |
-| `RegistrarAdministradorRequestValidator` | `class` | Tiene comportamiento (reglas) y hereda de `AbstractValidator<T>` |
+| `AdministradorCreatedResponse` | `record` | Igual |
+| `ListAdministradoresRequest` | `class` | Hereda de `PageRequest`, que es una clase ([ver sección 3](#3-el-caso-de-listadministradoresrequest)) |
+| `CreateAdministradorRequestValidator` | `class` | Tiene comportamiento (reglas) y hereda de `AbstractValidator<T>` |
 | `AdministradorService` | `class` | Tiene comportamiento y dependencias inyectadas (`db`, `cuentaService`) |
-| `AdministradorProyecciones` | `static class` | Solo métodos y campos estáticos; no se instancia |
+| `AdministradorProjections` | `static class` | Solo métodos y campos estáticos; no se instancia |
 
 > **Regla práctica**
 > - **DTOs** (datos que entran o salen) → `record`
@@ -35,15 +35,15 @@ Las dos son **tipos por referencia**: `record` es en realidad un `record class`.
 ### a) Sintaxis corta (record posicional)
 
 ```csharp
-public record RegistrarAdministradorRequest(string Cedula, string Nombre, string Apellidos, string Telefono, string Correo);
+public record CreateAdministradorRequest(string Cedula, string Nombre, string Apellidos, string Telefono, string Correo);
 ```
 
 Esa sola línea equivale aproximadamente a esto:
 
 ```csharp
-public class RegistrarAdministradorRequest
+public class CreateAdministradorRequest
 {
-    public RegistrarAdministradorRequest(string cedula, string nombre, string apellidos, string telefono, string correo)
+    public CreateAdministradorRequest(string cedula, string nombre, string apellidos, string telefono, string correo)
     { Cedula = cedula; Nombre = nombre; /* ... */ }
 
     public string Cedula { get; init; }
@@ -58,7 +58,7 @@ public class RegistrarAdministradorRequest
 Las propiedades de un record posicional son `init`: se asignan al construir el objeto y después **no se pueden cambiar**.
 
 ```csharp
-var req = new RegistrarAdministradorRequest("1-1111-1111", "Ana", "Mora", "8888-8888", "ana@x.com");
+var req = new CreateAdministradorRequest("1-1111-1111", "Ana", "Mora", "8888-8888", "ana@x.com");
 req.Nombre = "Otra";   // ❌ error de compilación
 ```
 
@@ -89,8 +89,8 @@ var actualizado = response with { Activo = false };   // copia nueva; "response"
 
 ```csharp
 Console.WriteLine(req);
-// class  → Matricula.Application.Administradores.RegistrarAdministradorRequest
-// record → RegistrarAdministradorRequest { Cedula = 1-1111-1111, Nombre = Ana, ... }
+// class  → Matricula.Application.Administradores.CreateAdministradorRequest
+// record → CreateAdministradorRequest { Cedula = 1-1111-1111, Nombre = Ana, ... }
 ```
 
 Esto ayuda al depurar.
@@ -103,14 +103,14 @@ Un `record` solo puede heredar de otro `record`, y una `class` solo de otra `cla
 
 ---
 
-## 3. El caso de `ListarAdministradoresRequest`
+## 3. El caso de `ListAdministradoresRequest`
 
 Es el único request que es `class`, por dos razones:
 
-### 1. Hereda de `PaginacionRequest`, que es una clase
+### 1. Hereda de `PageRequest`, que es una clase
 
 ```csharp
-public class PaginacionRequest
+public class PageRequest
 {
     private int _page = 1;
     private int _pageSize = 20;
@@ -124,16 +124,16 @@ public class PaginacionRequest
     public int PageSize
     {
         get => _pageSize;
-        set => _pageSize = Math.Clamp(value, 1, PageSizeMaximo);
+        set => _pageSize = Math.Clamp(value, 1, MaxPageSize);
     }
 
     public string? Search { get; set; }
 }
 ```
 
-Por la regla de herencia, `ListarAdministradoresRequest` **no podría ser un record**.
+Por la regla de herencia, `ListAdministradoresRequest` **no podría ser un record**.
 
-### 2. `PaginacionRequest` necesita ser clase por cómo funciona
+### 2. `PageRequest` necesita ser clase por cómo funciona
 
 - Tiene **valores por defecto** (`page = 1`, `pageSize = 20`).
 - Tiene **lógica dentro de los `set`** (el `Math.Clamp`).
@@ -150,7 +150,7 @@ En cambio, los requests de **registrar** y **actualizar** llegan en el **body JS
 Son `class`, y conviene que lo sean. **No uses records para entidades de EF Core**, por tres motivos:
 
 1. **Identidad:** una entidad es "el administrador con `Id` 7" aunque cambien sus datos. La igualdad por valor del record contradice esa idea.
-2. **Change Tracker:** EF sigue objetos por instancia y los modifica (`administrador.ActualizarDatos(...)`). Con un record inmutable eso choca.
+2. **Change Tracker:** EF sigue objetos por instancia y los modifica (`administrador.Update(...)`). Con un record inmutable eso choca.
 3. **HashCode cambiante:** en un record, `GetHashCode` se calcula con los valores. Si los valores cambian, el objeto "se pierde" dentro de un `HashSet` o `Dictionary`, y EF usa ese tipo de colecciones internamente.
 
 ---

@@ -1,6 +1,6 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
 using Matricula.Domain.Exceptions;
@@ -13,41 +13,41 @@ namespace Matricula.Application.Matriculas;
 /// Matrícula, retiro y cambio de grupo (RF-51 a RF-53). El estudiante opera sobre sí mismo (RN-18); al administrador
 /// no se le aplican las restricciones de estado del grupo ni de fechas (supuesto 1 de la spec).
 /// </summary>
-public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFechaLocal fechaLocal)
+public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, ILocalClock localClock)
 {
     private const string MensajeConcurrencia =
         "El grupo cambió mientras se procesaba la solicitud (por ejemplo, se ocupó el último cupo). Intente de nuevo.";
 
     /// <summary>RF-51 por un administrador, para cualquier estudiante.</summary>
-    public Task<MatriculaResponse> MatricularAsync(MatricularRequest request, CancellationToken cancellationToken)
+    public Task<MatriculaResponse> EnrollAsync(EnrollRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         // El validador ya exige estos datos.
-        return MatricularAsync(request.EstudianteId!.Value, request.GrupoId!.Value, cancellationToken);
+        return EnrollAsync(request.EstudianteId!.Value, request.GrupoId!.Value, cancellationToken);
     }
 
     /// <summary>RF-51 para el estudiante de la sesión: su id sale del token, nunca del body (RN-18).</summary>
-    public Task<MatriculaResponse> MatricularPropioAsync(
-        MatricularPropioRequest request, CancellationToken cancellationToken)
+    public Task<MatriculaResponse> EnrollMeAsync(
+        EnrollMeRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        return MatricularAsync(EstudianteActual(), request.GrupoId!.Value, cancellationToken);
+        return EnrollAsync(CurrentEstudianteId(), request.GrupoId!.Value, cancellationToken);
     }
 
     /// <summary>
     /// RF-54: una matrícula. El estudiante solo ve las suyas (RN-18).
     /// </summary>
-    public async Task<MatriculaResponse> ObtenerAsync(int id, CancellationToken cancellationToken)
+    public async Task<MatriculaResponse> GetAsync(int id, CancellationToken cancellationToken)
     {
         var matricula = await db.Matriculas.AsNoTracking()
             .Where(m => m.Id == id)
-            .Select(MatriculaProyecciones.AResponse)
+            .Select(MatriculaProjections.ToResponseExpression)
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException($"No existe la matrícula {id}.");
 
-        if (currentUser.Rol == nameof(Rol.Estudiante) && matricula.EstudianteId != EstudianteActual())
+        if (currentUser.Rol == nameof(Rol.Estudiante) && matricula.EstudianteId != CurrentEstudianteId())
         {
             throw new ForbiddenException("No tiene acceso a esta matrícula.", "RN-18");
         }
@@ -60,16 +60,16 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
     /// (RN-18), con el grupo Abierto (RN-11) y hasta la fecha límite de retiro (RN-10); al administrador no se le
     /// aplican el estado ni la fecha (supuesto 1).
     /// </summary>
-    public async Task RetirarAsync(int id, CancellationToken cancellationToken)
+    public async Task WithdrawAsync(int id, CancellationToken cancellationToken)
     {
-        var matricula = await BuscarPropiaAsync(id, cancellationToken);
-        var hoy = fechaLocal.Hoy();
+        var matricula = await FindOwnAsync(id, cancellationToken);
+        var hoy = localClock.Today();
 
-        ValidarRetiro(matricula, hoy);
+        EnsureRetiroAllowed(matricula, hoy);
 
-        matricula.Retirar(hoy, MotivoRetiro.RetiroVoluntario);
-        matricula.Grupo.LiberarCupo();
-        await GuardarAsync(cancellationToken);
+        matricula.Withdraw(hoy, MotivoRetiro.RetiroVoluntario);
+        matricula.Grupo.ReleaseCupo();
+        await SaveAsync(cancellationToken);
     }
 
     /// <summary>
@@ -77,14 +77,14 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
     /// RN-11) y el destino las de matricular salvo RN-04 (supuesto 3); RN-05 y RN-06 no cuentan la matrícula de origen.
     /// Todo se guarda junto: si algo falla, la matrícula original y los cupos quedan como estaban.
     /// </summary>
-    public async Task<MatriculaResponse> CambiarGrupoAsync(
-        int id, CambioGrupoRequest request, CancellationToken cancellationToken)
+    public async Task<MatriculaResponse> ChangeGrupoAsync(
+        int id, ChangeGrupoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var origen = await BuscarPropiaAsync(id, cancellationToken);
-        var hoy = fechaLocal.Hoy();
-        ValidarRetiro(origen, hoy);
+        var origen = await FindOwnAsync(id, cancellationToken);
+        var hoy = localClock.Today();
+        EnsureRetiroAllowed(origen, hoy);
 
         // El validador ya exige el destino.
         var destinoId = request.GrupoDestinoId!.Value;
@@ -93,7 +93,7 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
             throw new BusinessRuleException("RF-53", "El estudiante ya está matriculado en ese grupo.");
         }
 
-        var destino = await BuscarGrupoAsync(destinoId, cancellationToken);
+        var destino = await LoadGrupoAsync(destinoId, cancellationToken);
         if (destino.CursoId != origen.Grupo.CursoId || destino.PeriodoId != origen.Grupo.PeriodoId)
         {
             throw new BusinessRuleException(
@@ -101,35 +101,35 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
                 $"El grupo {destino.Nrc} no es del mismo curso y periodo que el grupo {origen.Grupo.Nrc}.");
         }
 
-        await ValidarEstudianteActivoAsync(origen.EstudianteId, cancellationToken);
-        destino.ValidarMovimiento(EsAdministrador());
-        await db.ValidarCursoNoRepetidoAsync(origen.EstudianteId, destino, origen.Id, cancellationToken);
-        await db.ValidarSinChoquesAsync(origen.EstudianteId, destino, origen.Id, cancellationToken);
-        destino.OcuparCupo();
+        await EnsureEstudianteActiveAsync(origen.EstudianteId, cancellationToken);
+        destino.EnsureAllowsMovimiento(IsAdministrador());
+        await db.EnsureCursoNotRepeatedAsync(origen.EstudianteId, destino, origen.Id, cancellationToken);
+        await db.EnsureNoConflictsAsync(origen.EstudianteId, destino, origen.Id, cancellationToken);
+        destino.TakeCupo();
 
-        origen.Retirar(hoy, MotivoRetiro.CambioGrupo);
-        origen.Grupo.LiberarCupo();
+        origen.Withdraw(hoy, MotivoRetiro.CambioGrupo);
+        origen.Grupo.ReleaseCupo();
         var nueva = new MatriculaEntidad(origen.EstudianteId, destino.Id, hoy);
         db.Matriculas.Add(nueva);
 
         // Un solo guardado: es transaccional, y xmin protege los dos grupos.
-        await GuardarAsync(cancellationToken);
-        return await ObtenerAsync(nueva.Id, cancellationToken);
+        await SaveAsync(cancellationToken);
+        return await GetAsync(nueva.Id, cancellationToken);
     }
 
     // Reglas para dejar un grupo, compartidas por el retiro y el origen de un cambio de grupo (RF-52, RF-53).
-    private void ValidarRetiro(MatriculaEntidad matricula, DateOnly hoy)
+    private void EnsureRetiroAllowed(MatriculaEntidad matricula, DateOnly hoy)
     {
         if (matricula.Estado == EstadoMatricula.Retirada)
         {
             throw new BusinessRuleException("RF-52", "La matrícula ya está retirada.");
         }
 
-        var esAdministrador = EsAdministrador();
-        matricula.Grupo.ValidarMovimiento(esAdministrador);
+        var esAdministrador = IsAdministrador();
+        matricula.Grupo.EnsureAllowsMovimiento(esAdministrador);
 
         var periodo = matricula.Grupo.Periodo;
-        if (!esAdministrador && !periodo.PermiteRetiro(hoy))
+        if (!esAdministrador && !periodo.AllowsRetiro(hoy))
         {
             throw new BusinessRuleException(
                 "RN-10",
@@ -139,7 +139,7 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
 
     // Con seguimiento y con el grupo (su periodo y sus bloques), porque retirar y cambiar modifican el grupo. RN-18: un
     // estudiante solo opera sobre sus matrículas.
-    private async Task<MatriculaEntidad> BuscarPropiaAsync(int id, CancellationToken cancellationToken)
+    private async Task<MatriculaEntidad> FindOwnAsync(int id, CancellationToken cancellationToken)
     {
         var matricula = await db.Matriculas
             .Include(m => m.Grupo).ThenInclude(g => g.Periodo)
@@ -147,7 +147,7 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
             .SingleOrDefaultAsync(m => m.Id == id, cancellationToken)
             ?? throw new NotFoundException($"No existe la matrícula {id}.");
 
-        if (currentUser.Rol == nameof(Rol.Estudiante) && matricula.EstudianteId != EstudianteActual())
+        if (currentUser.Rol == nameof(Rol.Estudiante) && matricula.EstudianteId != CurrentEstudianteId())
         {
             throw new ForbiddenException("No tiene acceso a esta matrícula.", "RN-18");
         }
@@ -159,8 +159,8 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
     /// RF-20 y RF-54 (consultas 2 y 10) para el administrador. Incluye matrículas de grupos y estudiantes inactivos
     /// (RN-40).
     /// </summary>
-    public async Task<PagedResult<MatriculaResponse>> ListarDeEstudianteAsync(
-        int estudianteId, ListarMatriculasRequest request, CancellationToken cancellationToken)
+    public async Task<PagedResult<MatriculaResponse>> ListByEstudianteAsync(
+        int estudianteId, ListMatriculasRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -169,24 +169,24 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
             throw new NotFoundException($"No existe el estudiante {estudianteId}.");
         }
 
-        return await ListarAsync(estudianteId, request, cancellationToken);
+        return await ListAsync(estudianteId, request, cancellationToken);
     }
 
     /// <summary>RF-20 y RF-54 para el estudiante de la sesión (RN-18).</summary>
-    public Task<PagedResult<MatriculaResponse>> ListarMiasAsync(
-        ListarMatriculasRequest request, CancellationToken cancellationToken)
+    public Task<PagedResult<MatriculaResponse>> ListMineAsync(
+        ListMatriculasRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        return ListarAsync(EstudianteActual(), request, cancellationToken);
+        return ListAsync(CurrentEstudianteId(), request, cancellationToken);
     }
 
     /// <summary>
     /// RF-49 (consulta 3): los estudiantes de un grupo, para el administrador o el profesor del grupo (RN-18). Ordena
     /// por apellidos, nombre e id de la matrícula.
     /// </summary>
-    public async Task<PagedResult<EstudianteGrupoResponse>> ListarEstudiantesGrupoAsync(
-        int grupoId, ListarEstudiantesGrupoRequest request, CancellationToken cancellationToken)
+    public async Task<PagedResult<EstudianteGrupoResponse>> ListEstudiantesAsync(
+        int grupoId, ListEstudiantesGrupoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -196,7 +196,7 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException($"No existe el grupo {grupoId}.");
 
-        if (currentUser.Rol == nameof(Rol.Profesor) && grupo.ProfesorId != ProfesorActual())
+        if (currentUser.Rol == nameof(Rol.Profesor) && grupo.ProfesorId != CurrentProfesorId())
         {
             throw new ForbiddenException("Solo puede consultar los estudiantes de sus grupos.", "RN-18");
         }
@@ -234,8 +234,8 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
 
     // Periodo más reciente primero, luego curso. Dentro de un mismo curso, la matrícula más nueva primero: tras un
     // cambio de grupo la activa queda antes que la retirada.
-    private Task<PagedResult<MatriculaResponse>> ListarAsync(
-        int estudianteId, ListarMatriculasRequest request, CancellationToken cancellationToken)
+    private Task<PagedResult<MatriculaResponse>> ListAsync(
+        int estudianteId, ListMatriculasRequest request, CancellationToken cancellationToken)
     {
         var query = db.Matriculas.AsNoTracking().Where(m => m.EstudianteId == estudianteId);
 
@@ -264,23 +264,23 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
             .OrderByDescending(m => m.Grupo.Periodo.InicioClases)
             .ThenBy(m => m.Grupo.Curso.Nombre)
             .ThenByDescending(m => m.Id)
-            .Select(MatriculaProyecciones.AResponse)
+            .Select(MatriculaProjections.ToResponseExpression)
             .ToPagedResultAsync(request, cancellationToken);
     }
 
     // Orden de RF-51: RN-01, RN-02/RN-11, RN-04, RN-05, RN-06 y al final RN-03, para que un grupo lleno no oculte un
     // error más útil.
-    private async Task<MatriculaResponse> MatricularAsync(
+    private async Task<MatriculaResponse> EnrollAsync(
         int estudianteId, int grupoId, CancellationToken cancellationToken)
     {
-        await ValidarEstudianteActivoAsync(estudianteId, cancellationToken);
+        await EnsureEstudianteActiveAsync(estudianteId, cancellationToken);
 
-        var grupo = await BuscarGrupoAsync(grupoId, cancellationToken);
-        var esAdministrador = EsAdministrador();
-        var hoy = fechaLocal.Hoy();
+        var grupo = await LoadGrupoAsync(grupoId, cancellationToken);
+        var esAdministrador = IsAdministrador();
+        var hoy = localClock.Today();
 
-        grupo.ValidarMovimiento(esAdministrador);
-        if (!esAdministrador && !grupo.Periodo.EnRangoMatricula(hoy))
+        grupo.EnsureAllowsMovimiento(esAdministrador);
+        if (!esAdministrador && !grupo.Periodo.IsInMatriculaRange(hoy))
         {
             throw new BusinessRuleException(
                 "RN-04",
@@ -288,19 +288,19 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
                 + $"al {grupo.Periodo.FinMatricula:dd/MM/yyyy}.");
         }
 
-        await db.ValidarCursoNoRepetidoAsync(estudianteId, grupo, ignorarMatriculaId: null, cancellationToken);
-        await db.ValidarSinChoquesAsync(estudianteId, grupo, ignorarMatriculaId: null, cancellationToken);
-        grupo.OcuparCupo();
+        await db.EnsureCursoNotRepeatedAsync(estudianteId, grupo, ignorarMatriculaId: null, cancellationToken);
+        await db.EnsureNoConflictsAsync(estudianteId, grupo, ignorarMatriculaId: null, cancellationToken);
+        grupo.TakeCupo();
 
         var matricula = new MatriculaEntidad(estudianteId, grupo.Id, hoy);
         db.Matriculas.Add(matricula);
-        await GuardarAsync(cancellationToken);
+        await SaveAsync(cancellationToken);
 
-        return await ObtenerAsync(matricula.Id, cancellationToken);
+        return await GetAsync(matricula.Id, cancellationToken);
     }
 
     // RN-01. Un estudiante que no existe responde 404.
-    private async Task ValidarEstudianteActivoAsync(int estudianteId, CancellationToken cancellationToken)
+    private async Task EnsureEstudianteActiveAsync(int estudianteId, CancellationToken cancellationToken)
     {
         var estudianteActivo = await db.Estudiantes.AsNoTracking()
             .Where(e => e.Id == estudianteId)
@@ -314,8 +314,8 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
         }
     }
 
-    // Con seguimiento: OcuparCupo y LiberarCupo cambian el grupo, y su xmin detecta otra operación simultánea.
-    private async Task<Grupo> BuscarGrupoAsync(int grupoId, CancellationToken cancellationToken) =>
+    // Con seguimiento: TakeCupo y ReleaseCupo cambian el grupo, y su xmin detecta otra operación simultánea.
+    private async Task<Grupo> LoadGrupoAsync(int grupoId, CancellationToken cancellationToken) =>
         await db.Grupos
             .Include(g => g.Horarios)
             .Include(g => g.Periodo)
@@ -323,7 +323,7 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
         ?? throw new NotFoundException($"No existe el grupo {grupoId}.");
 
     // Supuesto 6 de la spec: el conflicto de xmin se explica en términos del grupo.
-    private async Task GuardarAsync(CancellationToken cancellationToken)
+    private async Task SaveAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -335,14 +335,14 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, IFecha
         }
     }
 
-    private bool EsAdministrador() => currentUser.Rol == nameof(Rol.Administrador);
+    private bool IsAdministrador() => currentUser.Rol == nameof(Rol.Administrador);
 
     // Un token emitido antes de que existiera el claim no lo trae: basta con iniciar sesión de nuevo.
-    private int ProfesorActual() =>
+    private int CurrentProfesorId() =>
         currentUser.ProfesorId
         ?? throw new ForbiddenException("Su sesión no identifica a un profesor. Inicie sesión de nuevo.");
 
-    private int EstudianteActual() =>
+    private int CurrentEstudianteId() =>
         currentUser.EstudianteId
         ?? throw new ForbiddenException("Su sesión no identifica a un estudiante. Inicie sesión de nuevo.");
 }

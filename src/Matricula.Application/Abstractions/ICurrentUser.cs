@@ -9,7 +9,7 @@ public interface ICurrentUser
     string? Rol { get; }
     int? EstudianteId { get; }
     int? ProfesorId { get; }
-    bool EstaAutenticado { get; }
+    bool IsAuthenticated { get; }
 
     /// <summary>Ingresó con una temporal y aún no define su nueva contraseña (RN-24).</summary>
     bool DebeCambiarContrasena { get; }

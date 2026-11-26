@@ -25,17 +25,17 @@ public class AulaTests
     }
 
     [Fact]
-    public void NormalizarCodigo_CapitalizacionDistinta_DevuelveElMismoCodigo()
+    public void NormalizeCodigo_CapitalizacionDistinta_DevuelveElMismoCodigo()
     {
-        Assert.Equal(Aula.NormalizarCodigo("LAB-1"), Aula.NormalizarCodigo(" lab-1 "));
+        Assert.Equal(Aula.NormalizeCodigo("LAB-1"), Aula.NormalizeCodigo(" lab-1 "));
     }
 
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void NormalizarCodigo_CodigoEnBlanco_LanzaExcepcion(string codigo)
+    public void NormalizeCodigo_CodigoEnBlanco_LanzaExcepcion(string codigo)
     {
-        Assert.Throws<ArgumentException>(() => Aula.NormalizarCodigo(codigo));
+        Assert.Throws<ArgumentException>(() => Aula.NormalizeCodigo(codigo));
     }
 
     [Fact]
@@ -58,11 +58,11 @@ public class AulaTests
     }
 
     [Fact]
-    public void ActualizarDatos_DatosNuevos_CambiaTodosLosDatos()
+    public void Update_DatosNuevos_CambiaTodosLosDatos()
     {
         var aula = CrearAula();
 
-        aula.ActualizarDatos("aud-2", "Edificio B", 80);
+        aula.Update("aud-2", "Edificio B", 80);
 
         Assert.Equal("AUD-2", aula.Codigo);
         Assert.Equal("Edificio B", aula.Ubicacion);
@@ -70,33 +70,33 @@ public class AulaTests
     }
 
     [Fact]
-    public void ActualizarDatos_AulaInactiva_ConservaElEstado()
+    public void Update_AulaInactiva_ConservaElEstado()
     {
         var aula = CrearAula();
-        aula.Desactivar();
+        aula.Deactivate();
 
-        aula.ActualizarDatos("LAB-1", null, 25);
+        aula.Update("LAB-1", null, 25);
 
         Assert.False(aula.Activo);
     }
 
     [Fact]
-    public void Desactivar_AulaActiva_LaDejaInactiva()
+    public void Deactivate_AulaActiva_LaDejaInactiva()
     {
         var aula = CrearAula();
 
-        aula.Desactivar();
+        aula.Deactivate();
 
         Assert.False(aula.Activo);
     }
 
     [Fact]
-    public void Reactivar_AulaInactiva_LaDejaActiva()
+    public void Reactivate_AulaInactiva_LaDejaActiva()
     {
         var aula = CrearAula();
-        aula.Desactivar();
+        aula.Deactivate();
 
-        aula.Reactivar();
+        aula.Reactivate();
 
         Assert.True(aula.Activo);
     }

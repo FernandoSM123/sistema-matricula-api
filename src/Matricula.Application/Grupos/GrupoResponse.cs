@@ -3,7 +3,7 @@ using Matricula.Domain.Enums;
 namespace Matricula.Application.Grupos;
 
 /// <summary>
-/// Un grupo en los listados (RF-43). El detalle agrega los horarios (<see cref="GrupoDetalleResponse"/>).
+/// Un grupo en los listados (RF-43). El detalle agrega los horarios (<see cref="GrupoDetailResponse"/>).
 /// </summary>
 public record GrupoResponse(
     int Id,

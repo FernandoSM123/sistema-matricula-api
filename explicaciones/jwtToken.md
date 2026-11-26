@@ -24,7 +24,7 @@ Antes de llegar al servicio pasan los filtros que ya vimos (rate limiting y vali
 En `AuthService.LoginAsync`:
 
 ```csharp
-var correo = Usuario.NormalizarCorreo(request.Correo);
+var correo = Usuario.NormalizeCorreo(request.Correo);
 var usuario = await db.Usuarios.SingleOrDefaultAsync(u => u.Correo == correo, cancellationToken)
     ?? throw new UnauthorizedException();
 ```
@@ -34,7 +34,7 @@ Si no existe, responde **401** con un mensaje genérico de credenciales incorrec
 ### Paso 3: se verifica la contraseña
 
 ```csharp
-var definitiva = hasher.Verificar(usuario.PasswordHash, request.Contrasena);
+var definitiva = hasher.Verify(usuario.PasswordHash, request.Contrasena);
 ```
 
 La BD **no guarda la contraseña**, sino un **hash**: una "huella" de la que no se puede volver a la original. Para verificar, se calcula la huella de lo que escribió el usuario y se compara con la guardada.
@@ -50,10 +50,10 @@ Además, si la cuenta está desactivada → **403**.
 ### Paso 4: se juntan los datos que irán en el token
 
 ```csharp
-return EmitirToken(usuario, debeCambiarContrasena: false);
+return await IssueTokenAsync(usuario, debeCambiarContrasena: false, cancellationToken);
 ```
 
-`EmitirToken` llama a `GeneradorToken.Generar(...)` con estos datos (en `Seguridad/GeneradorToken.cs`):
+`IssueTokenAsync` llama a `JwtTokenGenerator.Generate(...)` con estos datos (en `Security/JwtTokenGenerator.cs`):
 
 ```csharp
 var claims = new Dictionary<string, object>
@@ -76,7 +76,7 @@ var descriptor = new SecurityTokenDescriptor
     Issuer   = "matricula-api",    // quién lo emitió
     Audience = "matricula-app",    // para quién es
     IssuedAt = ahora,              // cuándo se emitió
-    Expires  = ahora + 60 minutos, // cuándo vence (Jwt:MinutosVigencia)
+    Expires  = ahora + 60 minutos, // cuándo vence (Jwt:AccessTokenMinutes)
     ...
 };
 ```
@@ -86,7 +86,7 @@ var descriptor = new SecurityTokenDescriptor
 Este es **el paso clave**:
 
 ```csharp
-SigningCredentials = new SigningCredentials(CrearClave(_options), SecurityAlgorithms.HmacSha256)
+SigningCredentials = new SigningCredentials(CreateSigningKey(_options), SecurityAlgorithms.HmacSha256)
 ```
 
 Se toma todo lo anterior y se le aplica una firma calculada con una **clave secreta** que solo conoce el servidor.
@@ -135,12 +135,12 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 
 ### Paso 2: el middleware de autenticación lo revisa
 
-`app.UseAuthentication()`, configurado en `Seguridad/SeguridadExtensions.cs`, hace estas comprobaciones **sin tocar la BD**:
+`app.UseAuthentication()`, configurado en `Security/SecurityExtensions.cs`, hace estas comprobaciones **sin tocar la BD**:
 
 ```csharp
 bearer.TokenValidationParameters = new TokenValidationParameters
 {
-    IssuerSigningKey = GeneradorToken.CrearClave(opciones), // ✔ ¿la firma es auténtica?
+    IssuerSigningKey = JwtTokenGenerator.CreateSigningKey(opciones), // ✔ ¿la firma es auténtica?
     ValidIssuer      = opciones.Issuer,                     // ✔ ¿lo emitió "matricula-api"?
     ValidAudience    = opciones.Audience,                   // ✔ ¿es para "matricula-app"?
     ClockSkew        = TimeSpan.FromMinutes(1)              // ✔ ¿no ha vencido? (con 1 min de tolerancia)
@@ -153,10 +153,10 @@ Si alguna comprobación falla → **401**.
 
 Las comprobaciones anteriores tienen un hueco: ¿qué pasa si el usuario hace logout, cambia su contraseña o un administrador desactiva su cuenta? **El token seguiría funcionando hasta su vencimiento.**
 
-Para resolverlo, el proyecto usa el **security stamp**. Es un valor aleatorio guardado en la tabla `usuario`, que también va dentro del token. En cada request, `Seguridad/ValidacionSecurityStamp.cs` lo compara con el de la BD:
+Para resolverlo, el proyecto usa el **security stamp**. Es un valor aleatorio guardado en la tabla `usuario`, que también va dentro del token. En cada request, `Security/SecurityStampValidation.cs` lo compara con el de la BD:
 
 ```csharp
-if (!await authService.SesionValidaAsync(usuarioId, stamp, ...))
+if (!await authService.IsSessionValidAsync(usuarioId, stamp, ...))
     context.Fail("La sesión ya no es válida.");
 
 // AuthService

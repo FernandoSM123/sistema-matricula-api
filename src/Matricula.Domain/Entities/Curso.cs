@@ -23,7 +23,7 @@ public class Curso : EntidadBase
         NivelCurso nivel)
     {
         Codigo = Nombre = string.Empty;
-        ActualizarDatos(codigo, nombre, descripcion, duracionHoras, costo, nivel);
+        Update(codigo, nombre, descripcion, duracionHoras, costo, nivel);
         Activo = true;
     }
 
@@ -38,14 +38,14 @@ public class Curso : EntidadBase
     /// <summary>
     /// Forma canónica del código: en mayúsculas para que RN-13 no distinga capitalización.
     /// </summary>
-    public static string NormalizarCodigo(string codigo)
+    public static string NormalizeCodigo(string codigo)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
         return codigo.Trim().ToUpperInvariant();
     }
 
     /// <summary>Edición por un administrador (RF-32).</summary>
-    public void ActualizarDatos(
+    public void Update(
         string codigo,
         string nombre,
         string? descripcion,
@@ -55,7 +55,7 @@ public class Curso : EntidadBase
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nombre);
 
-        Codigo = NormalizarCodigo(codigo);
+        Codigo = NormalizeCodigo(codigo);
         Nombre = nombre.Trim();
         Descripcion = string.IsNullOrWhiteSpace(descripcion) ? null : descripcion.Trim();
         DuracionHoras = duracionHoras;
@@ -63,7 +63,7 @@ public class Curso : EntidadBase
         Nivel = nivel;
     }
 
-    public void Desactivar() => Activo = false;
+    public void Deactivate() => Activo = false;
 
-    public void Reactivar() => Activo = true;
+    public void Reactivate() => Activo = true;
 }

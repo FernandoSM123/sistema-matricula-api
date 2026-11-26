@@ -1,14 +1,14 @@
 using Matricula.Api.Common;
-using Matricula.Api.Seguridad;
+using Matricula.Api.Security;
 using Matricula.Application.Auditoria;
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Matricula.Api.Controllers;
 
 // Solo lectura: no hay endpoints para crear, modificar ni eliminar registros de auditoría (RN-43).
-[Authorize(Policy = Politicas.Administrador)]
+[Authorize(Policy = Policies.Administrador)]
 public class AuditoriaController(AuditoriaService auditoriaService) : ApiControllerBase
 {
     /// <summary>
@@ -21,7 +21,7 @@ public class AuditoriaController(AuditoriaService auditoriaService) : ApiControl
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PagedResult<RegistroAuditoriaResponse>>> Listar(
-        [FromQuery] ListarAuditoriaRequest request, CancellationToken cancellationToken) =>
-        Ok(await auditoriaService.ListarAsync(request, cancellationToken));
+    public async Task<ActionResult<PagedResult<RegistroAuditoriaResponse>>> List(
+        [FromQuery] ListAuditoriaRequest request, CancellationToken cancellationToken) =>
+        Ok(await auditoriaService.ListAsync(request, cancellationToken));
 }

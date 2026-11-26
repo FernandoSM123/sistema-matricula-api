@@ -63,11 +63,11 @@ public class EstudianteTests
     }
 
     [Fact]
-    public void ActualizarContacto_SoloCambiaTelefonoYDireccion()
+    public void UpdateContacto_SoloCambiaTelefonoYDireccion()
     {
         var estudiante = NuevoEstudiante();
 
-        estudiante.ActualizarContacto(" 7777-7777 ", " Heredia ");
+        estudiante.UpdateContacto(" 7777-7777 ", " Heredia ");
 
         Assert.Equal("7777-7777", estudiante.Telefono);
         Assert.Equal("Heredia", estudiante.Direccion);
@@ -78,22 +78,22 @@ public class EstudianteTests
     }
 
     [Fact]
-    public void ActualizarContacto_DireccionEnBlanco_LaQuita()
+    public void UpdateContacto_DireccionEnBlanco_LaQuita()
     {
         var estudiante = NuevoEstudiante();
 
-        estudiante.ActualizarContacto("88888888", " ");
+        estudiante.UpdateContacto("88888888", " ");
 
         Assert.Null(estudiante.Direccion);
     }
 
     [Fact]
-    public void ActualizarDatos_CambiaLosDatosPersonalesYConservaLaFechaDeRegistro()
+    public void Update_CambiaLosDatosPersonalesYConservaLaFechaDeRegistro()
     {
         var estudiante = NuevoEstudiante();
         var nuevaFecha = new DateOnly(2001, 1, 2);
 
-        estudiante.ActualizarDatos("2-2222-2222", "Ana Lucía", "Mora Solís", "77777777", nuevaFecha, null);
+        estudiante.Update("2-2222-2222", "Ana Lucía", "Mora Solís", "77777777", nuevaFecha, null);
 
         Assert.Equal("2-2222-2222", estudiante.Cedula);
         Assert.Equal("Ana Lucía", estudiante.Nombre);

@@ -7,8 +7,8 @@ public class SmtpOptions
     public required string Host { get; init; }
     public int Port { get; init; } = 25;
     public bool UseSsl { get; init; }
-    public string? Usuario { get; init; }
-    public string? Contrasena { get; init; }
-    public required string Remitente { get; init; }
-    public string NombreRemitente { get; init; } = "Sistema de Matrícula";
+    public string? User { get; init; }
+    public string? Password { get; init; }
+    public required string SenderEmail { get; init; }
+    public string SenderName { get; init; } = "Sistema de Matrícula";
 }

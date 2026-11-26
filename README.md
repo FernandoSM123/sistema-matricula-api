@@ -92,30 +92,32 @@ Para quitar un valor, usa `dotnet user-secrets remove "<clave>" --project src/Ma
 
 ### Todas las claves
 
-Como variable de entorno, cada clave usa `__` en lugar de `:` (por ejemplo `Jwt__Clave`). Las marcadas como **secreto** van solo en user-secrets o en variables de entorno, nunca en `appsettings*.json`.
+Como variable de entorno, cada clave usa `__` en lugar de `:` (por ejemplo `Jwt__Key`). Las marcadas como **secreto** van solo en user-secrets o en variables de entorno, nunca en `appsettings*.json`.
+
+> **Si ya tenías user-secrets de antes de la corrección `nombres`**, renombra las claves en tu `secrets.json` (`%APPDATA%\Microsoft\UserSecrets\<id>\secrets.json`, o *Manage User Secrets* en Visual Studio): `Jwt:Clave` → `Jwt:Key`, `AdminSeed:ContrasenaTemporal` → `AdminSeed:TemporaryPassword`, `Smtp:Usuario`/`Contrasena` → `Smtp:User`/`Password` y `DatosPrueba:Habilitado`/`Contrasena`/`Semilla` → `TestData:Enabled`/`Password`/`Seed`. Sin `Jwt:Key` la API no arranca y el error lo dice; en cambio, las claves viejas de `DatosPrueba` se ignoran **sin aviso** y la siembra no se ejecuta.
 
 | Clave | Secreto | Por defecto | Para qué |
 |---|---|---|---|
 | `ConnectionStrings:Matricula` | **Sí** | En Development, `postgres`/`postgres` en `localhost:5432` | Conexión a PostgreSQL. Sin ella, la API no arranca |
-| `Jwt:Clave` | **Sí** | — | Firma de los tokens. Obligatoria, de 32 caracteres o más |
+| `Jwt:Key` | **Sí** | — | Firma de los tokens. Obligatoria, de 32 caracteres o más |
 | `Jwt:Issuer`, `Jwt:Audience` | No | `matricula-api`, `matricula-app` | Emisor y audiencia de los tokens |
-| `Jwt:MinutosVigencia` | No | `60` | Vigencia del token de acceso |
-| `AdminSeed:ContrasenaTemporal` | **Sí** | — | Temporal del administrador inicial. Obligatoria mientras no haya administradores |
+| `Jwt:AccessTokenMinutes` | No | `60` | Vigencia del token de acceso |
+| `AdminSeed:TemporaryPassword` | **Sí** | — | Temporal del administrador inicial. Obligatoria mientras no haya administradores |
 | `AdminSeed:Correo`, `Cedula`, `Nombre`, `Apellidos`, `Telefono` | No | Datos genéricos (`admin@instituto.local`, John Doe) | Datos del administrador inicial |
 | `Smtp:Host`, `Smtp:Port`, `Smtp:UseSsl` | No | En Development, `localhost:2525` (smtp4dev), sin SSL | Servidor de correo |
-| `Smtp:Usuario`, `Smtp:Contrasena` | **Sí** | Vacíos | Solo si el servidor SMTP pide autenticación |
-| `Smtp:Remitente`, `Smtp:NombreRemitente` | No | `no-responder@instituto.local`, `Sistema de Matrícula` | Remitente de los correos |
-| `Cors:OrigenesPermitidos` | No | En Development, `http://localhost:5173` | Orígenes de los frontends |
-| `Instituto:ZonaHoraria` | No | `America/Costa_Rica` | Zona de la fecha de hoy |
-| `Errores:DiasRetencion` | No | `90` | Días que se guarda el registro de errores |
-| `DatosPrueba:Habilitado` | No | `false` | Activa la siembra de datos de prueba (solo Development) |
-| `DatosPrueba:Contrasena` | **Sí** | — | Contraseña de las cuentas de prueba y del administrador inicial |
-| `DatosPrueba:Semilla`, `Cursos`, `Aulas`, `Profesores`, `Estudiantes`, `GruposPorPeriodo`, `MaxMatriculasPorEstudiante` | No | Ver "Datos de prueba" | Cantidades de la siembra |
+| `Smtp:User`, `Smtp:Password` | **Sí** | Vacíos | Solo si el servidor SMTP pide autenticación |
+| `Smtp:SenderEmail`, `Smtp:SenderName` | No | `no-responder@instituto.local`, `Sistema de Matrícula` | Remitente de los correos |
+| `Cors:AllowedOrigins` | No | En Development, `http://localhost:5173` | Orígenes de los frontends |
+| `Institute:TimeZone` | No | `America/Costa_Rica` | Zona de la fecha de hoy |
+| `ErrorLog:RetentionDays` | No | `90` | Días que se guarda el registro de errores |
+| `TestData:Enabled` | No | `false` | Activa la siembra de datos de prueba (solo Development) |
+| `TestData:Password` | **Sí** | — | Contraseña de las cuentas de prueba y del administrador inicial |
+| `TestData:Seed`, `Cursos`, `Aulas`, `Profesores`, `Estudiantes`, `GruposPerPeriodo`, `MaxMatriculasPerEstudiante` | No | Ver "Datos de prueba" | Cantidades de la siembra |
 | `ASPNETCORE_ENVIRONMENT` | No | `Development` con `dotnet run` | Entorno. User-secrets y datos de prueba solo funcionan en `Development` |
 
 ### CORS
 
-La sección `Cors:OrigenesPermitidos` indica desde qué orígenes (URL del frontend) el navegador puede llamar a la API:
+La sección `Cors:AllowedOrigins` indica desde qué orígenes (URL del frontend) el navegador puede llamar a la API:
 
 | Archivo | Valor |
 |---|---|
@@ -125,8 +127,8 @@ La sección `Cors:OrigenesPermitidos` indica desde qué orígenes (URL del front
 Para cambiarlo en desarrollo, edita `appsettings.Development.json`. En otros entornos, usa variables de entorno con un índice por origen:
 
 ```powershell
-$env:Cors__OrigenesPermitidos__0 = "https://matricula.ejemplo.com"
-$env:Cors__OrigenesPermitidos__1 = "https://admin.ejemplo.com"
+$env:Cors__AllowedOrigins__0 = "https://matricula.ejemplo.com"
+$env:Cors__AllowedOrigins__1 = "https://admin.ejemplo.com"
 ```
 
 La lista se lee al arrancar, así que hay que reiniciar la API después de cambiarla. CORS solo afecta a los navegadores; herramientas como `curl` o Scalar no lo necesitan.
@@ -137,31 +139,31 @@ La política también expone dos encabezados de respuesta que el navegador no de
 
 Ver [COR-02](correcciones/COR-02-encabezados-cors.md).
 
-### Instituto (zona horaria)
+### Institute (zona horaria)
 
-La opción `Instituto:ZonaHoraria` define qué día es "hoy" para el sistema. Está en `appsettings.json` con el valor `America/Costa_Rica`. Es un identificador [IANA](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) y no es un secreto.
+La opción `Institute:TimeZone` define qué día es "hoy" para el sistema. Está en `appsettings.json` con el valor `America/Costa_Rica`. Es un identificador [IANA](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) y no es un secreto.
 
 ```json
-"Instituto": {
-  "ZonaHoraria": "America/Costa_Rica"
+"Institute": {
+  "TimeZone": "America/Costa_Rica"
 }
 ```
 
 **Por qué existe:** el periodo vigente, las fechas de matrícula y retiro (RN-04, RN-10), la fecha de registro del estudiante y la validación de la fecha de nacimiento comparan fechas sin hora. Con la fecha UTC, desde las 18:00 en Costa Rica el sistema ya estaría en el día siguiente y, por ejemplo, cerraría la matrícula seis horas antes de tiempo.
 
-**Cómo se usa en el código:** `IFechaLocal.Hoy()` es el único punto que calcula la fecha de hoy. Las marcas de tiempo (`FechaCreacion`, vencimientos de temporales, tokens) siguen en UTC con `TimeProvider`.
+**Cómo se usa en el código:** `ILocalClock.Today()` es el único punto que calcula la fecha de hoy. Las marcas de tiempo (`FechaCreacion`, vencimientos de temporales, tokens) siguen en UTC con `TimeProvider`.
 
 Para cambiarla, edita `appsettings.json` o, en otros entornos, usa una variable de entorno y reinicia la API:
 
 ```powershell
-$env:Instituto__ZonaHoraria = "America/Costa_Rica"
+$env:Institute__TimeZone = "America/Costa_Rica"
 ```
 
 Si la opción falta o no es una zona válida, **la API no arranca** y lo indica en el error. Esto también ocurre si el entorno no tiene datos de zonas horarias, como algunas imágenes mínimas de Docker: hay que instalarlos (`tzdata`) y no activar la globalización invariante.
 
 ### Jwt
 
-La API emite tokens JWT firmados con una clave simétrica (HS256). `Issuer`, `Audience` y `MinutosVigencia` (60) están en `appsettings.json`; la **clave** va solo en user-secrets o en la variable de entorno `Jwt__Clave`. Sin una clave de al menos 32 caracteres, **la API no arranca** y lo indica en el error.
+La API emite tokens JWT firmados con una clave simétrica (HS256). `Issuer`, `Audience` y `AccessTokenMinutes` (60) están en `appsettings.json`; la **clave** va solo en user-secrets o en la variable de entorno `Jwt__Key`. Sin una clave de al menos 32 caracteres, **la API no arranca** y lo indica en el error.
 
 Para generar una clave aleatoria en PowerShell:
 
@@ -172,23 +174,23 @@ Para generar una clave aleatoria en PowerShell:
 y agrégala a tu `secrets.json`:
 
 ```json
-"Jwt": { "Clave": "<la clave generada>" }
+"Jwt": { "Key": "<la clave generada>" }
 ```
 
 Cambiar la clave invalida todos los tokens emitidos (hay que volver a iniciar sesión).
 
 ### AdminSeed (primer administrador)
 
-Al arrancar, si no existe ningún administrador, la API crea uno con los datos genéricos de `appsettings.json` (`admin@instituto.local`, John Doe, cédula `000000000`) y la contraseña temporal de `AdminSeed:ContrasenaTemporal`, que va solo en user-secrets o en `AdminSeed__ContrasenaTemporal`:
+Al arrancar, si no existe ningún administrador, la API crea uno con los datos genéricos de `appsettings.json` (`admin@instituto.local`, John Doe, cédula `000000000`) y la contraseña temporal de `AdminSeed:TemporaryPassword`, que va solo en user-secrets o en `AdminSeed__TemporaryPassword`:
 
 ```json
-"AdminSeed": { "ContrasenaTemporal": "TuTemporal123" }
+"AdminSeed": { "TemporaryPassword": "TuTemporal123" }
 ```
 
 - La temporal debe cumplir la política de contraseñas: al menos 8 caracteres, una mayúscula y un número.
 - No se envía por correo: es la que configuras.
 - Si no hay administradores y falta la temporal, la API no arranca y lo indica.
-- Mientras el administrador inicial no defina su contraseña, cada arranque renueva su temporal desde la configuración (vence a las 72 horas). Después de definirla, `ContrasenaTemporal` deja de usarse.
+- Mientras el administrador inicial no defina su contraseña, cada arranque renueva su temporal desde la configuración (vence a las 72 horas). Después de definirla, `TemporaryPassword` deja de usarse.
 
 **Primer ingreso:**
 
@@ -206,16 +208,16 @@ Para no crear datos a mano, la API puede sembrar al arrancar cursos, aulas, tres
 **Activarlo** en user-secrets. La contraseña de las cuentas de prueba debe cumplir la política (8 caracteres, una mayúscula y un número):
 
 ```json
-"DatosPrueba": { "Habilitado": true, "Contrasena": "TuPrueba123" }
+"TestData": { "Enabled": true, "Password": "TuPrueba123" }
 ```
 
 La siembra solo se ejecuta si se cumplen las tres condiciones:
 
-- `DatosPrueba:Habilitado` es `true`;
+- `TestData:Enabled` es `true`;
 - el entorno es `Development` (en otro entorno escribe una advertencia y no hace nada);
 - la BD no tiene datos de negocio (con datos, escribe "La BD ya tiene datos" y no hace nada).
 
-Si la configuración no es válida, por ejemplo sin `Contrasena` o con una cantidad fuera de rango, la API no arranca y el error nombra la clave. La siembra no envía correos y nunca escribe la contraseña en el log.
+Si la configuración no es válida, por ejemplo sin `Password` o con una cantidad fuera de rango, la API no arranca y el error nombra la clave. La siembra no envía correos y nunca escribe la contraseña en el log.
 
 **Empezar de cero** (borra todos los datos de la BD de desarrollo):
 
@@ -227,7 +229,7 @@ dotnet run --project src/Matricula.Api
 
 Al arrancar, el log muestra un resumen con la semilla usada, los totales y los grupos y matrículas por estado.
 
-**Cuentas** (todas con `DatosPrueba:Contrasena`):
+**Cuentas** (todas con `TestData:Password`):
 
 | Correo | Caso |
 |---|---|
@@ -241,13 +243,13 @@ Al arrancar, el log muestra un resumen con la semilla usada, los totales y los g
 
 | Clave | Por defecto | Rango |
 |---|---|---|
-| `Semilla` | `null` (datos distintos en cada siembra) | Un número reproduce siempre los mismos datos |
+| `Seed` | `null` (datos distintos en cada siembra) | Un número reproduce siempre los mismos datos |
 | `Cursos` | 8 | 1–200 |
 | `Aulas` | 5 | 1–100 |
 | `Profesores` | 6 | 1–200 |
 | `Estudiantes` | 30 | 0–5000 |
-| `GruposPorPeriodo` | 5 | 0–200 |
-| `MaxMatriculasPorEstudiante` | 2 | 0–6 |
+| `GruposPerPeriodo` | 5 | 0–200 |
+| `MaxMatriculasPerEstudiante` | 2 | 0–6 |
 
 Si los profesores o las aulas no alcanzan para todos los grupos sin traslapes, se crean menos grupos y el log lo advierte. Con los valores por defecto, la siembra tarda alrededor de 1 segundo.
 

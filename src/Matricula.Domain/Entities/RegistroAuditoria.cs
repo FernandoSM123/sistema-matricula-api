@@ -52,7 +52,7 @@ public class RegistroAuditoria
 
     public int EntidadId { get; private set; }
 
-    /// <summary>JSON con los valores o las diferencias, armado por <see cref="Reglas.ReglasAuditoria"/>.</summary>
+    /// <summary>JSON con los valores o las diferencias, armado por <see cref="Reglas.AuditRules"/>.</summary>
     public string Cambios { get; private set; }
 
     /// <summary>Autor del cambio; null es el Sistema (RN-45). Sin FK: la cuenta puede eliminarse después.</summary>

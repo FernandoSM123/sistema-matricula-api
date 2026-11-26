@@ -475,7 +475,7 @@ Authorization: Bearer {{token}}
 ###
 
 # Periodo vigente (RF-38), público, sin token (COR-01): inicioMatricula ≤ hoy ≤ finClases, con la fecha de
-# Instituto:ZonaHoraria. Si hay varios, el de inicioMatricula más reciente y luego el id mayor. Sin vigente → 404.
+# Institute:TimeZone. Si hay varios, el de inicioMatricula más reciente y luego el id mayor. Sin vigente → 404.
 GET {{host}}/api/v1/periodos/vigente
 
 ###
@@ -805,7 +805,7 @@ Authorization: Bearer {{token}}
 # Errores inesperados (RF-59), solo administrador: los 500 no controlados (origen Peticion) y los correos que no se
 # pudieron enviar (origen Correo). Del más reciente al más antiguo, sin el detalle técnico. Filtros combinables: desde y
 # hasta (fechas locales del instituto, ambas incluidas), origen y traceId; search busca en el mensaje, el tipo de la
-# excepción y la ruta. usuarioId null = sin sesión. Se eliminan solos a los Errores:DiasRetencion días (90).
+# excepción y la ruta. usuarioId null = sin sesión. Se eliminan solos a los ErrorLog:RetentionDays días (90).
 GET {{host}}/api/v1/errores?page=1&pageSize=20
 Authorization: Bearer {{token}}
 

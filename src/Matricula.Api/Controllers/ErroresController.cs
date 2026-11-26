@@ -1,6 +1,6 @@
 using Matricula.Api.Common;
-using Matricula.Api.Seguridad;
-using Matricula.Application.Common.Paginacion;
+using Matricula.Api.Security;
+using Matricula.Application.Common.Pagination;
 using Matricula.Application.Errores;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Matricula.Api.Controllers;
 
 // Solo lectura: no hay endpoints para crear, modificar ni eliminar errores; se depuran solos al vencer (RN-49).
-[Authorize(Policy = Politicas.Administrador)]
+[Authorize(Policy = Policies.Administrador)]
 public class ErroresController(ErroresService erroresService) : ApiControllerBase
 {
     /// <summary>
@@ -22,19 +22,19 @@ public class ErroresController(ErroresService erroresService) : ApiControllerBas
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PagedResult<RegistroErrorResponse>>> Listar(
-        [FromQuery] ListarErroresRequest request, CancellationToken cancellationToken) =>
-        Ok(await erroresService.ListarAsync(request, cancellationToken));
+    public async Task<ActionResult<PagedResult<RegistroErrorResponse>>> List(
+        [FromQuery] ListErroresRequest request, CancellationToken cancellationToken) =>
+        Ok(await erroresService.ListAsync(request, cancellationToken));
 
     /// <summary>
     /// Un error con su detalle técnico (RF-59): la excepción completa, con las internas y el stack trace. Un error ya
     /// depurado responde 404.
     /// </summary>
     [HttpGet("{id:long}")]
-    [ProducesResponseType<RegistroErrorDetalleResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<RegistroErrorDetailResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<RegistroErrorDetalleResponse>> Obtener(long id, CancellationToken cancellationToken) =>
-        Ok(await erroresService.ObtenerAsync(id, cancellationToken));
+    public async Task<ActionResult<RegistroErrorDetailResponse>> Get(long id, CancellationToken cancellationToken) =>
+        Ok(await erroresService.GetAsync(id, cancellationToken));
 }

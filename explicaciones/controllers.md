@@ -9,7 +9,7 @@ Tu interpretación es correcta en lo general. Aquí va un poco más de detalle s
 ```csharp
 [HttpPost("login")]
 [AllowAnonymous]
-[EnableRateLimiting(LimitesPeticiones.Login)]
+[EnableRateLimiting(RateLimitPolicies.Login)]
 [ProducesResponseType<TokenResponse>(StatusCodes.Status200OK)]
 [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -32,16 +32,16 @@ Así, la URL completa queda **`POST /api/v1/auth/login`**.
 
 ### `[AllowAnonymous]`
 
-Correcto: no exige token. Esto importa más de lo que parece, porque la API **exige sesión por defecto**. En `Seguridad/Politicas.cs` hay una política de respaldo que pide un usuario autenticado en todos los endpoints.
+Correcto: no exige token. Esto importa más de lo que parece, porque la API **exige sesión por defecto**. En `Security/Policies.cs` hay una política de respaldo que pide un usuario autenticado en todos los endpoints.
 
 Sin `[AllowAnonymous]`, nadie podría hacer login: para entrar necesitaría un token, y el token lo da justamente el login. Por eso `cambiar-contrasena` no lleva ningún atributo de autorización y aun así está protegido.
 
-### `[EnableRateLimiting(LimitesPeticiones.Login)]`
+### `[EnableRateLimiting(RateLimitPolicies.Login)]`
 
-Correcto. Aplica la política `"login"` definida en `Seguridad/LimitesPeticiones.cs`:
+Correcto. Aplica la política `"login"` definida en `Security/RateLimitPolicies.cs`:
 
 ```csharp
-options.AddPolicy(Login, context => PorIp(context, limite: 10, ventana: TimeSpan.FromMinutes(1)));
+options.AddPolicy(Login, context => ByIp(context, limite: 10, ventana: TimeSpan.FromMinutes(1)));
 ```
 
 - Permite **10 intentos por minuto por IP**.

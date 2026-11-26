@@ -1,7 +1,7 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
-using Matricula.Application.Common.Paginacion;
-using Matricula.Domain.Reglas;
+using Matricula.Application.Common.Pagination;
+using Matricula.Domain.Rules;
 using Microsoft.EntityFrameworkCore;
 
 namespace Matricula.Application.Errores;
@@ -9,20 +9,20 @@ namespace Matricula.Application.Errores;
 /// <summary>
 /// Consulta de los errores inesperados (RF-59). Solo lee: los registros los escribe Infrastructure (RN-49).
 /// </summary>
-public class ErroresService(IAppDbContext db, IFechaLocal fechaLocal)
+public class ErroresService(IAppDbContext db, ILocalClock localClock)
 {
     /// <summary>
     /// Filtra con todos los criterios recibidos y ordena del error más reciente al más antiguo, sin el detalle.
     /// </summary>
-    public async Task<PagedResult<RegistroErrorResponse>> ListarAsync(
-        ListarErroresRequest request, CancellationToken cancellationToken)
+    public async Task<PagedResult<RegistroErrorResponse>> ListAsync(
+        ListErroresRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         var query = db.RegistrosError;
 
         // Las fechas son locales del instituto; "hasta" incluye su día completo.
-        var (inicio, fin) = fechaLocal.RangoUtc(request.Desde, request.Hasta);
+        var (inicio, fin) = localClock.ToUtcRange(request.Desde, request.Hasta);
         if (inicio is { } desde)
         {
             query = query.Where(r => r.Fecha >= desde);
@@ -39,7 +39,7 @@ public class ErroresService(IAppDbContext db, IFechaLocal fechaLocal)
         }
 
         // El validador ya rechazó los formatos inválidos.
-        if (ReglasErrores.NormalizarTraceId(request.TraceId) is { } traceId)
+        if (ErrorLogRules.NormalizeTraceId(request.TraceId) is { } traceId)
         {
             query = query.Where(r => r.TraceId == traceId);
         }
@@ -74,10 +74,10 @@ public class ErroresService(IAppDbContext db, IFechaLocal fechaLocal)
     }
 
     /// <summary>Un error con su detalle técnico. Uno ya depurado (RN-49) no existe.</summary>
-    public async Task<RegistroErrorDetalleResponse> ObtenerAsync(long id, CancellationToken cancellationToken) =>
+    public async Task<RegistroErrorDetailResponse> GetAsync(long id, CancellationToken cancellationToken) =>
         await db.RegistrosError
             .Where(r => r.Id == id)
-            .Select(r => new RegistroErrorDetalleResponse(
+            .Select(r => new RegistroErrorDetailResponse(
                 r.Id,
                 r.Fecha,
                 r.Origen,

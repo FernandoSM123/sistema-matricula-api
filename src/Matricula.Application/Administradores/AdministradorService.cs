@@ -1,6 +1,6 @@
 using Matricula.Application.Abstractions;
 using Matricula.Application.Common.Exceptions;
-using Matricula.Application.Common.Paginacion;
+using Matricula.Application.Common.Pagination;
 using Matricula.Application.Cuentas;
 using Matricula.Domain.Entities;
 using Matricula.Domain.Enums;
@@ -15,25 +15,25 @@ public class AdministradorService(IAppDbContext db, CuentaService cuentaService)
     /// RF-04: crea la cuenta (rol Administrador, temporal de 72 horas) y el registro del administrador en un solo
     /// guardado, y después envía la temporal.
     /// </summary>
-    public async Task<AdministradorRegistradoResponse> RegistrarAsync(RegistrarAdministradorRequest request, CancellationToken cancellationToken)
+    public async Task<AdministradorCreatedResponse> CreateAsync(CreateAdministradorRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        await ValidarCedulaDisponibleAsync(request.Cedula, cancellationToken);
-        var cuenta = await cuentaService.CrearCuentaConTemporalAsync(request.Correo, Rol.Administrador, cancellationToken);
+        await EnsureCedulaAvailableAsync(request.Cedula, cancellationToken);
+        var cuenta = await cuentaService.CreateWithTemporaryPasswordAsync(request.Correo, Rol.Administrador, cancellationToken);
 
         var administrador = new Administrador(cuenta.Usuario, request.Cedula, request.Nombre, request.Apellidos, request.Telefono);
         db.Administradores.Add(administrador);
         await db.SaveChangesAsync(cancellationToken);
 
-        var correoEnviado = await cuentaService.EnviarTemporalAsync(cuenta, cancellationToken);
-        return new AdministradorRegistradoResponse(administrador.ToResponse(), correoEnviado);
+        var correoEnviado = await cuentaService.SendTemporaryPasswordAsync(cuenta, cancellationToken);
+        return new AdministradorCreatedResponse(administrador.ToResponse(), correoEnviado);
     }
 
     /// <summary>
     /// RF-55: listado paginado, solo activos salvo que se pidan los inactivos (RN-41).
     /// </summary>
-    public Task<PagedResult<AdministradorResponse>> ListarAsync(ListarAdministradoresRequest request, CancellationToken cancellationToken)
+    public Task<PagedResult<AdministradorResponse>> ListAsync(ListAdministradoresRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -60,7 +60,7 @@ public class AdministradorService(IAppDbContext db, CuentaService cuentaService)
             .OrderBy(a => a.Apellidos)
             .ThenBy(a => a.Nombre)
             .ThenBy(a => a.Id)
-            .Select(AdministradorProyecciones.AResponse)
+            .Select(AdministradorProjections.ToResponseExpression)
             .ToPagedResultAsync(request, cancellationToken);
     }
 
@@ -68,7 +68,7 @@ public class AdministradorService(IAppDbContext db, CuentaService cuentaService)
     /// RF-55: datos personales y correo de cualquier administrador, incluido el propio. El correo se cambia en
     /// la cuenta (RN-31).
     /// </summary>
-    public async Task<AdministradorResponse> ActualizarAsync(int id, ActualizarAdministradorRequest request, CancellationToken cancellationToken)
+    public async Task<AdministradorResponse> UpdateAsync(int id, UpdateAdministradorRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -84,22 +84,22 @@ public class AdministradorService(IAppDbContext db, CuentaService cuentaService)
             throw new BusinessRuleException("RN-13", $"Ya existe un administrador con la cédula {cedula}.");
         }
 
-        await cuentaService.CambiarCorreoAsync(administrador.Usuario, request.Correo, cancellationToken);
-        administrador.ActualizarDatos(request.Cedula, request.Nombre, request.Apellidos, request.Telefono);
+        await cuentaService.ChangeCorreoAsync(administrador.Usuario, request.Correo, cancellationToken);
+        administrador.Update(request.Cedula, request.Nombre, request.Apellidos, request.Telefono);
         await db.SaveChangesAsync(cancellationToken);
 
         return administrador.ToResponse();
     }
 
-    public async Task<AdministradorResponse> ObtenerAsync(int id, CancellationToken cancellationToken) =>
+    public async Task<AdministradorResponse> GetAsync(int id, CancellationToken cancellationToken) =>
         await db.Administradores.AsNoTracking()
             .Where(a => a.Id == id)
-            .Select(AdministradorProyecciones.AResponse)
+            .Select(AdministradorProjections.ToResponseExpression)
             .SingleOrDefaultAsync(cancellationToken)
         ?? throw new NotFoundException($"No existe el administrador {id}.");
 
     // RN-13 (cédula única entre administradores) y RN-39 (un inactivo se reactiva, no se registra de nuevo).
-    private async Task ValidarCedulaDisponibleAsync(string cedula, CancellationToken cancellationToken)
+    private async Task EnsureCedulaAvailableAsync(string cedula, CancellationToken cancellationToken)
     {
         var buscada = cedula.Trim();
         var existente = await db.Administradores.AsNoTracking()

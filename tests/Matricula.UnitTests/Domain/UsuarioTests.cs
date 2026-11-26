@@ -10,16 +10,16 @@ public class UsuarioTests
     private static Usuario NuevoUsuario() =>
         new("ana@instituto.local", Rol.Administrador, OrigenRegistro.Administrador);
 
-    [Fact]
-    public void Constructor_CorreoConMayusculasYEspacios_LoNormaliza()
+    [Fact(DisplayName = "Un correo con mayúsculas y espacios se normaliza")]
+    public void Constructor_CorreoWithUppercaseAndSpaces_NormalizesIt()
     {
         var usuario = new Usuario("  Ana.Mora@Instituto.LOCAL ", Rol.Estudiante, OrigenRegistro.RegistroPublico);
 
         Assert.Equal("ana.mora@instituto.local", usuario.Correo);
     }
 
-    [Fact]
-    public void Constructor_CuentaNueva_ActivaSinContrasenaYConStamp()
+    [Fact(DisplayName = "Una cuenta nueva queda activa, sin contraseña y con stamp")]
+    public void Constructor_NewAccount_ActiveWithoutPasswordAndWithStamp()
     {
         var usuario = NuevoUsuario();
 
@@ -29,18 +29,18 @@ public class UsuarioTests
         Assert.False(string.IsNullOrWhiteSpace(usuario.SecurityStamp));
     }
 
-    [Theory]
+    [Theory(DisplayName = "Un correo vacío lanza ArgumentException")]
     [InlineData("")]
     [InlineData("   ")]
-    public void NormalizeCorreo_Vacio_Lanza(string correo)
+    public void NormalizeCorreo_Empty_Throws(string correo)
     {
         Assert.Throws<ArgumentException>(() => Usuario.NormalizeCorreo(correo));
     }
 
-    [Theory]
+    [Theory(DisplayName = "La temporal de una cuenta nueva o de un reenvío vence en 72 horas (RN-23)")]
     [InlineData(MotivoTemporal.CuentaNueva)]
     [InlineData(MotivoTemporal.ReenvioAdministrador)]
-    public void SetTemporaryPassword_CuentaNuevaOReenvio_VenceEn72Horas(MotivoTemporal motivo)
+    public void SetTemporaryPassword_NewAccountOrResend_ExpiresIn72Hours(MotivoTemporal motivo)
     {
         var usuario = NuevoUsuario();
 
@@ -50,8 +50,8 @@ public class UsuarioTests
         Assert.Equal(motivo, usuario.TempPasswordMotivo);
     }
 
-    [Fact]
-    public void SetTemporaryPassword_PorOlvido_VenceEnUnaHora()
+    [Fact(DisplayName = "La temporal de un olvido vence en una hora (RN-23)")]
+    public void SetTemporaryPassword_Forgot_ExpiresInOneHour()
     {
         var usuario = NuevoUsuario();
 
@@ -60,8 +60,8 @@ public class UsuarioTests
         Assert.Equal(Ahora.AddHours(1), usuario.TempPasswordExpira);
     }
 
-    [Fact]
-    public void SetTemporaryPassword_ConTemporalPrevia_LaReemplaza()
+    [Fact(DisplayName = "Una temporal nueva reemplaza a la anterior (RN-27)")]
+    public void SetTemporaryPassword_WithPreviousTemporary_ReplacesIt()
     {
         var usuario = NuevoUsuario();
         usuario.SetTemporaryPassword("hash-anterior", MotivoTemporal.CuentaNueva, Ahora);
@@ -73,8 +73,8 @@ public class UsuarioTests
         Assert.Equal(Ahora.AddHours(11), usuario.TempPasswordExpira);
     }
 
-    [Fact]
-    public void SetTemporaryPassword_NoInvalidaLaContrasenaActual()
+    [Fact(DisplayName = "Una temporal no invalida la contraseña actual (RN-32)")]
+    public void SetTemporaryPassword_DoesNotInvalidateCurrentPassword()
     {
         var usuario = NuevoUsuario();
         usuario.SetPassword("hash-definitiva", Ahora);
@@ -84,8 +84,8 @@ public class UsuarioTests
         Assert.Equal("hash-definitiva", usuario.PasswordHash);
     }
 
-    [Fact]
-    public void HasValidTemporaryPassword_AntesDelVencimiento_DevuelveTrue()
+    [Fact(DisplayName = "La temporal es válida antes de su vencimiento")]
+    public void HasValidTemporaryPassword_BeforeExpiration_ReturnsTrue()
     {
         var usuario = NuevoUsuario();
         usuario.SetTemporaryPassword("hash", MotivoTemporal.Olvido, Ahora);
@@ -93,8 +93,8 @@ public class UsuarioTests
         Assert.True(usuario.HasValidTemporaryPassword(Ahora.AddMinutes(59)));
     }
 
-    [Fact]
-    public void HasValidTemporaryPassword_EnElVencimientoODespues_DevuelveFalse()
+    [Fact(DisplayName = "La temporal no es válida en su vencimiento ni después")]
+    public void HasValidTemporaryPassword_AtOrAfterExpiration_ReturnsFalse()
     {
         var usuario = NuevoUsuario();
         usuario.SetTemporaryPassword("hash", MotivoTemporal.Olvido, Ahora);
@@ -103,14 +103,14 @@ public class UsuarioTests
         Assert.False(usuario.HasValidTemporaryPassword(Ahora.AddHours(2)));
     }
 
-    [Fact]
-    public void HasValidTemporaryPassword_SinTemporal_DevuelveFalse()
+    [Fact(DisplayName = "Sin temporal no hay una temporal válida")]
+    public void HasValidTemporaryPassword_WithoutTemporary_ReturnsFalse()
     {
         Assert.False(NuevoUsuario().HasValidTemporaryPassword(Ahora));
     }
 
-    [Fact]
-    public void SetPassword_AnulaLaTemporalFijaLaFechaYCambiaElStamp()
+    [Fact(DisplayName = "Fijar la contraseña anula la temporal, registra la fecha y cambia el stamp")]
+    public void SetPassword_ClearsTemporarySetsDateAndChangesStamp()
     {
         var usuario = NuevoUsuario();
         usuario.SetTemporaryPassword("hash-temporal", MotivoTemporal.CuentaNueva, Ahora);
@@ -126,8 +126,8 @@ public class UsuarioTests
         Assert.NotEqual(stampAnterior, usuario.SecurityStamp);
     }
 
-    [Fact]
-    public void RehashPassword_CambiaElHashSinCambiarStampNiFecha()
+    [Fact(DisplayName = "Recalcular el hash no cambia el stamp ni la fecha")]
+    public void RehashPassword_ChangesHashWithoutChangingStampOrDate()
     {
         var usuario = NuevoUsuario();
         usuario.SetPassword("hash-v2", Ahora);
@@ -140,8 +140,8 @@ public class UsuarioTests
         Assert.Equal(Ahora, usuario.FechaCambioContrasena);
     }
 
-    [Fact]
-    public void RecordLogin_AnulaLaTemporalPendienteSinCambiarElStamp()
+    [Fact(DisplayName = "Ingresar con la contraseña actual anula la temporal pendiente sin cambiar el stamp (RF-11)")]
+    public void RecordLogin_ClearsPendingTemporaryWithoutChangingStamp()
     {
         var usuario = NuevoUsuario();
         usuario.SetPassword("hash-definitiva", Ahora);
@@ -156,8 +156,8 @@ public class UsuarioTests
         Assert.Equal(stamp, usuario.SecurityStamp);
     }
 
-    [Fact]
-    public void RecordTemporaryPasswordLogin_ConservaLaTemporal()
+    [Fact(DisplayName = "Ingresar con la temporal la conserva")]
+    public void RecordTemporaryPasswordLogin_KeepsTemporary()
     {
         var usuario = NuevoUsuario();
         usuario.SetTemporaryPassword("hash-temporal", MotivoTemporal.CuentaNueva, Ahora);
@@ -168,8 +168,8 @@ public class UsuarioTests
         Assert.Equal(Ahora.AddMinutes(1), usuario.UltimoIngreso);
     }
 
-    [Fact]
-    public void ChangeCorreo_LoNormaliza()
+    [Fact(DisplayName = "Cambiar el correo lo normaliza")]
+    public void ChangeCorreo_NormalizesIt()
     {
         var usuario = NuevoUsuario();
 
@@ -178,8 +178,8 @@ public class UsuarioTests
         Assert.Equal("nuevo@instituto.local", usuario.Correo);
     }
 
-    [Fact]
-    public void Deactivate_MarcaInactivoYCambiaElStamp()
+    [Fact(DisplayName = "Desactivar marca la cuenta inactiva y cambia el stamp")]
+    public void Deactivate_MarksInactiveAndChangesStamp()
     {
         var usuario = NuevoUsuario();
         var stampAnterior = usuario.SecurityStamp;
@@ -190,8 +190,8 @@ public class UsuarioTests
         Assert.NotEqual(stampAnterior, usuario.SecurityStamp);
     }
 
-    [Fact]
-    public void Reactivate_MarcaActivoYCambiaElStamp()
+    [Fact(DisplayName = "Reactivar marca la cuenta activa y cambia el stamp")]
+    public void Reactivate_MarksActiveAndChangesStamp()
     {
         var usuario = NuevoUsuario();
         usuario.Deactivate();
@@ -203,8 +203,8 @@ public class UsuarioTests
         Assert.NotEqual(stampAnterior, usuario.SecurityStamp);
     }
 
-    [Fact]
-    public void EndSessions_CambiaElStamp()
+    [Fact(DisplayName = "Cerrar las sesiones cambia el stamp")]
+    public void EndSessions_ChangesStamp()
     {
         var usuario = NuevoUsuario();
         var stampAnterior = usuario.SecurityStamp;

@@ -8,8 +8,8 @@ public class HorarioPlannerTests
     private static readonly TimeSlot LunesTemprano = new(DiaSemana.Lunes, new TimeOnly(8, 0), new TimeOnly(10, 0));
     private static readonly TimeSlot MartesTemprano = new(DiaSemana.Martes, new TimeOnly(8, 0), new TimeOnly(10, 0));
 
-    [Fact]
-    public void All_TieneLasFranjasDeLaSpec()
+    [Fact(DisplayName = "Las franjas horarias son las de la spec de datos de prueba")]
+    public void All_HasSpecTimeSlots()
     {
         Assert.Equal(32, TimeSlot.All.Count);
         Assert.Equal(2, TimeSlot.All.Count(f => f.Dia == DiaSemana.Sabado));
@@ -17,8 +17,8 @@ public class HorarioPlannerTests
         Assert.Equal(TimeSlot.All.Count, TimeSlot.All.Distinct().Count());
     }
 
-    [Fact]
-    public void TryAssignGrupo_UnProfesorYUnAula_AsignaHastaAgotarLasFranjasSinRepetir()
+    [Fact(DisplayName = "Con un profesor y un aula asigna grupos hasta agotar las franjas, sin repetir")]
+    public void TryAssignGrupo_OneProfesorAndOneAula_AssignsUntilSlotsRunOutWithoutRepeating()
     {
         var planificador = new HorarioPlanner(new Random(1));
 
@@ -31,8 +31,8 @@ public class HorarioPlannerTests
         Assert.Null(planificador.TryAssignGrupo(1, [1], [10]));
     }
 
-    [Fact]
-    public void TryAssignGrupo_VariosProfesoresYAulas_NuncaRepiteProfesorOAulaEnUnaFranja()
+    [Fact(DisplayName = "Con varios profesores y aulas nunca repite profesor ni aula en una franja")]
+    public void TryAssignGrupo_SeveralProfesoresAndAulas_NeverRepeatsProfesorOrAulaInSlot()
     {
         var random = new Random(7);
         var planificador = new HorarioPlanner(random);
@@ -50,8 +50,8 @@ public class HorarioPlannerTests
         Assert.Equal(porAula.Count, porAula.Distinct().Count());
     }
 
-    [Fact]
-    public void TryAssignGrupo_Virtual_NoOcupaAulas()
+    [Fact(DisplayName = "Un grupo virtual no ocupa aulas")]
+    public void TryAssignGrupo_Virtual_DoesNotUseAulas()
     {
         var planificador = new HorarioPlanner(new Random(3));
 
@@ -71,8 +71,8 @@ public class HorarioPlannerTests
         }
     }
 
-    [Fact]
-    public void TryAssignGrupo_DosBloques_CaenEnDiasDistintos()
+    [Fact(DisplayName = "Los dos bloques de un grupo caen en días distintos")]
+    public void TryAssignGrupo_TwoBlocks_FallOnDifferentDays()
     {
         var planificador = new HorarioPlanner(new Random(5));
 
@@ -86,33 +86,33 @@ public class HorarioPlannerTests
         }
     }
 
-    [Theory]
+    [Theory(DisplayName = "Una cantidad de bloques fuera de rango lanza una excepción")]
     [InlineData(0)]
     [InlineData(3)]
-    public void TryAssignGrupo_CantidadDeBloquesFueraDeRango_Lanza(int cantidadBloques)
+    public void TryAssignGrupo_BlockCountOutOfRange_Throws(int cantidadBloques)
     {
         var planificador = new HorarioPlanner(new Random(1));
 
         Assert.Throws<ArgumentOutOfRangeException>(() => planificador.TryAssignGrupo(cantidadBloques, [1], [10]));
     }
 
-    [Fact]
-    public void TryAssignGrupo_SinProfesores_DevuelveNull()
+    [Fact(DisplayName = "Sin profesores no asigna el grupo")]
+    public void TryAssignGrupo_WithoutProfesores_ReturnsNull()
     {
         var planificador = new HorarioPlanner(new Random(1));
 
         Assert.Null(planificador.TryAssignGrupo(1, [], [10]));
     }
 
-    [Fact]
-    public void TryAssignGrupo_MismaSemilla_MismaSecuencia()
+    [Fact(DisplayName = "La misma semilla produce la misma secuencia")]
+    public void TryAssignGrupo_SameSeed_SameSequence()
     {
         Assert.Equal(CreatePlanner(42), CreatePlanner(42));
         Assert.NotEqual(CreatePlanner(42), CreatePlanner(43));
     }
 
-    [Fact]
-    public void CanEnroll_MismoCurso_Rechaza()
+    [Fact(DisplayName = "No permite matricular dos grupos del mismo curso")]
+    public void CanEnroll_SameCurso_Rejects()
     {
         var planificador = new HorarioPlanner(new Random(1));
         planificador.RecordMatricula(1, cursoId: 100, [LunesTemprano]);
@@ -120,8 +120,8 @@ public class HorarioPlannerTests
         Assert.False(planificador.CanEnroll(1, cursoId: 100, [MartesTemprano]));
     }
 
-    [Fact]
-    public void CanEnroll_FranjaCompartida_Rechaza()
+    [Fact(DisplayName = "No permite matricular dos grupos en la misma franja")]
+    public void CanEnroll_SharedSlot_Rejects()
     {
         var planificador = new HorarioPlanner(new Random(1));
         planificador.RecordMatricula(1, cursoId: 100, [LunesTemprano]);
@@ -129,8 +129,8 @@ public class HorarioPlannerTests
         Assert.False(planificador.CanEnroll(1, cursoId: 200, [MartesTemprano, LunesTemprano]));
     }
 
-    [Fact]
-    public void CanEnroll_OtroCursoEnOtraFranja_Acepta()
+    [Fact(DisplayName = "Permite matricular otro curso en otra franja")]
+    public void CanEnroll_OtherCursoInOtherSlot_Allows()
     {
         var planificador = new HorarioPlanner(new Random(1));
         planificador.RecordMatricula(1, cursoId: 100, [LunesTemprano]);
@@ -139,8 +139,8 @@ public class HorarioPlannerTests
         Assert.True(planificador.CanEnroll(2, cursoId: 100, [LunesTemprano]));
     }
 
-    [Fact]
-    public void RecordMatricula_NoPermitida_Lanza()
+    [Fact(DisplayName = "Registrar una matrícula no permitida lanza una excepción")]
+    public void RecordMatricula_NotAllowed_Throws()
     {
         var planificador = new HorarioPlanner(new Random(1));
         planificador.RecordMatricula(1, cursoId: 100, [LunesTemprano]);
@@ -148,8 +148,8 @@ public class HorarioPlannerTests
         Assert.Throws<InvalidOperationException>(() => planificador.RecordMatricula(1, cursoId: 200, [LunesTemprano]));
     }
 
-    [Fact]
-    public void ReleaseMatricula_VuelveAPermitirElCursoYLaFranja()
+    [Fact(DisplayName = "Liberar una matrícula vuelve a permitir el curso y la franja")]
+    public void ReleaseMatricula_AllowsCursoAndSlotAgain()
     {
         var planificador = new HorarioPlanner(new Random(1));
         planificador.RecordMatricula(1, cursoId: 100, [LunesTemprano]);

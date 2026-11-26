@@ -14,10 +14,10 @@ public class EstudianteTests
     private static Estudiante NuevoEstudiante() =>
         new(CuentaEstudiante(), "1-1111-1111", "Ana", "Mora", "88888888", Nacimiento, "San José", Hoy);
 
-    [Theory]
+    [Theory(DisplayName = "Crear un estudiante con una cuenta de otro rol lanza ArgumentException")]
     [InlineData(Rol.Administrador)]
     [InlineData(Rol.Profesor)]
-    public void Constructor_CuentaDeOtroRol_LanzaArgumentException(Rol rol)
+    public void Constructor_AccountWithOtherRol_ThrowsArgumentException(Rol rol)
     {
         var usuario = new Usuario("otro@instituto.local", rol, OrigenRegistro.Administrador);
 
@@ -25,8 +25,8 @@ public class EstudianteTests
             new Estudiante(usuario, "1-1111-1111", "Ana", "Mora", "88888888", null, null, Hoy));
     }
 
-    [Fact]
-    public void Constructor_DatosConEspacios_LosRecorta()
+    [Fact(DisplayName = "Los datos con espacios se recortan")]
+    public void Constructor_DataWithSpaces_TrimsThem()
     {
         var estudiante = new Estudiante(
             CuentaEstudiante(), " 1-1111-1111 ", "  Ana ", " Mora Rojas ", " 8888 8888 ", Nacimiento, "  San José  ", Hoy);
@@ -40,30 +40,30 @@ public class EstudianteTests
         Assert.Equal(Hoy, estudiante.FechaRegistro);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Una dirección vacía o en blanco queda nula")]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Constructor_DireccionVaciaOEnBlanco_QuedaNula(string? direccion)
+    public void Constructor_EmptyOrBlankDireccion_StaysNull(string? direccion)
     {
         var estudiante = new Estudiante(CuentaEstudiante(), "1-1111-1111", "Ana", "Mora", "88888888", null, direccion, Hoy);
 
         Assert.Null(estudiante.Direccion);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Un dato obligatorio vacío lanza ArgumentException")]
     [InlineData("", "Ana", "Mora", "88888888")]
     [InlineData("1-1111-1111", " ", "Mora", "88888888")]
     [InlineData("1-1111-1111", "Ana", "", "88888888")]
     [InlineData("1-1111-1111", "Ana", "Mora", "  ")]
-    public void Constructor_DatoObligatorioVacio_LanzaArgumentException(string cedula, string nombre, string apellidos, string telefono)
+    public void Constructor_EmptyRequiredData_ThrowsArgumentException(string cedula, string nombre, string apellidos, string telefono)
     {
         Assert.Throws<ArgumentException>(() =>
             new Estudiante(CuentaEstudiante(), cedula, nombre, apellidos, telefono, null, null, Hoy));
     }
 
-    [Fact]
-    public void UpdateContacto_SoloCambiaTelefonoYDireccion()
+    [Fact(DisplayName = "Actualizar el contacto solo cambia el teléfono y la dirección")]
+    public void UpdateContacto_ChangesOnlyTelefonoAndDireccion()
     {
         var estudiante = NuevoEstudiante();
 
@@ -77,8 +77,8 @@ public class EstudianteTests
         Assert.Equal(Nacimiento, estudiante.FechaNacimiento);
     }
 
-    [Fact]
-    public void UpdateContacto_DireccionEnBlanco_LaQuita()
+    [Fact(DisplayName = "Una dirección en blanco al actualizar el contacto la quita")]
+    public void UpdateContacto_BlankDireccion_RemovesIt()
     {
         var estudiante = NuevoEstudiante();
 
@@ -87,8 +87,8 @@ public class EstudianteTests
         Assert.Null(estudiante.Direccion);
     }
 
-    [Fact]
-    public void Update_CambiaLosDatosPersonalesYConservaLaFechaDeRegistro()
+    [Fact(DisplayName = "Actualizar cambia los datos personales y conserva la fecha de registro")]
+    public void Update_ChangesPersonalDataAndKeepsFechaRegistro()
     {
         var estudiante = NuevoEstudiante();
         var nuevaFecha = new DateOnly(2001, 1, 2);

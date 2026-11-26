@@ -6,16 +6,16 @@ public class TestDataOptionsTests
 {
     private const string ContrasenaValida = "Prueba123";
 
-    [Fact]
-    public void Validate_ValoresPorDefectoConContrasenaValida_SinErrores()
+    [Fact(DisplayName = "Los valores por defecto con una contraseña válida no tienen errores")]
+    public void Validate_DefaultsWithValidPassword_NoErrors()
     {
         var options = new TestDataOptions { Password = ContrasenaValida };
 
         Assert.Empty(options.Validate());
     }
 
-    [Fact]
-    public void Validate_LimitesDeLosRangos_SinErrores()
+    [Fact(DisplayName = "Los límites de los rangos no tienen errores")]
+    public void Validate_RangeLimits_NoErrors()
     {
         var minimos = new TestDataOptions
         {
@@ -33,7 +33,7 @@ public class TestDataOptionsTests
         Assert.Empty(maximos.Validate());
     }
 
-    [Theory]
+    [Theory(DisplayName = "Una clave fuera de rango da un error que la nombra")]
     [InlineData("Cursos", 0)]
     [InlineData("Cursos", 201)]
     [InlineData("Aulas", 0)]
@@ -46,7 +46,7 @@ public class TestDataOptionsTests
     [InlineData("GruposPerPeriodo", 201)]
     [InlineData("MaxMatriculasPerEstudiante", -1)]
     [InlineData("MaxMatriculasPerEstudiante", 7)]
-    public void Validate_ClaveFueraDeRango_DevuelveErrorQueLaNombra(string clave, int valor)
+    public void Validate_KeyOutOfRange_ReturnsErrorNamingIt(string clave, int valor)
     {
         var options = With(clave, valor);
 
@@ -54,13 +54,13 @@ public class TestDataOptionsTests
         Assert.Contains($"'TestData:{clave}'", error, StringComparison.Ordinal);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Una contraseña ausente o inválida da un error que nombra la clave")]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("prueba123")]
     [InlineData("PruebaSinNumero")]
     [InlineData("Prue1")]
-    public void Validate_ContrasenaAusenteOInvalida_DevuelveErrorQueLaNombra(string? contrasena)
+    public void Validate_MissingOrInvalidPassword_ReturnsErrorNamingIt(string? contrasena)
     {
         var options = new TestDataOptions { Password = contrasena };
 
@@ -68,8 +68,8 @@ public class TestDataOptionsTests
         Assert.Contains("'TestData:Password'", error, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void Validate_VariosErrores_DevuelveUnoPorClave()
+    [Fact(DisplayName = "Varios errores dan uno por clave")]
+    public void Validate_SeveralErrors_ReturnsOnePerKey()
     {
         var options = new TestDataOptions { Cursos = 0, Estudiantes = -1 };
 

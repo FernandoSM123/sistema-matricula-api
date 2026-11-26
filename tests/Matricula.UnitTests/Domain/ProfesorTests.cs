@@ -13,10 +13,10 @@ public class ProfesorTests
     private static Profesor NuevoProfesor() =>
         new(CuentaProfesor(), "1-1111-1111", "Ana", "Mora", "88888888", "Redes", Contratacion);
 
-    [Theory]
+    [Theory(DisplayName = "Crear un profesor con una cuenta de otro rol lanza ArgumentException")]
     [InlineData(Rol.Administrador)]
     [InlineData(Rol.Estudiante)]
-    public void Constructor_CuentaDeOtroRol_LanzaArgumentException(Rol rol)
+    public void Constructor_AccountWithOtherRol_ThrowsArgumentException(Rol rol)
     {
         var usuario = new Usuario("otro@instituto.local", rol, OrigenRegistro.Administrador);
 
@@ -24,8 +24,8 @@ public class ProfesorTests
             new Profesor(usuario, "1-1111-1111", "Ana", "Mora", "88888888", null, null));
     }
 
-    [Fact]
-    public void Constructor_DatosConEspacios_LosRecorta()
+    [Fact(DisplayName = "Los datos con espacios se recortan")]
+    public void Constructor_DataWithSpaces_TrimsThem()
     {
         var profesor = new Profesor(
             CuentaProfesor(), " 1-1111-1111 ", "  Ana ", " Mora Rojas ", " 8888 8888 ", "  Redes  ", Contratacion);
@@ -38,30 +38,30 @@ public class ProfesorTests
         Assert.Equal(Contratacion, profesor.FechaContratacion);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Una especialidad vacía o en blanco queda nula")]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Constructor_EspecialidadVaciaOEnBlanco_QuedaNula(string? especialidad)
+    public void Constructor_EmptyOrBlankEspecialidad_StaysNull(string? especialidad)
     {
         var profesor = new Profesor(CuentaProfesor(), "1-1111-1111", "Ana", "Mora", "88888888", especialidad, null);
 
         Assert.Null(profesor.Especialidad);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Un dato obligatorio vacío lanza ArgumentException")]
     [InlineData("", "Ana", "Mora", "88888888")]
     [InlineData("1-1111-1111", " ", "Mora", "88888888")]
     [InlineData("1-1111-1111", "Ana", "", "88888888")]
     [InlineData("1-1111-1111", "Ana", "Mora", "  ")]
-    public void Constructor_DatoObligatorioVacio_LanzaArgumentException(string cedula, string nombre, string apellidos, string telefono)
+    public void Constructor_EmptyRequiredData_ThrowsArgumentException(string cedula, string nombre, string apellidos, string telefono)
     {
         Assert.Throws<ArgumentException>(() =>
             new Profesor(CuentaProfesor(), cedula, nombre, apellidos, telefono, null, null));
     }
 
-    [Fact]
-    public void Update_CambiaTodosLosDatosPersonales()
+    [Fact(DisplayName = "Actualizar cambia todos los datos personales")]
+    public void Update_ChangesAllPersonalData()
     {
         var profesor = NuevoProfesor();
         var nuevaFecha = new DateOnly(2025, 8, 15);
@@ -76,8 +76,8 @@ public class ProfesorTests
         Assert.Equal(nuevaFecha, profesor.FechaContratacion);
     }
 
-    [Fact]
-    public void Update_EspecialidadEnBlancoYSinFecha_LasQuita()
+    [Fact(DisplayName = "Una especialidad en blanco y sin fecha de contratación las quita")]
+    public void Update_BlankEspecialidadAndNoDate_RemovesThem()
     {
         var profesor = NuevoProfesor();
 
@@ -87,12 +87,12 @@ public class ProfesorTests
         Assert.Null(profesor.FechaContratacion);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Un dato obligatorio vacío lanza ArgumentException y no cambia nada")]
     [InlineData("", "Ana", "Mora", "88888888")]
     [InlineData("1-1111-1111", " ", "Mora", "88888888")]
     [InlineData("1-1111-1111", "Ana", "", "88888888")]
     [InlineData("1-1111-1111", "Ana", "Mora", "  ")]
-    public void Update_DatoObligatorioVacio_LanzaArgumentExceptionYNoCambiaNada(
+    public void Update_EmptyRequiredData_ThrowsArgumentExceptionAndChangesNothing(
         string cedula, string nombre, string apellidos, string telefono)
     {
         var profesor = NuevoProfesor();

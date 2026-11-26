@@ -8,8 +8,8 @@ public class CursoTests
     private static Curso CrearCurso(string codigo = "MAT-101", string? descripcion = "Fundamentos") =>
         new(codigo, "Matemática", descripcion, 40, 150000m, NivelCurso.Basico);
 
-    [Fact]
-    public void Constructor_DatosValidos_CreaElCursoActivo()
+    [Fact(DisplayName = "Crear un curso con datos válidos lo deja activo")]
+    public void Constructor_ValidData_CreatesActiveCurso()
     {
         var curso = CrearCurso();
 
@@ -19,30 +19,30 @@ public class CursoTests
         Assert.Equal(NivelCurso.Basico, curso.Nivel);
     }
 
-    [Fact]
-    public void Constructor_CodigoEnMinusculasConEspacios_LoNormaliza()
+    [Fact(DisplayName = "Un código en minúsculas y con espacios se normaliza")]
+    public void Constructor_LowercaseCodigoWithSpaces_NormalizesIt()
     {
         var curso = CrearCurso(codigo: "  mat-101 ");
 
         Assert.Equal("MAT-101", curso.Codigo);
     }
 
-    [Fact]
-    public void NormalizeCodigo_CapitalizacionDistinta_DevuelveElMismoCodigo()
+    [Fact(DisplayName = "Códigos con distinta capitalización se normalizan al mismo valor")]
+    public void NormalizeCodigo_DifferentCasing_ReturnsSameCodigo()
     {
         Assert.Equal(Curso.NormalizeCodigo("MAT-101"), Curso.NormalizeCodigo(" mat-101 "));
     }
 
-    [Theory]
+    [Theory(DisplayName = "Un código en blanco lanza una excepción")]
     [InlineData("")]
     [InlineData("   ")]
-    public void NormalizeCodigo_CodigoEnBlanco_LanzaExcepcion(string codigo)
+    public void NormalizeCodigo_BlankCodigo_Throws(string codigo)
     {
         Assert.Throws<ArgumentException>(() => Curso.NormalizeCodigo(codigo));
     }
 
-    [Fact]
-    public void Constructor_TextosConEspacios_LosRecorta()
+    [Fact(DisplayName = "Los textos con espacios se recortan")]
+    public void Constructor_TextsWithSpaces_TrimsThem()
     {
         var curso = new Curso("MAT-101", "  Matemática ", "  Fundamentos ", 40, 0m, NivelCurso.Basico);
 
@@ -50,19 +50,19 @@ public class CursoTests
         Assert.Equal("Fundamentos", curso.Descripcion);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Una descripción en blanco queda nula")]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Constructor_DescripcionEnBlanco_QuedaNull(string? descripcion)
+    public void Constructor_BlankDescripcion_StaysNull(string? descripcion)
     {
         var curso = CrearCurso(descripcion: descripcion);
 
         Assert.Null(curso.Descripcion);
     }
 
-    [Fact]
-    public void Update_DatosNuevos_CambiaTodosLosDatos()
+    [Fact(DisplayName = "Actualizar con datos nuevos cambia todos los datos")]
+    public void Update_NewData_ChangesAllData()
     {
         var curso = CrearCurso();
 
@@ -76,8 +76,8 @@ public class CursoTests
         Assert.Equal(NivelCurso.Avanzado, curso.Nivel);
     }
 
-    [Fact]
-    public void Update_CursoInactivo_ConservaElEstado()
+    [Fact(DisplayName = "Actualizar un curso inactivo conserva su estado")]
+    public void Update_InactiveCurso_KeepsEstado()
     {
         var curso = CrearCurso();
         curso.Deactivate();
@@ -87,8 +87,8 @@ public class CursoTests
         Assert.False(curso.Activo);
     }
 
-    [Fact]
-    public void Deactivate_CursoActivo_LoDejaInactivo()
+    [Fact(DisplayName = "Desactivar un curso activo lo deja inactivo")]
+    public void Deactivate_ActiveCurso_MakesItInactive()
     {
         var curso = CrearCurso();
 
@@ -97,8 +97,8 @@ public class CursoTests
         Assert.False(curso.Activo);
     }
 
-    [Fact]
-    public void Reactivate_CursoInactivo_LoDejaActivo()
+    [Fact(DisplayName = "Reactivar un curso inactivo lo deja activo")]
+    public void Reactivate_InactiveCurso_MakesItActive()
     {
         var curso = CrearCurso();
         curso.Deactivate();

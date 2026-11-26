@@ -7,8 +7,8 @@ public class AulaTests
     private static Aula CrearAula(string codigo = "LAB-1", string? ubicacion = "Edificio A") =>
         new(codigo, ubicacion, 25);
 
-    [Fact]
-    public void Constructor_DatosValidos_CreaElAulaActiva()
+    [Fact(DisplayName = "Crear un aula con datos válidos la deja activa")]
+    public void Constructor_ValidData_CreatesActiveAula()
     {
         var aula = CrearAula();
 
@@ -16,49 +16,49 @@ public class AulaTests
         Assert.Equal(25, aula.Capacidad);
     }
 
-    [Fact]
-    public void Constructor_CodigoEnMinusculasConEspacios_LoNormaliza()
+    [Fact(DisplayName = "Un código en minúsculas y con espacios se normaliza")]
+    public void Constructor_LowercaseCodigoWithSpaces_NormalizesIt()
     {
         var aula = CrearAula(codigo: "  lab-1 ");
 
         Assert.Equal("LAB-1", aula.Codigo);
     }
 
-    [Fact]
-    public void NormalizeCodigo_CapitalizacionDistinta_DevuelveElMismoCodigo()
+    [Fact(DisplayName = "Códigos con distinta capitalización se normalizan al mismo valor")]
+    public void NormalizeCodigo_DifferentCasing_ReturnsSameCodigo()
     {
         Assert.Equal(Aula.NormalizeCodigo("LAB-1"), Aula.NormalizeCodigo(" lab-1 "));
     }
 
-    [Theory]
+    [Theory(DisplayName = "Un código en blanco lanza una excepción")]
     [InlineData("")]
     [InlineData("   ")]
-    public void NormalizeCodigo_CodigoEnBlanco_LanzaExcepcion(string codigo)
+    public void NormalizeCodigo_BlankCodigo_Throws(string codigo)
     {
         Assert.Throws<ArgumentException>(() => Aula.NormalizeCodigo(codigo));
     }
 
-    [Fact]
-    public void Constructor_UbicacionConEspacios_LaRecorta()
+    [Fact(DisplayName = "La ubicación con espacios se recorta")]
+    public void Constructor_UbicacionWithSpaces_TrimsIt()
     {
         var aula = CrearAula(ubicacion: "  Edificio A ");
 
         Assert.Equal("Edificio A", aula.Ubicacion);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Una ubicación en blanco queda nula")]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Constructor_UbicacionEnBlanco_QuedaNull(string? ubicacion)
+    public void Constructor_BlankUbicacion_StaysNull(string? ubicacion)
     {
         var aula = CrearAula(ubicacion: ubicacion);
 
         Assert.Null(aula.Ubicacion);
     }
 
-    [Fact]
-    public void Update_DatosNuevos_CambiaTodosLosDatos()
+    [Fact(DisplayName = "Actualizar con datos nuevos cambia todos los datos")]
+    public void Update_NewData_ChangesAllData()
     {
         var aula = CrearAula();
 
@@ -69,8 +69,8 @@ public class AulaTests
         Assert.Equal(80, aula.Capacidad);
     }
 
-    [Fact]
-    public void Update_AulaInactiva_ConservaElEstado()
+    [Fact(DisplayName = "Actualizar un aula inactiva conserva su estado")]
+    public void Update_InactiveAula_KeepsEstado()
     {
         var aula = CrearAula();
         aula.Deactivate();
@@ -80,8 +80,8 @@ public class AulaTests
         Assert.False(aula.Activo);
     }
 
-    [Fact]
-    public void Deactivate_AulaActiva_LaDejaInactiva()
+    [Fact(DisplayName = "Desactivar un aula activa la deja inactiva")]
+    public void Deactivate_ActiveAula_MakesItInactive()
     {
         var aula = CrearAula();
 
@@ -90,8 +90,8 @@ public class AulaTests
         Assert.False(aula.Activo);
     }
 
-    [Fact]
-    public void Reactivate_AulaInactiva_LaDejaActiva()
+    [Fact(DisplayName = "Reactivar un aula inactiva la deja activa")]
+    public void Reactivate_InactiveAula_MakesItActive()
     {
         var aula = CrearAula();
         aula.Deactivate();

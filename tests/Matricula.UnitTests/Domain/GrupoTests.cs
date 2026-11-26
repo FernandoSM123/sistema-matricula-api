@@ -51,8 +51,8 @@ public class GrupoTests
         Modalidad modalidad = Modalidad.Presencial) =>
         grupo.Update(nrc ?? grupo.Nrc, cursoId, profesorId, periodoId, aulaId, cupo, modalidad);
 
-    [Fact]
-    public void Constructor_DatosValidos_CreaPlanificadoSinOcupadosNiHorarios()
+    [Fact(DisplayName = "Crear un grupo con datos válidos lo deja Planificado, sin cupos ocupados ni horarios")]
+    public void Constructor_ValidData_CreatesPlanificadoWithoutOcupadosOrHorarios()
     {
         var grupo = CrearGrupo();
 
@@ -66,65 +66,65 @@ public class GrupoTests
         Assert.Equal(AulaId, grupo.AulaId);
     }
 
-    [Fact]
-    public void Constructor_NrcEnMinusculasConEspacios_LoNormaliza()
+    [Fact(DisplayName = "Un NRC en minúsculas y con espacios se normaliza")]
+    public void Constructor_LowercaseNrcWithSpaces_NormalizesIt()
     {
         Assert.Equal("NRC-01", CrearGrupo("  nrc-01 ").Nrc);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Un NRC en blanco lanza una excepción")]
     [InlineData("")]
     [InlineData("   ")]
-    public void NormalizeNrc_NrcEnBlanco_LanzaExcepcion(string nrc)
+    public void NormalizeNrc_BlankNrc_Throws(string nrc)
     {
         Assert.Throws<ArgumentException>(() => Grupo.NormalizeNrc(nrc));
     }
 
-    [Theory]
+    [Theory(DisplayName = "Un cupo cero o negativo lanza una excepción")]
     [InlineData(0)]
     [InlineData(-1)]
-    public void Constructor_CupoNoPositivo_LanzaExcepcion(int cupo)
+    public void Constructor_NonPositiveCupo_Throws(int cupo)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             new Grupo("10001", CursoId, ProfesorId, PeriodoId, AulaId, cupo, Modalidad.Presencial));
     }
 
-    [Theory]
+    [Theory(DisplayName = "Una modalidad que requiere aula sin aula lanza RN-09")]
     [InlineData(Modalidad.Presencial)]
     [InlineData(Modalidad.Hibrida)]
-    public void Constructor_ModalidadConAulaSinAula_LanzaRn09(Modalidad modalidad)
+    public void Constructor_ModalidadWithAulaWithoutAula_ThrowsRn09(Modalidad modalidad)
     {
         var excepcion = Assert.Throws<BusinessRuleException>(() => CrearGrupo(modalidad: modalidad, aulaId: null));
 
         Assert.Equal("RN-09", excepcion.Code);
     }
 
-    [Fact]
-    public void Constructor_VirtualConAula_LanzaRn09()
+    [Fact(DisplayName = "Un grupo virtual con aula lanza RN-09")]
+    public void Constructor_VirtualWithAula_ThrowsRn09()
     {
         var excepcion = Assert.Throws<BusinessRuleException>(() => CrearGrupo(modalidad: Modalidad.Virtual));
 
         Assert.Equal("RN-09", excepcion.Code);
     }
 
-    [Fact]
-    public void Constructor_VirtualSinAula_CreaElGrupo()
+    [Fact(DisplayName = "Un grupo virtual sin aula se crea")]
+    public void Constructor_VirtualWithoutAula_CreatesGrupo()
     {
         var grupo = CrearGrupo(modalidad: Modalidad.Virtual, aulaId: null);
 
         Assert.Null(grupo.AulaId);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Si requiere aula depende de la modalidad")]
     [InlineData(Modalidad.Presencial, true)]
     [InlineData(Modalidad.Hibrida, true)]
     [InlineData(Modalidad.Virtual, false)]
-    public void RequiresAula_SegunModalidad_DevuelveLoEsperado(Modalidad modalidad, bool esperado)
+    public void RequiresAula_ByModalidad_ReturnsExpected(Modalidad modalidad, bool esperado)
     {
         Assert.Equal(esperado, Grupo.RequiresAula(modalidad));
     }
 
-    [Theory]
+    [Theory(DisplayName = "Una transición permitida cambia el estado (RF-47)")]
     [InlineData(EstadoGrupo.Planificado, EstadoGrupo.Abierto)]
     [InlineData(EstadoGrupo.Abierto, EstadoGrupo.Cerrado)]
     [InlineData(EstadoGrupo.Cerrado, EstadoGrupo.EnCurso)]
@@ -133,7 +133,7 @@ public class GrupoTests
     [InlineData(EstadoGrupo.Abierto, EstadoGrupo.Cancelado)]
     [InlineData(EstadoGrupo.Cerrado, EstadoGrupo.Cancelado)]
     [InlineData(EstadoGrupo.EnCurso, EstadoGrupo.Cancelado)]
-    public void ChangeEstado_TransicionPermitida_CambiaElEstado(EstadoGrupo desde, EstadoGrupo hacia)
+    public void ChangeEstado_AllowedTransition_ChangesEstado(EstadoGrupo desde, EstadoGrupo hacia)
     {
         var grupo = CrearGrupoEn(desde);
 
@@ -142,7 +142,7 @@ public class GrupoTests
         Assert.Equal(hacia, grupo.Estado);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Una transición no permitida lanza RF-47")]
     [InlineData(EstadoGrupo.Planificado, EstadoGrupo.Cerrado)]
     [InlineData(EstadoGrupo.Planificado, EstadoGrupo.Finalizado)]
     [InlineData(EstadoGrupo.Abierto, EstadoGrupo.Planificado)]
@@ -153,7 +153,7 @@ public class GrupoTests
     [InlineData(EstadoGrupo.Finalizado, EstadoGrupo.EnCurso)]
     [InlineData(EstadoGrupo.Cancelado, EstadoGrupo.Planificado)]
     [InlineData(EstadoGrupo.Cancelado, EstadoGrupo.Abierto)]
-    public void ChangeEstado_TransicionNoPermitida_LanzaRf47(EstadoGrupo desde, EstadoGrupo hacia)
+    public void ChangeEstado_NotAllowedTransition_ThrowsRf47(EstadoGrupo desde, EstadoGrupo hacia)
     {
         var grupo = CrearGrupoEn(desde);
 
@@ -163,12 +163,12 @@ public class GrupoTests
         Assert.Equal(desde, grupo.Estado);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Cambiar al mismo estado no cambia nada")]
     [InlineData(EstadoGrupo.Planificado)]
     [InlineData(EstadoGrupo.Abierto)]
     [InlineData(EstadoGrupo.Finalizado)]
     [InlineData(EstadoGrupo.Cancelado)]
-    public void ChangeEstado_MismoEstado_NoCambiaNada(EstadoGrupo estado)
+    public void ChangeEstado_SameEstado_ChangesNothing(EstadoGrupo estado)
     {
         var grupo = CrearGrupoEn(estado);
 
@@ -177,8 +177,8 @@ public class GrupoTests
         Assert.Equal(estado, grupo.Estado);
     }
 
-    [Fact]
-    public void ChangeEstado_AbrirSinHorarios_LanzaRf47()
+    [Fact(DisplayName = "Abrir un grupo sin horarios lanza RF-47")]
+    public void ChangeEstado_OpenWithoutHorarios_ThrowsRf47()
     {
         var grupo = CrearGrupo();
 
@@ -188,8 +188,8 @@ public class GrupoTests
         Assert.Equal(EstadoGrupo.Planificado, grupo.Estado);
     }
 
-    [Fact]
-    public void ChangeEstado_CancelarSinHorarios_CancelaElGrupo()
+    [Fact(DisplayName = "Cancelar un grupo sin horarios lo cancela")]
+    public void ChangeEstado_CancelWithoutHorarios_CancelsGrupo()
     {
         var grupo = CrearGrupo();
 
@@ -198,8 +198,8 @@ public class GrupoTests
         Assert.Equal(EstadoGrupo.Cancelado, grupo.Estado);
     }
 
-    [Fact]
-    public void AddHorario_BloqueValido_LoAgregaYLoDevuelve()
+    [Fact(DisplayName = "Un bloque válido se agrega y se devuelve")]
+    public void AddHorario_ValidBlock_AddsAndReturnsIt()
     {
         var grupo = CrearGrupo();
 
@@ -208,8 +208,8 @@ public class GrupoTests
         Assert.Same(horario, Assert.Single(grupo.Horarios));
     }
 
-    [Fact]
-    public void AddHorario_BloqueTraslapadoConOtroDelGrupo_LanzaRn14()
+    [Fact(DisplayName = "Un bloque que se traslapa con otro del grupo lanza RN-14")]
+    public void AddHorario_BlockOverlappingAnotherOfGrupo_ThrowsRn14()
     {
         var grupo = CrearGrupoConHorario();
 
@@ -220,8 +220,8 @@ public class GrupoTests
         Assert.Single(grupo.Horarios);
     }
 
-    [Fact]
-    public void AddHorario_BloqueContiguoYOtroDia_LosAgrega()
+    [Fact(DisplayName = "Un bloque contiguo y uno de otro día se agregan")]
+    public void AddHorario_ContiguousAndOtherDayBlocks_AddsThem()
     {
         var grupo = CrearGrupoConHorario();
 
@@ -231,8 +231,8 @@ public class GrupoTests
         Assert.Equal(3, grupo.Horarios.Count);
     }
 
-    [Fact]
-    public void AddHorario_HorasInvalidas_LanzaRn15()
+    [Fact(DisplayName = "Un bloque con horas inválidas lanza RN-15")]
+    public void AddHorario_InvalidHours_ThrowsRn15()
     {
         var grupo = CrearGrupo();
 
@@ -242,11 +242,11 @@ public class GrupoTests
         Assert.Equal("RN-15", excepcion.Code);
     }
 
-    [Theory]
+    [Theory(DisplayName = "A un grupo en marcha se le puede agregar un bloque")]
     [InlineData(EstadoGrupo.Abierto)]
     [InlineData(EstadoGrupo.Cerrado)]
     [InlineData(EstadoGrupo.EnCurso)]
-    public void AddHorario_GrupoEnMarcha_LoAgrega(EstadoGrupo estado)
+    public void AddHorario_GrupoInProgress_AddsIt(EstadoGrupo estado)
     {
         var grupo = CrearGrupoEn(estado);
 
@@ -255,10 +255,10 @@ public class GrupoTests
         Assert.Equal(2, grupo.Horarios.Count);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Agregar un bloque a un grupo finalizado o cancelado lanza RF-48")]
     [InlineData(EstadoGrupo.Finalizado)]
     [InlineData(EstadoGrupo.Cancelado)]
-    public void AddHorario_GrupoFinalizadoOCancelado_LanzaRf48(EstadoGrupo estado)
+    public void AddHorario_FinalizadoOrCanceladoGrupo_ThrowsRf48(EstadoGrupo estado)
     {
         var grupo = CrearGrupoEn(estado);
 
@@ -268,8 +268,8 @@ public class GrupoTests
         Assert.Equal("RF-48", excepcion.Code);
     }
 
-    [Fact]
-    public void RemoveHorario_GrupoPlanificado_LoQuitaYLoDevuelve()
+    [Fact(DisplayName = "Quitar un bloque de un grupo planificado lo quita y lo devuelve")]
+    public void RemoveHorario_PlanificadoGrupo_RemovesAndReturnsIt()
     {
         var grupo = CrearGrupo();
         var horario = grupo.AddHorario(DiaSemana.Lunes, new TimeOnly(8, 0), new TimeOnly(10, 0));
@@ -281,8 +281,8 @@ public class GrupoTests
         Assert.Empty(grupo.Horarios);
     }
 
-    [Fact]
-    public void RemoveHorario_BloqueDeOtroGrupo_DevuelveNull()
+    [Fact(DisplayName = "Quitar un bloque de otro grupo devuelve null")]
+    public void RemoveHorario_BlockOfOtherGrupo_ReturnsNull()
     {
         var grupo = CrearGrupoConHorario();
 
@@ -290,13 +290,13 @@ public class GrupoTests
         Assert.Single(grupo.Horarios);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Quitar un bloque de un grupo no planificado lanza RF-48")]
     [InlineData(EstadoGrupo.Abierto)]
     [InlineData(EstadoGrupo.Cerrado)]
     [InlineData(EstadoGrupo.EnCurso)]
     [InlineData(EstadoGrupo.Finalizado)]
     [InlineData(EstadoGrupo.Cancelado)]
-    public void RemoveHorario_GrupoNoPlanificado_LanzaRf48(EstadoGrupo estado)
+    public void RemoveHorario_NotPlanificadoGrupo_ThrowsRf48(EstadoGrupo estado)
     {
         var grupo = CrearGrupoEn(estado);
         var horario = grupo.Horarios.Single();
@@ -308,8 +308,8 @@ public class GrupoTests
         Assert.Single(grupo.Horarios);
     }
 
-    [Fact]
-    public void Update_GrupoPlanificado_CambiaTodosLosDatos()
+    [Fact(DisplayName = "Actualizar un grupo planificado cambia todos los datos")]
+    public void Update_PlanificadoGrupo_ChangesAllData()
     {
         var grupo = CrearGrupo();
 
@@ -324,11 +324,11 @@ public class GrupoTests
         Assert.Equal(Modalidad.Virtual, grupo.Modalidad);
     }
 
-    [Theory]
+    [Theory(DisplayName = "En un grupo en marcha se pueden reasignar el profesor, el aula, la modalidad y el cupo")]
     [InlineData(EstadoGrupo.Abierto)]
     [InlineData(EstadoGrupo.Cerrado)]
     [InlineData(EstadoGrupo.EnCurso)]
-    public void Update_GrupoEnMarcha_PermiteReasignarProfesorAulaModalidadYCupo(EstadoGrupo estado)
+    public void Update_GrupoInProgress_AllowsReassigningProfesorAulaModalidadAndCupo(EstadoGrupo estado)
     {
         var grupo = CrearGrupoEn(estado);
 
@@ -340,8 +340,8 @@ public class GrupoTests
         Assert.Equal(Modalidad.Hibrida, grupo.Modalidad);
     }
 
-    [Fact]
-    public void Update_GrupoEnMarchaConElMismoNrcEnOtraCapitalizacion_NoLoConsideraUnCambio()
+    [Fact(DisplayName = "En un grupo en marcha, el mismo NRC con otra capitalización no cuenta como cambio")]
+    public void Update_GrupoInProgressWithSameNrcInOtherCasing_IsNotAChange()
     {
         var grupo = CrearGrupoEn(EstadoGrupo.Abierto);
 
@@ -350,11 +350,11 @@ public class GrupoTests
         Assert.Equal(30, grupo.Cupo);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Cambiar el NRC, el curso o el periodo de un grupo en marcha lanza RF-45")]
     [InlineData(EstadoGrupo.Abierto)]
     [InlineData(EstadoGrupo.Cerrado)]
     [InlineData(EstadoGrupo.EnCurso)]
-    public void Update_GrupoEnMarchaCambiandoNrcCursoOPeriodo_LanzaRf45(EstadoGrupo estado)
+    public void Update_GrupoInProgressChangingNrcCursoOrPeriodo_ThrowsRf45(EstadoGrupo estado)
     {
         var grupo = CrearGrupoEn(estado);
 
@@ -366,10 +366,10 @@ public class GrupoTests
         Assert.Equal(PeriodoId, grupo.PeriodoId);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Actualizar un grupo finalizado o cancelado lanza RF-45")]
     [InlineData(EstadoGrupo.Finalizado)]
     [InlineData(EstadoGrupo.Cancelado)]
-    public void Update_GrupoFinalizadoOCancelado_LanzaRf45(EstadoGrupo estado)
+    public void Update_FinalizadoOrCanceladoGrupo_ThrowsRf45(EstadoGrupo estado)
     {
         var grupo = CrearGrupoEn(estado);
 
@@ -379,8 +379,8 @@ public class GrupoTests
         Assert.Equal(25, grupo.Cupo);
     }
 
-    [Fact]
-    public void TakeCupo_HastaLlenar_AumentaOcupadosYReduceDisponibles()
+    [Fact(DisplayName = "Tomar cupos hasta llenar aumenta los ocupados y reduce los disponibles")]
+    public void TakeCupo_UntilFull_IncreasesOcupadosAndReducesDisponibles()
     {
         var grupo = CrearGrupo();
 
@@ -393,8 +393,8 @@ public class GrupoTests
         Assert.Equal(0, grupo.CuposDisponibles);
     }
 
-    [Fact]
-    public void TakeCupo_GrupoLleno_LanzaRn03YNoCambiaOcupados()
+    [Fact(DisplayName = "Tomar un cupo de un grupo lleno lanza RN-03 y no cambia los ocupados")]
+    public void TakeCupo_FullGrupo_ThrowsRn03AndKeepsOcupados()
     {
         var grupo = new Grupo("10001", CursoId, ProfesorId, PeriodoId, AulaId, 1, Modalidad.Presencial);
         grupo.TakeCupo();
@@ -405,8 +405,8 @@ public class GrupoTests
         Assert.Equal(1, grupo.CuposOcupados);
     }
 
-    [Fact]
-    public void ReleaseCupo_ConOcupados_ReduceOcupados()
+    [Fact(DisplayName = "Liberar un cupo reduce los ocupados")]
+    public void ReleaseCupo_WithOcupados_ReducesOcupados()
     {
         var grupo = CrearGrupo();
         grupo.TakeCupo();
@@ -418,8 +418,8 @@ public class GrupoTests
         Assert.Equal(24, grupo.CuposDisponibles);
     }
 
-    [Fact]
-    public void ReleaseCupo_SinOcupados_NoBajaDeCero()
+    [Fact(DisplayName = "Liberar un cupo sin ocupados no baja de cero")]
+    public void ReleaseCupo_WithoutOcupados_DoesNotGoBelowZero()
     {
         var grupo = CrearGrupo();
 
@@ -429,8 +429,8 @@ public class GrupoTests
     }
 
     // Verificación heredada de grupos T1: el cupo no baja de los ocupados.
-    [Fact]
-    public void Update_CupoMenorQueOcupados_LanzaRf45YNoCambiaElCupo()
+    [Fact(DisplayName = "Un cupo menor que los ocupados lanza RF-45 y no cambia el cupo")]
+    public void Update_CupoBelowOcupados_ThrowsRf45AndKeepsCupo()
     {
         var grupo = CrearGrupo();
         for (var i = 0; i < 10; i++)
@@ -444,8 +444,8 @@ public class GrupoTests
         Assert.Equal(25, grupo.Cupo);
     }
 
-    [Fact]
-    public void Update_CupoIgualAOcupados_LoAcepta()
+    [Fact(DisplayName = "Un cupo igual a los ocupados se acepta")]
+    public void Update_CupoEqualToOcupados_AcceptsIt()
     {
         var grupo = CrearGrupo();
         for (var i = 0; i < 10; i++)
@@ -459,13 +459,13 @@ public class GrupoTests
         Assert.Equal(0, grupo.CuposDisponibles);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Un estado que permite matrículas y retiros no lanza")]
     [InlineData(EstadoGrupo.Abierto, false)]
     [InlineData(EstadoGrupo.Abierto, true)]
     [InlineData(EstadoGrupo.Planificado, true)]
     [InlineData(EstadoGrupo.Cerrado, true)]
     [InlineData(EstadoGrupo.EnCurso, true)]
-    public void EnsureAllowsMovimiento_EstadoPermitido_NoLanza(EstadoGrupo estado, bool esAdministrador)
+    public void EnsureAllowsMovimiento_AllowedEstado_DoesNotThrow(EstadoGrupo estado, bool esAdministrador)
     {
         var grupo = CrearGrupoEn(estado);
 
@@ -474,7 +474,7 @@ public class GrupoTests
         Assert.Null(excepcion);
     }
 
-    [Theory]
+    [Theory(DisplayName = "Un estado que no permite matrículas ni retiros lanza su regla")]
     [InlineData(EstadoGrupo.Planificado, false, "RN-02")]
     [InlineData(EstadoGrupo.Cerrado, false, "RN-11")]
     [InlineData(EstadoGrupo.EnCurso, false, "RN-11")]
@@ -482,7 +482,7 @@ public class GrupoTests
     [InlineData(EstadoGrupo.Cancelado, false, "RN-11")]
     [InlineData(EstadoGrupo.Finalizado, true, "RN-11")]
     [InlineData(EstadoGrupo.Cancelado, true, "RN-11")]
-    public void EnsureAllowsMovimiento_EstadoNoPermitido_LanzaLaRegla(EstadoGrupo estado, bool esAdministrador, string codigo)
+    public void EnsureAllowsMovimiento_NotAllowedEstado_ThrowsRule(EstadoGrupo estado, bool esAdministrador, string codigo)
     {
         var grupo = CrearGrupoEn(estado);
 
@@ -491,8 +491,8 @@ public class GrupoTests
         Assert.Equal(codigo, excepcion.Code);
     }
 
-    [Fact]
-    public void Update_ModalidadSinAulaRequerida_LanzaRn09YNoCambiaNada()
+    [Fact(DisplayName = "Una modalidad que requiere aula sin aula lanza RN-09 y no cambia nada")]
+    public void Update_ModalidadWithoutRequiredAula_ThrowsRn09AndChangesNothing()
     {
         var grupo = CrearGrupo();
 

@@ -218,6 +218,49 @@ public class AuthService(
     }
 
     /// <summary>
+    /// RF-60: entrega un token de acceso nuevo y rota el refresh token (RN-51). Todos los rechazos dan el mismo 401,
+    /// para no revelar por qué terminó la sesión. No es un ingreso: no actualiza UltimoIngreso.
+    /// </summary>
+    public async Task<TokenResponse> RefreshAsync(RefreshTokenRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var ahora = timeProvider.GetUtcNow();
+        var hash = tokenGenerator.HashRefreshToken(request.RefreshToken);
+        var actual = await db.RefreshTokens.Include(t => t.Usuario)
+            .SingleOrDefaultAsync(t => t.TokenHash == hash, cancellationToken)
+            ?? throw SessionEnded();
+
+        if (actual.RevokedAt is not null)
+        {
+            // RN-51: el token ya se había usado. Puede ser un robo, así que termina la sesión entera.
+            await RevokeFamilyAsync(actual.FamilyId, ahora, cancellationToken);
+            throw SessionEnded();
+        }
+
+        var usuario = actual.Usuario;
+        if (actual.IsExpired(ahora) || !usuario.Activo || usuario.SecurityStamp != actual.SecurityStamp)
+        {
+            // RN-50 y RN-52. No hace falta escribir nada: esta familia ya no puede renovar.
+            throw SessionEnded();
+        }
+
+        var siguiente = tokenGenerator.GenerateRefreshToken();
+        db.RefreshTokens.Add(actual.Rotate(siguiente.Hash, ahora));
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Otra petición rotó el mismo token al mismo tiempo (xmin).
+            throw SessionEnded();
+        }
+
+        return await IssueTokensAsync(usuario, debeCambiarContrasena: false, siguiente.Token, actual.ExpiresAt, cancellationToken);
+    }
+
+    /// <summary>
     /// Se usa al validar cada token: la sesión deja de valer si la cuenta se desactivó o cambió su stamp
     /// (logout, cambio de contraseña o desactivación).
     /// </summary>
@@ -277,6 +320,39 @@ public class AuthService(
             .ToListAsync(cancellationToken);
         db.RefreshTokens.RemoveRange(vencidas);
     }
+
+    /// <summary>
+    /// RN-51: anula los tokens activos de la familia. Si otra petición rota el último token en el mismo instante, el
+    /// guardado choca con xmin y la familia sigue activa con el token que emitió esa petición. Es una carrera de
+    /// milisegundos entre el token viejo y el nuevo; se responde igual el 401 para no convertirla en un 409.
+    /// </summary>
+    private async Task RevokeFamilyAsync(Guid familyId, DateTimeOffset ahora, CancellationToken cancellationToken)
+    {
+        var activos = await db.RefreshTokens
+            .Where(t => t.FamilyId == familyId && t.RevokedAt == null && t.ExpiresAt > ahora)
+            .ToListAsync(cancellationToken);
+        if (activos.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var token in activos)
+        {
+            token.Revoke(ahora);
+        }
+
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Ver el resumen: quien llama responde el 401 de RF-60.
+        }
+    }
+
+    private static UnauthorizedException SessionEnded() =>
+        new("La sesión terminó. Inicie sesión de nuevo.", "RF-60");
 
     private async Task<TokenResponse> IssueTokensAsync(
         Usuario usuario,

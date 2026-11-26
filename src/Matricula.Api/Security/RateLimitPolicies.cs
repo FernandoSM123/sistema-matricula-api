@@ -13,6 +13,7 @@ public static class RateLimitPolicies
     public const string Login = "login";
     public const string ForgotPassword = "forgot-password";
     public const string SignUp = "sign-up";
+    public const string Refresh = "refresh";
 
     public static IServiceCollection AddRateLimitPolicies(this IServiceCollection services)
     {
@@ -22,6 +23,9 @@ public static class RateLimitPolicies
             options.AddPolicy(ForgotPassword, context => ByIp(context, limite: 5, ventana: TimeSpan.FromMinutes(15)));
             // Más holgado que el olvido: varios estudiantes pueden registrarse desde la red del instituto.
             options.AddPolicy(SignUp, context => ByIp(context, limite: 10, ventana: TimeSpan.FromMinutes(15)));
+            // RF-60: con access tokens de 15 minutos un usuario renueva unas 4 veces por hora; deja margen para muchos
+            // usuarios detrás de la IP del instituto (supuesto 4 de la spec de sesiones).
+            options.AddPolicy(Refresh, context => ByIp(context, limite: 30, ventana: TimeSpan.FromMinutes(1)));
             options.OnRejected = RespondAsync;
         });
 

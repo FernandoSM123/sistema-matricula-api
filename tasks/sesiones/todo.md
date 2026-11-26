@@ -15,7 +15,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T1. Dominio: `RefreshToken` | Completada | ✅ | ✅ | ➖ | ✅ |
 | T2. Persistencia y migración `AgregaRefreshToken` | Completada | ✅ | ➖ | ✅ | ✅ |
 | T3. Emisión en los ingresos | Completada | ✅ | ➖ | ✅ | ✅ |
-| T4. Renovación `POST /api/v1/auth/refresh` | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
+| T4. Renovación `POST /api/v1/auth/refresh` | Completada | ✅ | ➖ | ✅ | ✅ |
 | T5. Eliminar a una persona borra sus sesiones | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T6. Cierre del módulo | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 

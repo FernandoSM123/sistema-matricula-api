@@ -1,13 +1,14 @@
 @host = http://localhost:5022
 
-# Recorrido de los módulos acceso, estudiantes, profesores, catalogos, grupos, matriculas, auditoria y errores. Ejecuta primero el login con tus credenciales: las demás peticiones usan
+# Recorrido de los módulos acceso, sesiones, estudiantes, profesores, catalogos, grupos, matriculas, auditoria y errores. Ejecuta primero el login con tus credenciales: las demás peticiones usan
 # {{token}}. Primer ingreso: login con la temporal de AdminSeed → cambio-obligatorio → login con la nueva.
 
 GET {{host}}/health
 
 ###
 
-# Login (RF-06). Con la temporal del administrador inicial responde debeCambiarContrasena: true.
+# Login (RF-06). Con la contraseña definitiva devuelve también refreshToken y refreshExpiraEn (RF-60). Con la temporal
+# del administrador inicial responde debeCambiarContrasena: true y refreshToken: null (RN-24).
 # @name login
 POST {{host}}/api/v1/auth/login
 Content-Type: application/json
@@ -74,6 +75,49 @@ Content-Type: application/json
   "contrasenaActual": "NuevaClave2026",
   "nuevaContrasena": "OtraClave2026",
   "confirmacion": "OtraClave2026"
+}
+
+###
+
+# Renovar la sesión (RF-60). Usa el refreshToken del login con la contraseña definitiva (con una temporal es null).
+# Devuelve un par nuevo con el mismo refreshExpiraEn (RN-50): la sesión no se extiende.
+# @name refresh
+POST {{host}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{login.response.body.$.refreshToken}}"
+}
+
+###
+
+# Reuso (RN-51): repetir el refresh con el token del login, que la petición anterior ya reemplazó → 401 RF-60.
+# Después, el token que devolvió la renovación también da 401: la sesión terminó.
+POST {{host}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{login.response.body.$.refreshToken}}"
+}
+
+###
+
+POST {{host}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refresh.response.body.$.refreshToken}}"
+}
+
+###
+
+# Token inventado → 401 RF-60; body vacío → 400. Después de logout, de cambiar la contraseña o de desactivar la
+# cuenta, y al vencer refreshExpiraEn, también 401 RF-60 (RN-52). Más de 30 por minuto desde la misma IP → 429.
+POST {{host}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "token-inventado"
 }
 
 ###

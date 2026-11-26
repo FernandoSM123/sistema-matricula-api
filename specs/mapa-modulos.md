@@ -38,7 +38,7 @@
 
 | Corrección | Spec | Plan | Tareas | Avance | Estado |
 |---|---|---|---|---|---|
-| `nombres` | [Aprobada](SPEC-nombres.md) | [Aprobado](../tasks/nombres/plan.md) | [Aprobadas](../tasks/nombres/todo.md) | 5/7 | En implementación |
+| `nombres` | [Aprobada](SPEC-nombres.md) | [Aprobado](../tasks/nombres/plan.md) | [Aprobadas](../tasks/nombres/todo.md) | 6/7 | En implementación |
 
 **Estados de un documento** (spec, plan o lista de tareas):
 - **Borrador:** se está escribiendo.

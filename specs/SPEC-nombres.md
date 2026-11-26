@@ -4,7 +4,7 @@ Corrección transversal de la API, equivalente a `SPEC-nombres` del SPA. No es u
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/nombres/plan.md) | [Aprobadas](../tasks/nombres/todo.md) | 5/7 tareas |
+| **Aprobada** | [Aprobado](../tasks/nombres/plan.md) | [Aprobadas](../tasks/nombres/todo.md) | 6/7 tareas |
 
 **Historial:**
 - 2026-11-26: v1 en revisión. Parte del análisis de factibilidad hecho a pedido del usuario: el renombre es viable, no toca la BD y solo cambia el contrato en los nombres de los esquemas del OpenAPI (§2.6).
@@ -28,13 +28,13 @@ Corrección transversal de la API, equivalente a `SPEC-nombres` del SPA. No es u
   - Las clases de prueba de los validadores siguen el nombre de su request.
   - OpenAPI: 32 esquemas renombrados (73 antes y después, 55 paths). Con esos renombres aplicados a la línea base, el documento es idéntico: sin cambios en paths, propiedades, enums ni códigos de respuesta.
   - Verificación con la API: registro público `201` (y `400` con el campo `Confirmacion`), matrícula que llega al servicio (`404` del grupo, `400` con los dos campos vacíos) y cambio de contraseña `200` con login posterior. El estudiante temporal se borró.
-- 2026-11-26: T6 implementada, falta un paso de su verificación. Detalles que la spec no fijaba:
+- 2026-11-26: T6 completada, sin cambio de alcance. Detalles que la spec no fijaba:
   - `Cors:OrigenesPermitidos` pasa a `Cors:AllowedOrigins`. No estaba en la tabla de §2.7, pero la regla lo cubre (clave de configuración) y no es un secreto.
   - Las clases de `Seed/TestData` también llevan en inglés sus métodos, constantes y propiedades técnicas (`TimeSlot.All`, `GrupoSeed.IsFull`, `SeededData.Planners`, `HorarioPlanner.TryAssignGrupo`, `TestDates.Compute`/`PeriodoNombre`...). Quedan en español las propiedades de dominio (`Cursos`, `Periodo`, `InicioClases`...) y los métodos de `PersonGenerator` que generan un dato (`Nombre()`, `Cedula()`...). `PlanificadorHorariosTests` pasa a `HorarioPlannerTests`.
   - Los mensajes de log mantienen sus placeholders en español (`{Semilla}`, `{Lleno}`).
   - Las claves de user-secrets del entorno de desarrollo se renombraron con `dotnet user-secrets`, sin mostrar sus valores. El README explica el paso manual.
   - Verificado: sin `Jwt:Key` la API no arranca y el error la nombra. Valores inválidos de `Institute:TimeZone`, `ErrorLog:RetentionDays` y `TestData:Cursos` fallan con la clave nueva. Con las claves renombradas arranca, la siembra lee `TestData:Enabled` (BD con datos: no siembra), las cuentas de prueba entran con `TestData:Password`, la depuración usa `ErrorLog:RetentionDays` = 30 y el correo sale con `Smtp:SenderEmail`.
-  - Pendiente: recrear la BD (`database drop` + `update`) y comprobar la siembra completa. El permiso para borrar la BD se denegó en la sesión.
+  - BD recreada (`database drop` + `update`, con la aprobación del usuario): la siembra completa crea el administrador inicial, 8 cursos, 5 aulas, 3 periodos, 6 profesores, 30 estudiantes, 15 grupos en todos sus estados y 74 matrículas con cambio de grupo; el admin y las cuentas de prueba entran con `TestData:Password`.
 
 ## Objetivo
 

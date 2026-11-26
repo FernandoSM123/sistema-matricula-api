@@ -20,6 +20,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, AuditCapture c
     public DbSet<Grupo> Grupos => Set<Grupo>();
     public DbSet<Horario> Horarios => Set<Horario>();
     public DbSet<MatriculaEntidad> Matriculas => Set<MatriculaEntidad>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     // Sin DbSet público: Application solo puede leer la auditoría (RN-43). La entidad entra al modelo por
     // RegistroAuditoriaConfiguration.

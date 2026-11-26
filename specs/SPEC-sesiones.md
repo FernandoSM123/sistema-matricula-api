@@ -4,13 +4,14 @@ Módulo `sesiones` del [mapa de módulos](mapa-modulos.md): renovación de la se
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/sesiones/plan.md) | [Aprobadas](../tasks/sesiones/todo.md) | 1/6 tareas |
+| **Aprobada** | [Aprobado](../tasks/sesiones/plan.md) | [Aprobadas](../tasks/sesiones/todo.md) | 2/6 tareas |
 
 **Historial:**
 - 2026-11-26: v1 en revisión. El refresh token estaba fuera del alcance de `acceso` (`SPEC-acceso`, "Fuera de alcance"). El usuario lo pidió para que el SPA renueve la sesión al vencer el token, y antes de redactar decidió: el refresh token viaja en el body y el SPA lo guarda en `sessionStorage`; el access token dura 15 minutos y la sesión 8 horas desde el ingreso, sin extenderse; al eliminar a un estudiante o profesor se borran sus sesiones en el mismo guardado; las sesiones vencidas se limpian al iniciar sesión; el logout sigue cerrando todas las sesiones de la cuenta.
 - 2026-11-26: v1 aprobada por el usuario, que resolvió las dos preguntas abiertas como se proponían (decisiones 1 y 2). Plan y tareas en revisión.
 - 2026-11-26: plan y tareas aprobados. Empieza después de cerrar la corrección `nombres`.
 - 2026-11-26: T1 completada: entidad `RefreshToken` con sus reglas y `RefreshTokenTests`.
+- 2026-11-26: T2 completada: `RefreshTokenConfiguration` (`token_hash` como `char(64)`), `IAppDbContext.RefreshTokens` y la migración `AgregaRefreshToken` aplicada a la BD de desarrollo. El script solo crea `refresh_token`, sus tres índices y la FK `ON DELETE RESTRICT`; la auditoría sigue registrando los cambios de un curso.
 
 ## Objetivo
 

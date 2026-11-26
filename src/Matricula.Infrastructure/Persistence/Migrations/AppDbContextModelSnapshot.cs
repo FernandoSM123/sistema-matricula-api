@@ -575,6 +575,70 @@ namespace Matricula.Infrastructure.Persistence.Migrations
                     b.ToTable("profesor", (string)null);
                 });
 
+            modelBuilder.Entity("Matricula.Domain.Entities.RefreshToken", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<Guid>("FamilyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("family_id");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<string>("SecurityStamp")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("character varying(36)")
+                        .HasColumnName("security_stamp");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .HasColumnName("token_hash")
+                        .IsFixedLength();
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer")
+                        .HasColumnName("usuario_id");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_refresh_token");
+
+                    b.HasIndex("FamilyId")
+                        .HasDatabaseName("ix_refresh_token_family_id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_refresh_token_token_hash");
+
+                    b.HasIndex("UsuarioId")
+                        .HasDatabaseName("ix_refresh_token_usuario_id");
+
+                    b.ToTable("refresh_token", (string)null);
+                });
+
             modelBuilder.Entity("Matricula.Domain.Entities.RegistroAuditoria", b =>
                 {
                     b.Property<long>("Id")
@@ -913,6 +977,18 @@ namespace Matricula.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_profesor_usuarios_usuario_id");
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("Matricula.Domain.Entities.RefreshToken", b =>
+                {
+                    b.HasOne("Matricula.Domain.Entities.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_refresh_token_usuarios_usuario_id");
 
                     b.Navigation("Usuario");
                 });

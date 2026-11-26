@@ -21,6 +21,11 @@ public interface IAppDbContext
     DbSet<MatriculaEntidad> Matriculas { get; }
 
     /// <summary>
+    /// Sesiones renovables (RF-60). No se auditan (RN-46).
+    /// </summary>
+    DbSet<RefreshToken> RefreshTokens { get; }
+
+    /// <summary>
     /// Auditoría de cambios, solo para leer (RN-43): los registros los agrega AppDbContext al guardar, nunca un servicio.
     /// </summary>
     IQueryable<RegistroAuditoria> RegistrosAuditoria { get; }

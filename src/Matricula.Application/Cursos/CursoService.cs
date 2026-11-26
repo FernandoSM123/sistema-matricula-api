@@ -13,7 +13,7 @@ public class CursoService(IAppDbContext db)
     /// <summary>
     /// RF-29: registra un curso activo. Costo y Nivel ya los exige el validador.
     /// </summary>
-    public async Task<CursoResponse> CreateAsync(RegistrarCursoRequest request, CancellationToken cancellationToken)
+    public async Task<CursoResponse> CreateAsync(CreateCursoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -34,7 +34,7 @@ public class CursoService(IAppDbContext db)
     /// <summary>
     /// RF-30: listado paginado, solo activos salvo que se pidan los inactivos (RN-41).
     /// </summary>
-    public Task<PagedResult<CursoResponse>> ListAsync(ListarCursosRequest request, CancellationToken cancellationToken)
+    public Task<PagedResult<CursoResponse>> ListAsync(ListCursosRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -68,7 +68,7 @@ public class CursoService(IAppDbContext db)
     /// <summary>
     /// RF-32: también se editan cursos inactivos. Costo y Nivel ya los exige el validador.
     /// </summary>
-    public async Task<CursoResponse> UpdateAsync(int id, ActualizarCursoRequest request, CancellationToken cancellationToken)
+    public async Task<CursoResponse> UpdateAsync(int id, UpdateCursoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 

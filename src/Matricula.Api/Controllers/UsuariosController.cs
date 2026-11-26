@@ -16,10 +16,10 @@ public class UsuariosController(UsuarioService usuarioService) : ApiControllerBa
     /// Genera y envía una nueva contraseña temporal (RF-12). La anterior deja de funcionar.
     /// </summary>
     [HttpPost("{id:int}/reenviar-temporal")]
-    [ProducesResponseType<ReenvioTemporalResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ResendTemporaryPasswordResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<ReenvioTemporalResponse>> ResendTemporaryPassword(int id, CancellationToken cancellationToken) =>
+    public async Task<ActionResult<ResendTemporaryPasswordResponse>> ResendTemporaryPassword(int id, CancellationToken cancellationToken) =>
         Ok(await usuarioService.ResendTemporaryPasswordAsync(id, cancellationToken));
 
     /// <summary>

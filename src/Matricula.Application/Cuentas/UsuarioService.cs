@@ -23,7 +23,7 @@ public class UsuarioService(
     /// <summary>
     /// RF-12: nueva temporal de 72 horas que reemplaza a la anterior (RN-23, RN-27). No a cuentas inactivas (RN-29).
     /// </summary>
-    public async Task<ReenvioTemporalResponse> ResendTemporaryPasswordAsync(int usuarioId, CancellationToken cancellationToken)
+    public async Task<ResendTemporaryPasswordResponse> ResendTemporaryPasswordAsync(int usuarioId, CancellationToken cancellationToken)
     {
         var usuario = await LoadAsync(usuarioId, cancellationToken);
         if (!usuario.Activo)
@@ -36,7 +36,7 @@ public class UsuarioService(
         await db.SaveChangesAsync(cancellationToken);
 
         var correoEnviado = await emailDispatcher.SendTemporaryPasswordAsync(usuario, temporal, MotivoTemporal.ReenvioAdministrador, cancellationToken);
-        return new ReenvioTemporalResponse(correoEnviado);
+        return new ResendTemporaryPasswordResponse(correoEnviado);
     }
 
     /// <summary>

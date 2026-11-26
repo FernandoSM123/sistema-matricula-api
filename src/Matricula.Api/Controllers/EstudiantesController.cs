@@ -36,7 +36,7 @@ public class EstudiantesController(
     [ProducesResponseType<PagedResult<MatriculaResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PagedResult<MatriculaResponse>>> ListMatriculas(
-        int id, [FromQuery] ListarMatriculasRequest request, CancellationToken cancellationToken) =>
+        int id, [FromQuery] ListMatriculasRequest request, CancellationToken cancellationToken) =>
         Ok(await matriculaService.ListByEstudianteAsync(id, request, cancellationToken));
 
     /// <summary>
@@ -44,13 +44,13 @@ public class EstudiantesController(
     /// la respuesta; con correoEnviado en false se puede reenviar.
     /// </summary>
     [HttpPost]
-    [ProducesResponseType<EstudianteRegistradoResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<EstudianteCreatedResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<EstudianteRegistradoResponse>> Create(
-        RegistrarEstudianteRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<EstudianteCreatedResponse>> Create(
+        CreateEstudianteRequest request, CancellationToken cancellationToken)
     {
         var registrado = await estudianteService.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = registrado.Estudiante.Id }, registrado);
@@ -63,12 +63,12 @@ public class EstudiantesController(
     [HttpPost("registro")]
     [AllowAnonymous]
     [EnableRateLimiting(RateLimitPolicies.SignUp)]
-    [ProducesResponseType<MensajeResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<MessageResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
-    public async Task<ActionResult<MensajeResponse>> SignUp(
-        RegistroPublicoRequest request, CancellationToken cancellationToken) =>
+    public async Task<ActionResult<MessageResponse>> SignUp(
+        SignUpRequest request, CancellationToken cancellationToken) =>
         // Sin Location: el visitante no puede consultar el recurso creado.
         StatusCode(StatusCodes.Status201Created, await estudianteService.SignUpAsync(request, cancellationToken));
 
@@ -79,7 +79,7 @@ public class EstudiantesController(
     [HttpGet]
     [ProducesResponseType<PagedResult<EstudianteResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResult<EstudianteResponse>>> List(
-        [FromQuery] ListarEstudiantesRequest request, CancellationToken cancellationToken) =>
+        [FromQuery] ListEstudiantesRequest request, CancellationToken cancellationToken) =>
         Ok(await estudianteService.ListAsync(request, cancellationToken));
 
     /// <summary>
@@ -91,7 +91,7 @@ public class EstudiantesController(
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<EstudianteResponse>> Update(
-        int id, ActualizarEstudianteRequest request, CancellationToken cancellationToken) =>
+        int id, UpdateEstudianteRequest request, CancellationToken cancellationToken) =>
         Ok(await estudianteService.UpdateAsync(id, request, cancellationToken));
 
     /// <summary>

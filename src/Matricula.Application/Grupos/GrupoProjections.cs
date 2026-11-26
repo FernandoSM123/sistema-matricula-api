@@ -32,7 +32,7 @@ public static class GrupoProjections
     /// Para el detalle (se traduce a SQL). Los horarios llegan sin ordenar: el día se guarda como texto y en SQL se
     /// ordenaría alfabéticamente. Se ordenan con <see cref="SortHorarios"/>.
     /// </summary>
-    public static readonly Expression<Func<Grupo, GrupoDetalleResponse>> ToDetailExpression = g => new GrupoDetalleResponse(
+    public static readonly Expression<Func<Grupo, GrupoDetailResponse>> ToDetailExpression = g => new GrupoDetailResponse(
         g.Id,
         g.Nrc,
         g.CursoId,
@@ -55,7 +55,7 @@ public static class GrupoProjections
     /// <summary>
     /// Ordena los bloques de lunes a domingo y por hora de inicio.
     /// </summary>
-    public static GrupoDetalleResponse SortHorarios(this GrupoDetalleResponse detalle)
+    public static GrupoDetailResponse SortHorarios(this GrupoDetailResponse detalle)
     {
         ArgumentNullException.ThrowIfNull(detalle);
         return detalle with

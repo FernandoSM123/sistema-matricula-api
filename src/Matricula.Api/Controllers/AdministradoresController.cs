@@ -15,13 +15,13 @@ public class AdministradoresController(AdministradorService administradorService
     /// aparece en la respuesta; con correoEnviado en false se puede reenviar.
     /// </summary>
     [HttpPost]
-    [ProducesResponseType<AdministradorRegistradoResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<AdministradorCreatedResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<AdministradorRegistradoResponse>> Create(
-        RegistrarAdministradorRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<AdministradorCreatedResponse>> Create(
+        CreateAdministradorRequest request, CancellationToken cancellationToken)
     {
         var registrado = await administradorService.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = registrado.Administrador.Id }, registrado);
@@ -34,7 +34,7 @@ public class AdministradoresController(AdministradorService administradorService
     [HttpGet]
     [ProducesResponseType<PagedResult<AdministradorResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResult<AdministradorResponse>>> List(
-        [FromQuery] ListarAdministradoresRequest request, CancellationToken cancellationToken) =>
+        [FromQuery] ListAdministradoresRequest request, CancellationToken cancellationToken) =>
         Ok(await administradorService.ListAsync(request, cancellationToken));
 
     /// <summary>
@@ -46,7 +46,7 @@ public class AdministradoresController(AdministradorService administradorService
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<AdministradorResponse>> Update(
-        int id, ActualizarAdministradorRequest request, CancellationToken cancellationToken) =>
+        int id, UpdateAdministradorRequest request, CancellationToken cancellationToken) =>
         Ok(await administradorService.UpdateAsync(id, request, cancellationToken));
 
     /// <summary>

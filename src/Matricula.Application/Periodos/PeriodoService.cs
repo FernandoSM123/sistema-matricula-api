@@ -12,7 +12,7 @@ public class PeriodoService(IAppDbContext db, ILocalClock localClock)
     /// <summary>
     /// RF-35: registra un periodo. Las fechas ya las exige el validador, y los periodos pueden traslaparse.
     /// </summary>
-    public async Task<PeriodoResponse> CreateAsync(RegistrarPeriodoRequest request, CancellationToken cancellationToken)
+    public async Task<PeriodoResponse> CreateAsync(CreatePeriodoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -38,7 +38,7 @@ public class PeriodoService(IAppDbContext db, ILocalClock localClock)
     /// <summary>
     /// RF-36: listado paginado, con los más recientes primero.
     /// </summary>
-    public Task<PagedResult<PeriodoResponse>> ListAsync(ListarPeriodosRequest request, CancellationToken cancellationToken)
+    public Task<PagedResult<PeriodoResponse>> ListAsync(ListPeriodosRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -100,7 +100,7 @@ public class PeriodoService(IAppDbContext db, ILocalClock localClock)
     /// <summary>
     /// RF-36: también se editan periodos pasados. Las fechas ya las exige el validador.
     /// </summary>
-    public async Task<PeriodoResponse> UpdateAsync(int id, ActualizarPeriodoRequest request, CancellationToken cancellationToken)
+    public async Task<PeriodoResponse> UpdateAsync(int id, UpdatePeriodoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 

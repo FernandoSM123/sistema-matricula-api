@@ -23,7 +23,7 @@ public class AuthService(
     /// RF-10: si el correo es de una cuenta activa, envía una temporal de 1 hora que reemplaza a la anterior
     /// (RN-27). La contraseña actual sigue funcionando (RN-32). La respuesta es siempre la misma (RN-28, RN-29).
     /// </summary>
-    public async Task<MensajeResponse> ForgotPasswordAsync(OlvidoContrasenaRequest request, CancellationToken cancellationToken)
+    public async Task<MessageResponse> ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -39,14 +39,14 @@ public class AuthService(
             await emailDispatcher.SendTemporaryPasswordAsync(usuario, temporal, MotivoTemporal.Olvido, cancellationToken);
         }
 
-        return new MensajeResponse(ForgotPasswordMessage);
+        return new MessageResponse(ForgotPasswordMessage);
     }
 
     /// <summary>
     /// RF-07: quien ingresó con una temporal define su nueva contraseña. Devuelve un token sin cambio pendiente;
     /// el anterior deja de valer porque cambia el stamp.
     /// </summary>
-    public async Task<TokenResponse> RequiredPasswordChangeAsync(CambioObligatorioRequest request, CancellationToken cancellationToken)
+    public async Task<TokenResponse> RequiredPasswordChangeAsync(RequiredPasswordChangeRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -81,7 +81,7 @@ public class AuthService(
     /// RF-09: cambio de la contraseña propia con la actual. Envía el aviso (RN-33) y devuelve un token nuevo;
     /// los tokens anteriores, también los de otras sesiones, dejan de valer.
     /// </summary>
-    public async Task<TokenResponse> ChangePasswordAsync(CambiarContrasenaRequest request, CancellationToken cancellationToken)
+    public async Task<TokenResponse> ChangePasswordAsync(ChangePasswordRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -117,7 +117,7 @@ public class AuthService(
     /// RF-13: datos de la cuenta del usuario actual y, si los tiene, sus datos personales (de administrador, de
     /// estudiante o de profesor).
     /// </summary>
-    public async Task<PerfilResponse> GetProfileAsync(CancellationToken cancellationToken)
+    public async Task<ProfileResponse> GetProfileAsync(CancellationToken cancellationToken)
     {
         var usuarioId = currentUser.UsuarioId ?? throw new UnauthorizedException("No hay una sesión activa.");
 
@@ -125,7 +125,7 @@ public class AuthService(
             .Where(u => u.Id == usuarioId)
             .Select(u => new
             {
-                Perfil = new PerfilResponse(
+                Perfil = new ProfileResponse(
                     u.Id,
                     null,
                     u.Correo,

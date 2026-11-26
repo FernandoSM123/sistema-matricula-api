@@ -18,14 +18,14 @@ public class GruposController(GrupoService grupoService, MatriculaService matric
     /// </summary>
     [HttpPost]
     [Authorize(Policy = Policies.Administrador)]
-    [ProducesResponseType<GrupoDetalleResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<GrupoDetailResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<GrupoDetalleResponse>> Create(
-        CrearGrupoRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<GrupoDetailResponse>> Create(
+        CreateGrupoRequest request, CancellationToken cancellationToken)
     {
         var grupo = await grupoService.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = grupo.Id }, grupo);
@@ -38,14 +38,14 @@ public class GruposController(GrupoService grupoService, MatriculaService matric
     /// </summary>
     [HttpPut("{id:int}")]
     [Authorize(Policy = Policies.Administrador)]
-    [ProducesResponseType<GrupoDetalleResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<GrupoDetailResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<GrupoDetalleResponse>> Update(
-        int id, ActualizarGrupoRequest request, CancellationToken cancellationToken) =>
+    public async Task<ActionResult<GrupoDetailResponse>> Update(
+        int id, UpdateGrupoRequest request, CancellationToken cancellationToken) =>
         Ok(await grupoService.UpdateAsync(id, request, cancellationToken));
 
     /// <summary>
@@ -63,7 +63,7 @@ public class GruposController(GrupoService grupoService, MatriculaService matric
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> ChangeEstado(
-        int id, CambiarEstadoRequest request, CancellationToken cancellationToken)
+        int id, ChangeEstadoRequest request, CancellationToken cancellationToken)
     {
         await grupoService.ChangeEstadoAsync(id, request, cancellationToken);
         return NoContent();
@@ -77,14 +77,14 @@ public class GruposController(GrupoService grupoService, MatriculaService matric
     /// </summary>
     [HttpPost("{id:int}/horarios")]
     [Authorize(Policy = Policies.Administrador)]
-    [ProducesResponseType<GrupoDetalleResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<GrupoDetailResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<GrupoDetalleResponse>> AddHorario(
-        int id, AgregarHorarioRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<GrupoDetailResponse>> AddHorario(
+        int id, AddHorarioRequest request, CancellationToken cancellationToken)
     {
         var grupo = await grupoService.AddHorarioAsync(id, request, cancellationToken);
         return CreatedAtAction(nameof(Get), new { id }, grupo);
@@ -117,7 +117,7 @@ public class GruposController(GrupoService grupoService, MatriculaService matric
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<PagedResult<GrupoResponse>>> List(
-        [FromQuery] ListarGruposRequest request, CancellationToken cancellationToken) =>
+        [FromQuery] ListGruposRequest request, CancellationToken cancellationToken) =>
         Ok(await grupoService.ListAsync(request, cancellationToken));
 
     /// <summary>
@@ -126,11 +126,11 @@ public class GruposController(GrupoService grupoService, MatriculaService matric
     /// </summary>
     [HttpGet("{id:int}")]
     [Authorize]
-    [ProducesResponseType<GrupoDetalleResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<GrupoDetailResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<GrupoDetalleResponse>> Get(int id, CancellationToken cancellationToken) =>
+    public async Task<ActionResult<GrupoDetailResponse>> Get(int id, CancellationToken cancellationToken) =>
         Ok(await grupoService.GetAsync(id, cancellationToken));
 
     /// <summary>
@@ -162,6 +162,6 @@ public class GruposController(GrupoService grupoService, MatriculaService matric
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PagedResult<EstudianteGrupoResponse>>> ListEstudiantes(
-        int id, [FromQuery] ListarEstudiantesGrupoRequest request, CancellationToken cancellationToken) =>
+        int id, [FromQuery] ListEstudiantesGrupoRequest request, CancellationToken cancellationToken) =>
         Ok(await matriculaService.ListEstudiantesAsync(id, request, cancellationToken));
 }

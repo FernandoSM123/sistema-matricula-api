@@ -15,7 +15,7 @@ public class ProfesorService(IAppDbContext db, CuentaService cuentaService, Usua
     /// RF-03 y RF-22: crea la cuenta (rol Profesor, temporal de 72 horas) y el registro del profesor en un solo
     /// guardado, y después envía la temporal.
     /// </summary>
-    public async Task<ProfesorRegistradoResponse> CreateAsync(RegistrarProfesorRequest request, CancellationToken cancellationToken)
+    public async Task<ProfesorCreatedResponse> CreateAsync(CreateProfesorRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -34,13 +34,13 @@ public class ProfesorService(IAppDbContext db, CuentaService cuentaService, Usua
         await db.SaveChangesAsync(cancellationToken);
 
         var correoEnviado = await cuentaService.SendTemporaryPasswordAsync(cuenta, cancellationToken);
-        return new ProfesorRegistradoResponse(profesor.ToResponse(), correoEnviado);
+        return new ProfesorCreatedResponse(profesor.ToResponse(), correoEnviado);
     }
 
     /// <summary>
     /// RF-23: listado paginado, solo activos salvo que se pidan los inactivos (RN-41).
     /// </summary>
-    public Task<PagedResult<ProfesorResponse>> ListAsync(ListarProfesoresRequest request, CancellationToken cancellationToken)
+    public Task<PagedResult<ProfesorResponse>> ListAsync(ListProfesoresRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -75,7 +75,7 @@ public class ProfesorService(IAppDbContext db, CuentaService cuentaService, Usua
     /// <summary>
     /// RF-25: datos personales y correo de un profesor. El correo se cambia en la cuenta (RN-31).
     /// </summary>
-    public async Task<ProfesorResponse> UpdateAsync(int id, ActualizarProfesorRequest request, CancellationToken cancellationToken)
+    public async Task<ProfesorResponse> UpdateAsync(int id, UpdateProfesorRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 

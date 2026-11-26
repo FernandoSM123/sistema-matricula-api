@@ -24,7 +24,7 @@ public class MatriculasController(MatriculaService matriculaService) : ApiContro
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<MatriculaResponse>> Enroll(
-        MatricularRequest request, CancellationToken cancellationToken)
+        EnrollRequest request, CancellationToken cancellationToken)
     {
         var matricula = await matriculaService.EnrollAsync(request, cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = matricula.Id }, matricula);
@@ -75,7 +75,7 @@ public class MatriculasController(MatriculaService matriculaService) : ApiContro
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<MatriculaResponse>> ChangeGrupo(
-        int id, CambioGrupoRequest request, CancellationToken cancellationToken)
+        int id, ChangeGrupoRequest request, CancellationToken cancellationToken)
     {
         var nueva = await matriculaService.ChangeGrupoAsync(id, request, cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = nueva.Id }, nueva);

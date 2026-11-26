@@ -13,7 +13,7 @@ public class AulaService(IAppDbContext db)
     /// <summary>
     /// RF-39: registra un aula activa.
     /// </summary>
-    public async Task<AulaResponse> CreateAsync(RegistrarAulaRequest request, CancellationToken cancellationToken)
+    public async Task<AulaResponse> CreateAsync(CreateAulaRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -28,7 +28,7 @@ public class AulaService(IAppDbContext db)
     /// <summary>
     /// RF-40: listado paginado, solo activas salvo que se pidan las inactivas (RN-41).
     /// </summary>
-    public Task<PagedResult<AulaResponse>> ListAsync(ListarAulasRequest request, CancellationToken cancellationToken)
+    public Task<PagedResult<AulaResponse>> ListAsync(ListAulasRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -60,7 +60,7 @@ public class AulaService(IAppDbContext db)
     /// RF-40: también se editan aulas inactivas. El módulo grupos impide reducir la capacidad por debajo del cupo de
     /// sus grupos (RN-09).
     /// </summary>
-    public async Task<AulaResponse> UpdateAsync(int id, ActualizarAulaRequest request, CancellationToken cancellationToken)
+    public async Task<AulaResponse> UpdateAsync(int id, UpdateAulaRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 

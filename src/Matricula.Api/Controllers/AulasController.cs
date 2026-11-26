@@ -23,7 +23,7 @@ public class AulasController(AulaService aulaService, HorarioSemanalService hora
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<AulaResponse>> Create(
-        RegistrarAulaRequest request, CancellationToken cancellationToken)
+        CreateAulaRequest request, CancellationToken cancellationToken)
     {
         var aula = await aulaService.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = aula.Id }, aula);
@@ -38,7 +38,7 @@ public class AulasController(AulaService aulaService, HorarioSemanalService hora
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<PagedResult<AulaResponse>>> List(
-        [FromQuery] ListarAulasRequest request, CancellationToken cancellationToken) =>
+        [FromQuery] ListAulasRequest request, CancellationToken cancellationToken) =>
         Ok(await aulaService.ListAsync(request, cancellationToken));
 
     /// <summary>
@@ -53,7 +53,7 @@ public class AulasController(AulaService aulaService, HorarioSemanalService hora
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<AulaResponse>> Update(
-        int id, ActualizarAulaRequest request, CancellationToken cancellationToken) =>
+        int id, UpdateAulaRequest request, CancellationToken cancellationToken) =>
         Ok(await aulaService.UpdateAsync(id, request, cancellationToken));
 
     /// <summary>

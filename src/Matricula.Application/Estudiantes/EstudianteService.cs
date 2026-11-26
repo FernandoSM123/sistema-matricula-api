@@ -21,7 +21,7 @@ public class EstudianteService(
     /// RF-02: crea la cuenta (rol Estudiante, temporal de 72 horas) y el registro del estudiante en un solo
     /// guardado, y después envía la temporal.
     /// </summary>
-    public async Task<EstudianteRegistradoResponse> CreateAsync(RegistrarEstudianteRequest request, CancellationToken cancellationToken)
+    public async Task<EstudianteCreatedResponse> CreateAsync(CreateEstudianteRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -41,14 +41,14 @@ public class EstudianteService(
         await db.SaveChangesAsync(cancellationToken);
 
         var correoEnviado = await cuentaService.SendTemporaryPasswordAsync(cuenta, cancellationToken);
-        return new EstudianteRegistradoResponse(estudiante.ToResponse(), correoEnviado);
+        return new EstudianteCreatedResponse(estudiante.ToResponse(), correoEnviado);
     }
 
     /// <summary>
     /// RF-01: la persona define su contraseña y la cuenta siempre es de estudiante (RN-19). Cuenta y estudiante
     /// en un solo guardado; no se envía correo ni se inicia sesión.
     /// </summary>
-    public async Task<MensajeResponse> SignUpAsync(RegistroPublicoRequest request, CancellationToken cancellationToken)
+    public async Task<MessageResponse> SignUpAsync(SignUpRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -77,13 +77,13 @@ public class EstudianteService(
             localClock.Today()));
         await db.SaveChangesAsync(cancellationToken);
 
-        return new MensajeResponse("Registro completado. Ya puede iniciar sesión con su correo y contraseña.");
+        return new MessageResponse("Registro completado. Ya puede iniciar sesión con su correo y contraseña.");
     }
 
     /// <summary>
     /// RF-16 y consulta 1: listado paginado, solo activos salvo que se pidan los inactivos (RN-41).
     /// </summary>
-    public Task<PagedResult<EstudianteResponse>> ListAsync(ListarEstudiantesRequest request, CancellationToken cancellationToken)
+    public Task<PagedResult<EstudianteResponse>> ListAsync(ListEstudiantesRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -118,7 +118,7 @@ public class EstudianteService(
     /// RF-18: datos personales y correo de un estudiante. El correo se cambia en la cuenta (RN-31).
     /// La fecha de registro no se edita.
     /// </summary>
-    public async Task<EstudianteResponse> UpdateAsync(int id, ActualizarEstudianteRequest request, CancellationToken cancellationToken)
+    public async Task<EstudianteResponse> UpdateAsync(int id, UpdateEstudianteRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -153,7 +153,7 @@ public class EstudianteService(
     /// El estudiante actual edita su teléfono y su dirección (matriz §2.2). Se identifica por el claim
     /// estudiante_id, no por un id que envíe el cliente (RN-18).
     /// </summary>
-    public async Task UpdateContactoAsync(ActualizarContactoRequest request, CancellationToken cancellationToken)
+    public async Task UpdateContactoAsync(UpdateContactoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 

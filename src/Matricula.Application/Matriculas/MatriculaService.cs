@@ -19,7 +19,7 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, ILocal
         "El grupo cambió mientras se procesaba la solicitud (por ejemplo, se ocupó el último cupo). Intente de nuevo.";
 
     /// <summary>RF-51 por un administrador, para cualquier estudiante.</summary>
-    public Task<MatriculaResponse> EnrollAsync(MatricularRequest request, CancellationToken cancellationToken)
+    public Task<MatriculaResponse> EnrollAsync(EnrollRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -29,7 +29,7 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, ILocal
 
     /// <summary>RF-51 para el estudiante de la sesión: su id sale del token, nunca del body (RN-18).</summary>
     public Task<MatriculaResponse> EnrollMeAsync(
-        MatricularPropioRequest request, CancellationToken cancellationToken)
+        EnrollMeRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -78,7 +78,7 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, ILocal
     /// Todo se guarda junto: si algo falla, la matrícula original y los cupos quedan como estaban.
     /// </summary>
     public async Task<MatriculaResponse> ChangeGrupoAsync(
-        int id, CambioGrupoRequest request, CancellationToken cancellationToken)
+        int id, ChangeGrupoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -160,7 +160,7 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, ILocal
     /// (RN-40).
     /// </summary>
     public async Task<PagedResult<MatriculaResponse>> ListByEstudianteAsync(
-        int estudianteId, ListarMatriculasRequest request, CancellationToken cancellationToken)
+        int estudianteId, ListMatriculasRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -174,7 +174,7 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, ILocal
 
     /// <summary>RF-20 y RF-54 para el estudiante de la sesión (RN-18).</summary>
     public Task<PagedResult<MatriculaResponse>> ListMineAsync(
-        ListarMatriculasRequest request, CancellationToken cancellationToken)
+        ListMatriculasRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -186,7 +186,7 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, ILocal
     /// por apellidos, nombre e id de la matrícula.
     /// </summary>
     public async Task<PagedResult<EstudianteGrupoResponse>> ListEstudiantesAsync(
-        int grupoId, ListarEstudiantesGrupoRequest request, CancellationToken cancellationToken)
+        int grupoId, ListEstudiantesGrupoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -235,7 +235,7 @@ public class MatriculaService(IAppDbContext db, ICurrentUser currentUser, ILocal
     // Periodo más reciente primero, luego curso. Dentro de un mismo curso, la matrícula más nueva primero: tras un
     // cambio de grupo la activa queda antes que la retirada.
     private Task<PagedResult<MatriculaResponse>> ListAsync(
-        int estudianteId, ListarMatriculasRequest request, CancellationToken cancellationToken)
+        int estudianteId, ListMatriculasRequest request, CancellationToken cancellationToken)
     {
         var query = db.Matriculas.AsNoTracking().Where(m => m.EstudianteId == estudianteId);
 

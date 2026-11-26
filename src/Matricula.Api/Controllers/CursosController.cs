@@ -23,7 +23,7 @@ public class CursosController(CursoService cursoService, GrupoService grupoServi
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<CursoResponse>> Create(
-        RegistrarCursoRequest request, CancellationToken cancellationToken)
+        CreateCursoRequest request, CancellationToken cancellationToken)
     {
         var curso = await cursoService.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = curso.Id }, curso);
@@ -39,7 +39,7 @@ public class CursosController(CursoService cursoService, GrupoService grupoServi
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<PagedResult<CursoResponse>>> List(
-        [FromQuery] ListarCursosRequest request, CancellationToken cancellationToken) =>
+        [FromQuery] ListCursosRequest request, CancellationToken cancellationToken) =>
         Ok(await cursoService.ListAsync(request, cancellationToken));
 
     /// <summary>
@@ -54,7 +54,7 @@ public class CursosController(CursoService cursoService, GrupoService grupoServi
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<CursoResponse>> Update(
-        int id, ActualizarCursoRequest request, CancellationToken cancellationToken) =>
+        int id, UpdateCursoRequest request, CancellationToken cancellationToken) =>
         Ok(await cursoService.UpdateAsync(id, request, cancellationToken));
 
     /// <summary>
@@ -128,6 +128,6 @@ public class CursosController(CursoService cursoService, GrupoService grupoServi
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PagedResult<GrupoResponse>>> ListGrupos(
-        int id, [FromQuery] ListarGruposCursoRequest request, CancellationToken cancellationToken) =>
+        int id, [FromQuery] ListGruposCursoRequest request, CancellationToken cancellationToken) =>
         Ok(await grupoService.ListByCursoAsync(id, request, cancellationToken));
 }

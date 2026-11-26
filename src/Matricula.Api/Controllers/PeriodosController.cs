@@ -22,7 +22,7 @@ public class PeriodosController(PeriodoService periodoService) : ApiControllerBa
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<PeriodoResponse>> Create(
-        RegistrarPeriodoRequest request, CancellationToken cancellationToken)
+        CreatePeriodoRequest request, CancellationToken cancellationToken)
     {
         var periodo = await periodoService.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = periodo.Id }, periodo);
@@ -37,7 +37,7 @@ public class PeriodosController(PeriodoService periodoService) : ApiControllerBa
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<PagedResult<PeriodoResponse>>> List(
-        [FromQuery] ListarPeriodosRequest request, CancellationToken cancellationToken) =>
+        [FromQuery] ListPeriodosRequest request, CancellationToken cancellationToken) =>
         Ok(await periodoService.ListAsync(request, cancellationToken));
 
     /// <summary>
@@ -76,7 +76,7 @@ public class PeriodosController(PeriodoService periodoService) : ApiControllerBa
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<PeriodoResponse>> Update(
-        int id, ActualizarPeriodoRequest request, CancellationToken cancellationToken) =>
+        int id, UpdatePeriodoRequest request, CancellationToken cancellationToken) =>
         Ok(await periodoService.UpdateAsync(id, request, cancellationToken));
 
     /// <summary>

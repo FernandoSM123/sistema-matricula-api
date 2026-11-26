@@ -13,7 +13,7 @@ public class OfertaAcademicaService(IAppDbContext db, PeriodoService periodoServ
     /// periodo vigente devuelve una página vacía (supuesto 8). Ordena por curso y NRC.
     /// </summary>
     public async Task<PagedResult<OfertaAcademicaResponse>> ListAsync(
-        ListarOfertaRequest request, CancellationToken cancellationToken)
+        ListOfertaRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 

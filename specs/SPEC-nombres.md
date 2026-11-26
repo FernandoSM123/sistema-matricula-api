@@ -4,7 +4,7 @@ Corrección transversal de la API, equivalente a `SPEC-nombres` del SPA. No es u
 
 | Estado | Plan | Tareas | Avance |
 |---|---|---|---|
-| **Aprobada** | [Aprobado](../tasks/nombres/plan.md) | [Aprobadas](../tasks/nombres/todo.md) | 4/7 tareas |
+| **Aprobada** | [Aprobado](../tasks/nombres/plan.md) | [Aprobadas](../tasks/nombres/todo.md) | 5/7 tareas |
 
 **Historial:**
 - 2026-11-26: v1 en revisión. Parte del análisis de factibilidad hecho a pedido del usuario: el renombre es viable, no toca la BD y solo cambia el contrato en los nombres de los esquemas del OpenAPI (§2.6).
@@ -23,6 +23,11 @@ Corrección transversal de la API, equivalente a `SPEC-nombres` del SPA. No es u
   - Métodos privados de los servicios: `Ensure*` para las validaciones que lanzan (`EnsureCedulaAvailableAsync`, `EnsureNoOverlapsAsync`...), `Load*` para las búsquedas que lanzan 404, `CurrentProfesorId`/`CurrentEstudianteId`, `IsAdministrador`, `QueryPageAsync`, `SaveAsync`.
   - Las acciones de los controllers cambian de nombre sin cambiar rutas: el OpenAPI generado es idéntico a la línea base.
   - Verificación con la API: `201` con `Location` al crear un curso (y `GET` de ese `Location`), `403` de un estudiante en `/administradores` y `429` con `Retry-After` en el sexto olvido de contraseña.
+- 2026-11-26: T5 completada, sin cambio de alcance. Detalles que la spec no fijaba:
+  - Los `Listar*Request` cambian solo el prefijo: `ListEstudiantesGrupoRequest`, `ListGruposCursoRequest`, `ListGruposProfesorRequest`, `ListOfertaRequest`, etc.
+  - Las clases de prueba de los validadores siguen el nombre de su request.
+  - OpenAPI: 32 esquemas renombrados (73 antes y después, 55 paths). Con esos renombres aplicados a la línea base, el documento es idéntico: sin cambios en paths, propiedades, enums ni códigos de respuesta.
+  - Verificación con la API: registro público `201` (y `400` con el campo `Confirmacion`), matrícula que llega al servicio (`404` del grupo, `400` con los dos campos vacíos) y cambio de contraseña `200` con login posterior. El estudiante temporal se borró.
 
 ## Objetivo
 

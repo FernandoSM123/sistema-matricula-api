@@ -14,7 +14,7 @@ public class AuditoriaService(IAppDbContext db, ILocalClock localClock)
     /// Filtra con todos los criterios recibidos y ordena del cambio más reciente al más antiguo.
     /// </summary>
     public async Task<PagedResult<RegistroAuditoriaResponse>> ListAsync(
-        ListarAuditoriaRequest request, CancellationToken cancellationToken)
+        ListAuditoriaRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 

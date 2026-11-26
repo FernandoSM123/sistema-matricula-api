@@ -23,7 +23,7 @@ public class ErroresController(ErroresService erroresService) : ApiControllerBas
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<PagedResult<RegistroErrorResponse>>> List(
-        [FromQuery] ListarErroresRequest request, CancellationToken cancellationToken) =>
+        [FromQuery] ListErroresRequest request, CancellationToken cancellationToken) =>
         Ok(await erroresService.ListAsync(request, cancellationToken));
 
     /// <summary>
@@ -31,10 +31,10 @@ public class ErroresController(ErroresService erroresService) : ApiControllerBas
     /// depurado responde 404.
     /// </summary>
     [HttpGet("{id:long}")]
-    [ProducesResponseType<RegistroErrorDetalleResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<RegistroErrorDetailResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<RegistroErrorDetalleResponse>> Get(long id, CancellationToken cancellationToken) =>
+    public async Task<ActionResult<RegistroErrorDetailResponse>> Get(long id, CancellationToken cancellationToken) =>
         Ok(await erroresService.GetAsync(id, cancellationToken));
 }

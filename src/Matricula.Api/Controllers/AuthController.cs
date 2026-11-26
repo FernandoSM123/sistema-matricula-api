@@ -31,10 +31,10 @@ public class AuthController(AuthService authService) : ApiControllerBase
     [HttpPost("olvido-contrasena")]
     [AllowAnonymous]
     [EnableRateLimiting(RateLimitPolicies.ForgotPassword)]
-    [ProducesResponseType<MensajeResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<MessageResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
-    public async Task<ActionResult<MensajeResponse>> ForgotPassword(OlvidoContrasenaRequest request, CancellationToken cancellationToken) =>
+    public async Task<ActionResult<MessageResponse>> ForgotPassword(ForgotPasswordRequest request, CancellationToken cancellationToken) =>
         Ok(await authService.ForgotPasswordAsync(request, cancellationToken));
 
     /// <summary>
@@ -48,7 +48,7 @@ public class AuthController(AuthService authService) : ApiControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<TokenResponse>> RequiredPasswordChange(CambioObligatorioRequest request, CancellationToken cancellationToken) =>
+    public async Task<ActionResult<TokenResponse>> RequiredPasswordChange(RequiredPasswordChangeRequest request, CancellationToken cancellationToken) =>
         Ok(await authService.RequiredPasswordChangeAsync(request, cancellationToken));
 
     /// <summary>
@@ -61,7 +61,7 @@ public class AuthController(AuthService authService) : ApiControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<TokenResponse>> ChangePassword(CambiarContrasenaRequest request, CancellationToken cancellationToken) =>
+    public async Task<ActionResult<TokenResponse>> ChangePassword(ChangePasswordRequest request, CancellationToken cancellationToken) =>
         Ok(await authService.ChangePasswordAsync(request, cancellationToken));
 
     /// <summary>

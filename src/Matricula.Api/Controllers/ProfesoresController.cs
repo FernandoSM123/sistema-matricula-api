@@ -18,13 +18,13 @@ public class ProfesoresController(
     /// correoEnviado en false se puede reenviar.
     /// </summary>
     [HttpPost]
-    [ProducesResponseType<ProfesorRegistradoResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProfesorCreatedResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<ProfesorRegistradoResponse>> Create(
-        RegistrarProfesorRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<ProfesorCreatedResponse>> Create(
+        CreateProfesorRequest request, CancellationToken cancellationToken)
     {
         var registrado = await profesorService.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = registrado.Profesor.Id }, registrado);
@@ -37,7 +37,7 @@ public class ProfesoresController(
     [HttpGet]
     [ProducesResponseType<PagedResult<ProfesorResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResult<ProfesorResponse>>> List(
-        [FromQuery] ListarProfesoresRequest request, CancellationToken cancellationToken) =>
+        [FromQuery] ListProfesoresRequest request, CancellationToken cancellationToken) =>
         Ok(await profesorService.ListAsync(request, cancellationToken));
 
     /// <summary>
@@ -49,7 +49,7 @@ public class ProfesoresController(
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<ProfesorResponse>> Update(
-        int id, ActualizarProfesorRequest request, CancellationToken cancellationToken) =>
+        int id, UpdateProfesorRequest request, CancellationToken cancellationToken) =>
         Ok(await profesorService.UpdateAsync(id, request, cancellationToken));
 
     /// <summary>
@@ -107,7 +107,7 @@ public class ProfesoresController(
     [ProducesResponseType<PagedResult<GrupoResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PagedResult<GrupoResponse>>> ListGrupos(
-        int id, [FromQuery] ListarGruposProfesorRequest request, CancellationToken cancellationToken) =>
+        int id, [FromQuery] ListGruposProfesorRequest request, CancellationToken cancellationToken) =>
         Ok(await grupoService.ListByProfesorAsync(id, request, cancellationToken));
 
     /// <summary>

@@ -31,7 +31,7 @@ public class MeController(
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<PagedResult<MatriculaResponse>>> ListMyMatriculas(
-        [FromQuery] ListarMatriculasRequest request, CancellationToken cancellationToken) =>
+        [FromQuery] ListMatriculasRequest request, CancellationToken cancellationToken) =>
         Ok(await matriculaService.ListMineAsync(request, cancellationToken));
 
     /// <summary>
@@ -48,7 +48,7 @@ public class MeController(
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<MatriculaResponse>> EnrollMe(
-        MatricularPropioRequest request, CancellationToken cancellationToken)
+        EnrollMeRequest request, CancellationToken cancellationToken)
     {
         var matricula = await matriculaService.EnrollMeAsync(request, cancellationToken);
         return CreatedAtAction(
@@ -64,7 +64,7 @@ public class MeController(
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<PagedResult<GrupoResponse>>> ListMyGrupos(
-        [FromQuery] ListarGruposProfesorRequest request, CancellationToken cancellationToken) =>
+        [FromQuery] ListGruposProfesorRequest request, CancellationToken cancellationToken) =>
         Ok(await grupoService.ListMineAsync(request, cancellationToken));
 
     /// <summary>
@@ -86,10 +86,10 @@ public class MeController(
     /// Perfil propio: datos de la cuenta, rol y datos personales (RF-13).
     /// </summary>
     [HttpGet]
-    [ProducesResponseType<PerfilResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProfileResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PerfilResponse>> GetProfile(CancellationToken cancellationToken) =>
+    public async Task<ActionResult<ProfileResponse>> GetProfile(CancellationToken cancellationToken) =>
         Ok(await authService.GetProfileAsync(cancellationToken));
 
     /// <summary>
@@ -98,12 +98,12 @@ public class MeController(
     /// </summary>
     [HttpPut("datos-contacto")]
     [Authorize(Policy = Policies.Estudiante)]
-    [ProducesResponseType<PerfilResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProfileResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PerfilResponse>> UpdateContacto(
-        ActualizarContactoRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<ProfileResponse>> UpdateContacto(
+        UpdateContactoRequest request, CancellationToken cancellationToken)
     {
         await estudianteService.UpdateContactoAsync(request, cancellationToken);
         return Ok(await authService.GetProfileAsync(cancellationToken));

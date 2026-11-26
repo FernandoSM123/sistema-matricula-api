@@ -22,6 +22,6 @@ public class AuditoriaController(AuditoriaService auditoriaService) : ApiControl
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<PagedResult<RegistroAuditoriaResponse>>> List(
-        [FromQuery] ListarAuditoriaRequest request, CancellationToken cancellationToken) =>
+        [FromQuery] ListAuditoriaRequest request, CancellationToken cancellationToken) =>
         Ok(await auditoriaService.ListAsync(request, cancellationToken));
 }

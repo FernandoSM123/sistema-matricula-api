@@ -15,7 +15,7 @@ public class AdministradorService(IAppDbContext db, CuentaService cuentaService)
     /// RF-04: crea la cuenta (rol Administrador, temporal de 72 horas) y el registro del administrador en un solo
     /// guardado, y después envía la temporal.
     /// </summary>
-    public async Task<AdministradorRegistradoResponse> CreateAsync(RegistrarAdministradorRequest request, CancellationToken cancellationToken)
+    public async Task<AdministradorCreatedResponse> CreateAsync(CreateAdministradorRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -27,13 +27,13 @@ public class AdministradorService(IAppDbContext db, CuentaService cuentaService)
         await db.SaveChangesAsync(cancellationToken);
 
         var correoEnviado = await cuentaService.SendTemporaryPasswordAsync(cuenta, cancellationToken);
-        return new AdministradorRegistradoResponse(administrador.ToResponse(), correoEnviado);
+        return new AdministradorCreatedResponse(administrador.ToResponse(), correoEnviado);
     }
 
     /// <summary>
     /// RF-55: listado paginado, solo activos salvo que se pidan los inactivos (RN-41).
     /// </summary>
-    public Task<PagedResult<AdministradorResponse>> ListAsync(ListarAdministradoresRequest request, CancellationToken cancellationToken)
+    public Task<PagedResult<AdministradorResponse>> ListAsync(ListAdministradoresRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -68,7 +68,7 @@ public class AdministradorService(IAppDbContext db, CuentaService cuentaService)
     /// RF-55: datos personales y correo de cualquier administrador, incluido el propio. El correo se cambia en
     /// la cuenta (RN-31).
     /// </summary>
-    public async Task<AdministradorResponse> UpdateAsync(int id, ActualizarAdministradorRequest request, CancellationToken cancellationToken)
+    public async Task<AdministradorResponse> UpdateAsync(int id, UpdateAdministradorRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 

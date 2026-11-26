@@ -14,7 +14,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 | T2. Domain | Completada | ✅ | ✅ | ✅ | ✅ |
 | T3. Piezas técnicas de Application e Infrastructure | Completada | ✅ | ✅ | ✅ | ✅ |
 | T4. Api técnica, métodos de los servicios y acciones | Completada | ✅ | ✅ | ✅ | ✅ |
-| T5. DTO y validadores | Pendiente | ⬜ | ⬜ | ⬜ | ⬜ |
+| T5. DTO y validadores | Completada | ✅ | ✅ | ✅ | ✅ |
 | T6. Configuración y datos de prueba | Pendiente | ⬜ | ⬜ | ⬜ | ⬜ |
 | T7. Cierre | Pendiente | ⬜ | ⬜ | ⬜ | ⬜ |
 

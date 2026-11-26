@@ -16,7 +16,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, ILocalCloc
     /// RF-43 con la visibilidad de RN-18: el profesor solo ve sus grupos y el estudiante solo los Abierto (supuesto 7),
     /// aunque envíen otro filtro. Ordena por inicio de clases (más reciente primero), curso y NRC.
     /// </summary>
-    public Task<PagedResult<GrupoResponse>> ListAsync(ListarGruposRequest request, CancellationToken cancellationToken)
+    public Task<PagedResult<GrupoResponse>> ListAsync(ListGruposRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -41,7 +41,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, ILocalCloc
     /// Abierto, también el profesor, que aquí no se limita a los suyos (supuesto 7).
     /// </summary>
     public async Task<PagedResult<GrupoResponse>> ListByCursoAsync(
-        int cursoId, ListarGruposCursoRequest request, CancellationToken cancellationToken)
+        int cursoId, ListGruposCursoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -60,7 +60,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, ILocalCloc
     /// RF-27 (consulta 5) para el administrador: los grupos de un profesor, en todos los estados.
     /// </summary>
     public async Task<PagedResult<GrupoResponse>> ListByProfesorAsync(
-        int profesorId, ListarGruposProfesorRequest request, CancellationToken cancellationToken)
+        int profesorId, ListGruposProfesorRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -77,7 +77,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, ILocalCloc
     /// RF-27 (consulta 5) para el profesor de la sesión.
     /// </summary>
     public Task<PagedResult<GrupoResponse>> ListMineAsync(
-        ListarGruposProfesorRequest request, CancellationToken cancellationToken)
+        ListGruposProfesorRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -142,7 +142,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, ILocalCloc
     /// RF-42: crea el grupo Planificado y sin horarios. Curso, profesor y aula deben estar activos (RN-17), el cupo no
     /// supera la capacidad del aula (RN-09) y el NRC es único (RN-13).
     /// </summary>
-    public async Task<GrupoDetalleResponse> CreateAsync(CrearGrupoRequest request, CancellationToken cancellationToken)
+    public async Task<GrupoDetailResponse> CreateAsync(CreateGrupoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -168,8 +168,8 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, ILocalCloc
     /// RN-09 siempre, RN-13 contra los otros grupos, y RN-07/RN-08 con todos los bloques del grupo y el profesor y aula
     /// que quedan.
     /// </summary>
-    public async Task<GrupoDetalleResponse> UpdateAsync(
-        int id, ActualizarGrupoRequest request, CancellationToken cancellationToken)
+    public async Task<GrupoDetailResponse> UpdateAsync(
+        int id, UpdateGrupoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -197,7 +197,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, ILocalCloc
     /// sus grupos y un estudiante el de los Abierto y el de los grupos en que tiene o tuvo una matrícula; otro grupo
     /// existente responde 403.
     /// </summary>
-    public async Task<GrupoDetalleResponse> GetAsync(int id, CancellationToken cancellationToken)
+    public async Task<GrupoDetailResponse> GetAsync(int id, CancellationToken cancellationToken)
     {
         var detalle = await db.Grupos.AsNoTracking()
             .Where(g => g.Id == id)
@@ -240,8 +240,8 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, ILocalCloc
     /// profesor (RN-07) o la misma aula (RN-08) en el periodo, y que deje con choque a un estudiante matriculado (RN-06,
     /// supuesto 13).
     /// </summary>
-    public async Task<GrupoDetalleResponse> AddHorarioAsync(
-        int grupoId, AgregarHorarioRequest request, CancellationToken cancellationToken)
+    public async Task<GrupoDetailResponse> AddHorarioAsync(
+        int grupoId, AddHorarioRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -293,7 +293,7 @@ public class GrupoService(IAppDbContext db, ICurrentUser currentUser, ILocalCloc
     /// RF-47: avanza un paso del flujo normal o cancela. Pedir el estado actual no cambia nada. Al cancelar se
     /// retiran las matrículas activas y se liberan sus cupos (RN-12).
     /// </summary>
-    public async Task ChangeEstadoAsync(int grupoId, CambiarEstadoRequest request, CancellationToken cancellationToken)
+    public async Task ChangeEstadoAsync(int grupoId, ChangeEstadoRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 

@@ -11,5 +11,8 @@ public class JwtOptions
     public string Issuer { get; init; } = string.Empty;
     public string Audience { get; init; } = string.Empty;
     public string Key { get; init; } = string.Empty;
-    public int AccessTokenMinutes { get; init; } = 60;
+    public int AccessTokenMinutes { get; init; } = 15;
+
+    /// <summary>Duración de la sesión desde el ingreso; renovarla no la extiende (RN-50).</summary>
+    public int RefreshTokenMinutes { get; init; } = 480;
 }

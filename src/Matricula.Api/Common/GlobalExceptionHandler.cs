@@ -45,7 +45,7 @@ public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService
             NotFoundException => (StatusCodes.Status404NotFound, "Recurso no encontrado", null),
             ConflictException => (StatusCodes.Status409Conflict, "Conflicto", null),
             ForbiddenException e => (StatusCodes.Status403Forbidden, "Acceso denegado", e.Code),
-            UnauthorizedException => (StatusCodes.Status401Unauthorized, "No autenticado", null),
+            UnauthorizedException e => (StatusCodes.Status401Unauthorized, "No autenticado", e.Code),
             DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, "Conflicto de concurrencia", "CONCURRENCIA"),
             _ when violacionUnicidad is not null => (StatusCodes.Status409Conflict, "Dato duplicado", "RN-13"),
             _ when violacionReferencia is not null => (StatusCodes.Status409Conflict, "Registro en uso", "RN-34"),

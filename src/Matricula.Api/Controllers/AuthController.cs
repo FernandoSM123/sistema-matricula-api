@@ -25,6 +25,21 @@ public class AuthController(AuthService authService) : ApiControllerBase
         Ok(await authService.LoginAsync(request, cancellationToken));
 
     /// <summary>
+    /// Renueva la sesión (RF-60): entrega un token de acceso nuevo y reemplaza el refresh token (RN-51). Es anónimo
+    /// porque el token de acceso puede estar vencido. La sesión no se extiende (RN-50). Todos los rechazos dan el
+    /// mismo 401 con code RF-60; reusar un refresh token ya reemplazado termina la sesión.
+    /// </summary>
+    [HttpPost("refresh")]
+    [AllowAnonymous]
+    [EnableRateLimiting(RateLimitPolicies.Refresh)]
+    [ProducesResponseType<TokenResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
+    public async Task<ActionResult<TokenResponse>> Refresh(RefreshTokenRequest request, CancellationToken cancellationToken) =>
+        Ok(await authService.RefreshAsync(request, cancellationToken));
+
+    /// <summary>
     /// Olvido de contraseña (RF-10). Si el correo es de una cuenta activa, envía una temporal que vence en 1 hora.
     /// Responde siempre lo mismo, exista o no el correo (RN-28).
     /// </summary>

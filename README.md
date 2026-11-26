@@ -101,7 +101,8 @@ Como variable de entorno, cada clave usa `__` en lugar de `:` (por ejemplo `Jwt_
 | `ConnectionStrings:Matricula` | **Sí** | En Development, `postgres`/`postgres` en `localhost:5432` | Conexión a PostgreSQL. Sin ella, la API no arranca |
 | `Jwt:Key` | **Sí** | — | Firma de los tokens. Obligatoria, de 32 caracteres o más |
 | `Jwt:Issuer`, `Jwt:Audience` | No | `matricula-api`, `matricula-app` | Emisor y audiencia de los tokens |
-| `Jwt:AccessTokenMinutes` | No | `60` | Vigencia del token de acceso |
+| `Jwt:AccessTokenMinutes` | No | `15` | Vigencia del token de acceso (RN-50) |
+| `Jwt:RefreshTokenMinutes` | No | `480` | Duración máxima de la sesión desde el ingreso; renovarla no la extiende (RF-60, RN-50). Debe ser mayor que `AccessTokenMinutes` |
 | `AdminSeed:TemporaryPassword` | **Sí** | — | Temporal del administrador inicial. Obligatoria mientras no haya administradores |
 | `AdminSeed:Correo`, `Cedula`, `Nombre`, `Apellidos`, `Telefono` | No | Datos genéricos (`admin@instituto.local`, John Doe) | Datos del administrador inicial |
 | `Smtp:Host`, `Smtp:Port`, `Smtp:UseSsl` | No | En Development, `localhost:2525` (smtp4dev), sin SSL | Servidor de correo |
@@ -163,7 +164,7 @@ Si la opción falta o no es una zona válida, **la API no arranca** y lo indica 
 
 ### Jwt
 
-La API emite tokens JWT firmados con una clave simétrica (HS256). `Issuer`, `Audience` y `AccessTokenMinutes` (60) están en `appsettings.json`; la **clave** va solo en user-secrets o en la variable de entorno `Jwt__Key`. Sin una clave de al menos 32 caracteres, **la API no arranca** y lo indica en el error.
+La API emite tokens JWT firmados con una clave simétrica (HS256), y junto a ellos un refresh token para renovar la sesión (`POST /api/v1/auth/refresh`). `Issuer`, `Audience`, `AccessTokenMinutes` (15) y `RefreshTokenMinutes` (480) están en `appsettings.json`; para probar los vencimientos se pueden bajar en user-secrets (por ejemplo, 1 y 3). la **clave** va solo en user-secrets o en la variable de entorno `Jwt__Key`. Sin una clave de al menos 32 caracteres, **la API no arranca** y lo indica en el error.
 
 Para generar una clave aleatoria en PowerShell:
 

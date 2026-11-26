@@ -32,7 +32,7 @@
 | `auditoria` | [Aprobada](SPEC-auditoria.md) | [Aprobado](../tasks/auditoria/plan.md) | [Aprobadas](../tasks/auditoria/todo.md) | 5/5 | Completado |
 | `errores` | [Aprobada](SPEC-errores.md) | [Aprobado](../tasks/errores/plan.md) | [Aprobadas](../tasks/errores/todo.md) | 6/6 | Completado |
 | `datos-prueba` | [Aprobada](SPEC-datos-prueba.md) | [Aprobado](../tasks/datos-prueba/plan.md) | [Aprobadas](../tasks/datos-prueba/todo.md) | 6/6 | Completado |
-| `sesiones` | [Aprobada](SPEC-sesiones.md) | [Aprobado](../tasks/sesiones/plan.md) | [Aprobadas](../tasks/sesiones/todo.md) | 0/6 | Planificación |
+| `sesiones` | [Aprobada](SPEC-sesiones.md) | [Aprobado](../tasks/sesiones/plan.md) | [Aprobadas](../tasks/sesiones/todo.md) | 6/6 | Completado |
 
 **Correcciones transversales** (no son módulos: cambian una regla de la arquitectura y renombran lo construido):
 
@@ -116,3 +116,9 @@ Verificaciones que un módulo no pudo hacer por falta de datos o endpoints. Se c
 15. **Idioma de los nombres** (2026-11-26, corrección `nombres`). El dominio del instituto se nombra en español (entidades y sus propiedades, enums y sus valores, rutas, controllers, carpetas de funcionalidad, mensajes y comentarios) y todo lo técnico en inglés (clases técnicas, métodos, constantes, carpetas técnicas, opciones y sus claves). Los nombres combinados van primero con el dominio (`CursoService`, `CreateCursoRequest`) y los verbos en inglés (`EnrollAsync`). La regla está en `docs/arquitectura.md` §8.1 y las tablas completas de los renombres en [SPEC-nombres](SPEC-nombres.md). No cambian las tablas, el JSON ni las rutas; sí los nombres de los esquemas del OpenAPI y las claves de configuración (ver el README).
 
     **Los documentos históricos conservan los nombres viejos:** las specs, planes y tareas de los módulos ya cerrados y las correcciones COR-01 a COR-03 describen el código como era cuando se escribieron y no se reescriben. Para el nombre actual de algo, ver las tablas de SPEC-nombres.
+16. **Renovación de la sesión** (2026-11-26, módulo `sesiones`, RF-60, RN-50 a RN-52). El refresh token, que estaba fuera del alcance de `acceso`, pasa a ser el módulo [`sesiones`](SPEC-sesiones.md). Se decidió:
+    - El token de acceso dura 15 minutos y la sesión 8 horas desde el ingreso, sin extenderse al renovar (`Jwt:AccessTokenMinutes`, `Jwt:RefreshTokenMinutes`).
+    - El refresh token viaja en el body (el SPA lo guarda en `sessionStorage`), nunca en una cookie; en la BD (`refresh_token`) solo se guarda su hash. La entidad técnica `RefreshToken` se nombra en inglés y no se audita (RN-46).
+    - Rotación en cada renovación y anulación de la familia ante un reuso, sin margen de gracia. Todos los rechazos dan el mismo `401` con `code: "RF-60"`.
+    - El fin de las sesiones se apoya en el `SecurityStamp`: logout (cierra todas las sesiones de la cuenta), cambio de contraseña y desactivación. Eliminar a un estudiante o profesor borra sus sesiones en el mismo guardado; las vencidas se limpian al iniciar sesión.
+    - La ruta `POST /api/v1/auth/refresh` es anónima y aparece en el OpenAPI con el candado de Bearer, como las demás rutas anónimas, porque el esquema se declara para todo el documento (decisión del usuario).

@@ -71,10 +71,11 @@ public class AuthService(
         EnsureDifferentFromCurrent(usuario, request.NuevaContrasena);
 
         usuario.SetPassword(hasher.Hash(request.NuevaContrasena), ahora);
+        var (refreshToken, refreshExpiraEn) = StartSession(usuario, ahora);
         await db.SaveChangesAsync(cancellationToken);
 
         await emailDispatcher.SendPasswordChangedAsync(usuario, cancellationToken);
-        return await IssueTokenAsync(usuario, debeCambiarContrasena: false, cancellationToken);
+        return await IssueTokensAsync(usuario, debeCambiarContrasena: false, refreshToken, refreshExpiraEn, cancellationToken);
     }
 
     /// <summary>
@@ -95,11 +96,13 @@ public class AuthService(
 
         EnsureDifferentFromCurrent(usuario, request.NuevaContrasena);
 
-        usuario.SetPassword(hasher.Hash(request.NuevaContrasena), timeProvider.GetUtcNow());
+        var ahora = timeProvider.GetUtcNow();
+        usuario.SetPassword(hasher.Hash(request.NuevaContrasena), ahora);
+        var (refreshToken, refreshExpiraEn) = StartSession(usuario, ahora);
         await db.SaveChangesAsync(cancellationToken);
 
         await emailDispatcher.SendPasswordChangedAsync(usuario, cancellationToken);
-        return await IssueTokenAsync(usuario, debeCambiarContrasena: false, cancellationToken);
+        return await IssueTokensAsync(usuario, debeCambiarContrasena: false, refreshToken, refreshExpiraEn, cancellationToken);
     }
 
     /// <summary>
@@ -195,8 +198,10 @@ public class AuthService(
             }
 
             usuario.RecordLogin(ahora);
+            await RemoveExpiredSessionsAsync(usuario.Id, ahora, cancellationToken);
+            var (refreshToken, refreshExpiraEn) = StartSession(usuario, ahora);
             await db.SaveChangesAsync(cancellationToken);
-            return await IssueTokenAsync(usuario, debeCambiarContrasena: false, cancellationToken);
+            return await IssueTokensAsync(usuario, debeCambiarContrasena: false, refreshToken, refreshExpiraEn, cancellationToken);
         }
 
         if (usuario.HasValidTemporaryPassword(ahora)
@@ -205,10 +210,54 @@ public class AuthService(
             EnsureActive(usuario);
             usuario.RecordTemporaryPasswordLogin(ahora);
             await db.SaveChangesAsync(cancellationToken);
-            return await IssueTokenAsync(usuario, debeCambiarContrasena: true, cancellationToken);
+            // RN-24: la sesión con una temporal solo sirve para el cambio obligatorio; no se puede renovar (RN-52).
+            return await IssueTokensAsync(usuario, debeCambiarContrasena: true, null, null, cancellationToken);
         }
 
         throw new UnauthorizedException();
+    }
+
+    /// <summary>
+    /// RF-60: entrega un token de acceso nuevo y rota el refresh token (RN-51). Todos los rechazos dan el mismo 401,
+    /// para no revelar por qué terminó la sesión. No es un ingreso: no actualiza UltimoIngreso.
+    /// </summary>
+    public async Task<TokenResponse> RefreshAsync(RefreshTokenRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var ahora = timeProvider.GetUtcNow();
+        var hash = tokenGenerator.HashRefreshToken(request.RefreshToken);
+        var actual = await db.RefreshTokens.Include(t => t.Usuario)
+            .SingleOrDefaultAsync(t => t.TokenHash == hash, cancellationToken)
+            ?? throw SessionEnded();
+
+        if (actual.RevokedAt is not null)
+        {
+            // RN-51: el token ya se había usado. Puede ser un robo, así que termina la sesión entera.
+            await RevokeFamilyAsync(actual.FamilyId, ahora, cancellationToken);
+            throw SessionEnded();
+        }
+
+        var usuario = actual.Usuario;
+        if (actual.IsExpired(ahora) || !usuario.Activo || usuario.SecurityStamp != actual.SecurityStamp)
+        {
+            // RN-50 y RN-52. No hace falta escribir nada: esta familia ya no puede renovar.
+            throw SessionEnded();
+        }
+
+        var siguiente = tokenGenerator.GenerateRefreshToken();
+        db.RefreshTokens.Add(actual.Rotate(siguiente.Hash, ahora));
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Otra petición rotó el mismo token al mismo tiempo (xmin).
+            throw SessionEnded();
+        }
+
+        return await IssueTokensAsync(usuario, debeCambiarContrasena: false, siguiente.Token, actual.ExpiresAt, cancellationToken);
     }
 
     /// <summary>
@@ -246,7 +295,71 @@ public class AuthService(
         }
     }
 
-    private async Task<TokenResponse> IssueTokenAsync(Usuario usuario, bool debeCambiarContrasena, CancellationToken cancellationToken)
+    /// <summary>
+    /// Abre una familia nueva de refresh tokens con el stamp actual de la cuenta. Va después de SetPassword, que
+    /// regenera el stamp, y antes del guardado de la operación. Devuelve el token en claro, que solo viaja en la respuesta.
+    /// </summary>
+    private (string Token, DateTimeOffset ExpiraEn) StartSession(Usuario usuario, DateTimeOffset ahora)
+    {
+        var generado = tokenGenerator.GenerateRefreshToken();
+        var refreshToken = RefreshToken.Issue(
+            usuario.Id, generado.Hash, usuario.SecurityStamp, ahora, tokenGenerator.RefreshTokenLifetime);
+        db.RefreshTokens.Add(refreshToken);
+
+        return (generado.Token, refreshToken.ExpiresAt);
+    }
+
+    /// <summary>
+    /// Supuesto 3: las sesiones vencidas de la cuenta se borran al iniciar sesión. Las anuladas que no han vencido se
+    /// conservan, porque sirven para detectar el reuso (RN-51).
+    /// </summary>
+    private async Task RemoveExpiredSessionsAsync(int usuarioId, DateTimeOffset ahora, CancellationToken cancellationToken)
+    {
+        var vencidas = await db.RefreshTokens
+            .Where(t => t.UsuarioId == usuarioId && t.ExpiresAt <= ahora)
+            .ToListAsync(cancellationToken);
+        db.RefreshTokens.RemoveRange(vencidas);
+    }
+
+    /// <summary>
+    /// RN-51: anula los tokens activos de la familia. Si otra petición rota el último token en el mismo instante, el
+    /// guardado choca con xmin y la familia sigue activa con el token que emitió esa petición. Es una carrera de
+    /// milisegundos entre el token viejo y el nuevo; se responde igual el 401 para no convertirla en un 409.
+    /// </summary>
+    private async Task RevokeFamilyAsync(Guid familyId, DateTimeOffset ahora, CancellationToken cancellationToken)
+    {
+        var activos = await db.RefreshTokens
+            .Where(t => t.FamilyId == familyId && t.RevokedAt == null && t.ExpiresAt > ahora)
+            .ToListAsync(cancellationToken);
+        if (activos.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var token in activos)
+        {
+            token.Revoke(ahora);
+        }
+
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Ver el resumen: quien llama responde el 401 de RF-60.
+        }
+    }
+
+    private static UnauthorizedException SessionEnded() =>
+        new("La sesión terminó. Inicie sesión de nuevo.", "RF-60");
+
+    private async Task<TokenResponse> IssueTokensAsync(
+        Usuario usuario,
+        bool debeCambiarContrasena,
+        string? refreshToken,
+        DateTimeOffset? refreshExpiraEn,
+        CancellationToken cancellationToken)
     {
         // RN-18: matriculas y grupos identifican a la persona por estos claims, sin que el cliente envíe su id.
         var estudianteId = usuario.Rol == Rol.Estudiante
@@ -265,6 +378,7 @@ public class AuthService(
         var token = tokenGenerator.Generate(new TokenData(
             usuario.Id, usuario.Correo, usuario.Rol, usuario.SecurityStamp, debeCambiarContrasena, estudianteId, profesorId));
 
-        return new TokenResponse(token.AccessToken, token.ExpiraEn, usuario.Rol, debeCambiarContrasena);
+        return new TokenResponse(
+            token.AccessToken, token.ExpiraEn, usuario.Rol, debeCambiarContrasena, refreshToken, refreshExpiraEn);
     }
 }

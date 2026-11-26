@@ -194,7 +194,11 @@ public class EstudianteService(
                 $"{estudiante.Nombre} {estudiante.Apellidos} tiene matrículas y no se puede eliminar. Desactívelo en su lugar.");
         }
 
-        // Sin cascada: se eliminan los dos de forma explícita.
+        // Sin cascada: se eliminan de forma explícita las sesiones de la cuenta (RF-60), el estudiante y su cuenta.
+        var sesiones = await db.RefreshTokens
+            .Where(t => t.UsuarioId == estudiante.UsuarioId)
+            .ToListAsync(cancellationToken);
+        db.RefreshTokens.RemoveRange(sesiones);
         db.Estudiantes.Remove(estudiante);
         db.Usuarios.Remove(estudiante.Usuario);
         await db.SaveChangesAsync(cancellationToken);

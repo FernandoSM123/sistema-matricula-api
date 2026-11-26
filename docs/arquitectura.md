@@ -99,7 +99,7 @@ Infrastructure implementa las interfaces definidas en Application (inversión de
   - `POST /api/grupos/{id}/estado` con body `{ "estado": "Abierto" }`
   - `POST /api/estudiantes/{id}/desactivar` y `.../reactivar`
   - `POST /api/matriculas` (matricular), `POST /api/matriculas/{id}/retiro`, `POST /api/matriculas/{id}/cambio-grupo`
-  - `POST /api/auth/login`, `/api/auth/olvido-contrasena`, `/api/auth/cambio-obligatorio` (RF-07), `/api/auth/cambiar-contrasena` (RF-09), `/api/auth/logout`, `GET /api/auth/perfil` (o `/api/me`)
+  - `POST /api/auth/login`, `/api/auth/refresh` (RF-60), `/api/auth/olvido-contrasena`, `/api/auth/cambio-obligatorio` (RF-07), `/api/auth/cambiar-contrasena` (RF-09), `/api/auth/logout`, `GET /api/auth/perfil` (o `/api/me`)
   - `POST /api/usuarios/{id}/reenviar-temporal`
 - **Auditoría (RF-57):** un único endpoint de solo lectura, `GET /api/auditoria?entidad=&entidadId=&usuarioId=&accion=&desde=&hasta=`, con la paginación estándar. No existen endpoints para crear, modificar ni eliminar registros de auditoría (RN-43).
 - **Errores (RF-59):** dos endpoints de solo lectura para el administrador, `GET /api/errores?desde=&hasta=&origen=&traceId=&search=` (paginado, sin el detalle técnico) y `GET /api/errores/{id}` (con el detalle). No hay endpoints para crearlos, modificarlos ni eliminarlos (RN-49).
@@ -145,7 +145,7 @@ Son dos piezas distintas que trabajan juntas.
 - **Fecha de hoy:** las comparaciones con fechas sin hora (RN-04, RN-10, periodo vigente) usan `ILocalClock.Today()`, que convierte la hora de `TimeProvider` a la zona de `Institute:TimeZone` (`America/Costa_Rica`). Nunca calcules la fecha de hoy desde UTC: desde las 18:00 en Costa Rica ya sería el día siguiente.
 - Logging con `ILogger<T>` y mensajes estructurados. Serilog es opcional. **Nunca registres contraseñas ni temporales.** El log sigue siendo el respaldo del registro de errores (§5.2): todo error inesperado se escribe primero en el log y después en la tabla.
 - Ciclos de vida en la inyección de dependencias: el `DbContext` y los servicios son `Scoped`; `TimeProvider` y el generador de contraseñas, `Singleton`.
-- Health check (`/health`), CORS configurado para el front y **rate limiting** integrado en `login` y `olvido-contrasena`. La política CORS expone `Retry-After` (del `429`) y `Location` (del `201`), porque el navegador no deja leerlos desde otro origen si no se declaran (COR-02).
+- Health check (`/health`), CORS configurado para el front y **rate limiting** integrado en `login`, `olvido-contrasena`, el registro público y `refresh`. La política CORS expone `Retry-After` (del `429`) y `Location` (del `201`), porque el navegador no deja leerlos desde otro origen si no se declaran (COR-02).
 
 ## 5. Buenas prácticas de EF Core
 - **Fluent API** en una clase `IEntityTypeConfiguration<T>` por entidad, cargadas con `ApplyConfigurationsFromAssembly`. No uses data annotations en el dominio.
@@ -255,7 +255,14 @@ Así las reglas puras se prueban con tests unitarios sin BD, y los servicios orq
 - **RN-24:** una **política de autorización por defecto** exige que **no** exista ese claim. Solo `cambio-obligatorio` y `logout` permiten tenerlo (`[Authorize(Policy="PasswordChangePending")]`).
 - **Roles:** `[Authorize(Roles = "Administrador")]` o políticas con nombre.
 - **Propiedad (RN-18):** se verifica en el servicio usando `ICurrentUser` (Id, Rol, EstudianteId, ProfesorId leídos de los claims), no solo con atributos.
-- **Logout, desactivación y cambio de contraseña con JWT:** usa tokens de vida corta (por ejemplo, 30–60 min) y un claim con el `SecurityStamp`. Al cambiar la contraseña, desactivar la cuenta o cerrar sesión, se regenera el stamp, y un evento `OnTokenValidated` lo compara contra la BD. Es simple y cumple RN-29.
+- **Logout, desactivación y cambio de contraseña con JWT:** el token de acceso dura poco (`Jwt:AccessTokenMinutes`, 15 min, RN-50) y lleva un claim con el `SecurityStamp`. Al cambiar la contraseña, desactivar la cuenta o cerrar sesión, se regenera el stamp, y un evento `OnTokenValidated` lo compara contra la BD. Es simple y cumple RN-29.
+- **Refresh token (RF-60, RN-50 a RN-52):** la sesión se renueva con `POST /api/v1/auth/refresh`, sin pedir la contraseña.
+  - Se entrega en el body junto al token de acceso (login con la definitiva, cambio obligatorio y cambiar contraseña), nunca en una cookie ni en la URL. El login con una temporal no lo recibe (RN-24).
+  - Son 32 bytes de `RandomNumberGenerator` en Base64Url. En la tabla `refresh_token` solo se guarda su SHA-256, con el `SecurityStamp` de la cuenta al emitirlo, una `FamilyId` por inicio de sesión y el fin de la sesión (`Jwt:RefreshTokenMinutes`, 8 horas).
+  - **Rotación:** cada renovación marca el token usado y emite otro de la misma familia con el mismo `ExpiresAt`: la sesión no se extiende. **Reuso:** presentar un token ya usado anula toda su familia (posible robo). Dos renovaciones simultáneas del mismo token chocan con el token de concurrencia `xmin` y una recibe el `401`.
+  - **Relación con el stamp:** el token copia el stamp al emitirse; si la cuenta lo regenera (logout, cambio de contraseña, desactivación), la familia ya no renueva. El logout no recibe el refresh token y cierra todas las sesiones de la cuenta.
+  - Todos los rechazos dan el mismo `401` con `code: "RF-60"`, sin decir por qué. El endpoint es anónimo y tiene su propio rate limiting.
+  - `RefreshToken` no hereda de `EntidadBase`: no se audita (RN-46). Las vencidas de una cuenta se borran al iniciar sesión y todas al eliminar a su estudiante o profesor, con el change tracker, sin `BackgroundService` ni `ExecuteDelete`.
 - Contraseñas temporales con `RandomNumberGenerator` que cumplan RN-26. Los correos se envían **después** de un `SaveChanges` exitoso.
 - RN-28: el endpoint de olvido de contraseña siempre responde `200` con el mismo mensaje.
 

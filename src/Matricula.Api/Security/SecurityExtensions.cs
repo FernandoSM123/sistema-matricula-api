@@ -20,6 +20,8 @@ public static class SecurityExtensions
             .Validate(o => o.Key.Length >= JwtOptions.MinKeyLength,
                 $"'Jwt:Key' debe tener al menos {JwtOptions.MinKeyLength} caracteres. Defínala en user-secrets o en la variable de entorno Jwt__Key.")
             .Validate(o => o.AccessTokenMinutes > 0, "'Jwt:AccessTokenMinutes' debe ser mayor que cero.")
+            .Validate(o => o.RefreshTokenMinutes > o.AccessTokenMinutes,
+                "'Jwt:RefreshTokenMinutes' debe ser mayor que 'Jwt:AccessTokenMinutes'.")
             .ValidateOnStart();
 
         services.AddSingleton<ITokenGenerator, JwtTokenGenerator>();

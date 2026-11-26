@@ -12,7 +12,7 @@ Cada tarea termina con `dotnet build` sin warnings, `dotnet test tests/Matricula
 
 | Tarea | Estado | Código | Pruebas unitarias | Verificación manual | Commit |
 |---|---|:---:|:---:|:---:|:---:|
-| T1. Dominio: `RefreshToken` | Pendiente | ⬜ | ⬜ | ➖ | ⬜ |
+| T1. Dominio: `RefreshToken` | Completada | ✅ | ✅ | ➖ | ✅ |
 | T2. Persistencia y migración `AgregaRefreshToken` | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
 | T3. Emisión en los ingresos | Pendiente | ⬜ | ⬜ | ⬜ | ⬜ |
 | T4. Renovación `POST /api/v1/auth/refresh` | Pendiente | ⬜ | ➖ | ⬜ | ⬜ |
